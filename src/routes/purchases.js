@@ -1,0 +1,92 @@
+const express = require('express');
+const pool = require('../db');
+const { requireAuth, requireRole } = require('../middleware/auth');
+
+const router = express.Router();
+
+/**
+ * POST /purchases
+ * body: { package_id, group_id, payment_method_id }
+ *
+ * ВАЖНО: "payment_method_id" е tokenized референца добиена на клиентска страна
+ * од платежниот процесор (пр. Stripe.js "PaymentMethod" или CPay/NestPay hosted
+ * fields). Бројот на картичка, CVV и датумот на истек НИКОГАШ не поминуваат
+ * низ нашиот сервер — тоа би значело PCI-DSS обврска што сакаме да ја избегнеме.
+ * Клиентската апликација (сајтот) комуницира директно со процесорот, добива
+ * token, и само токенот стигнува овде.
+ */
+router.post('/', requireAuth, requireRole('student'), async (req, res) => {
+  const { package_id, group_id, payment_method_id } = req.body;
+
+  if (!package_id || !group_id || !payment_method_id) {
+    return res.status(400).json({ error: 'package_id, group_id и payment_method_id се задолжителни.' });
+  }
+
+  const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
+  if (!pkg) return res.status(404).json({ error: 'Пакетот не постои.' });
+
+  const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [group_id]);
+  if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+
+  const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [group_id]);
+  if (members.length >= group.capacity) {
+    return res.status(409).json({ error: 'Групата е веќе пополнета.' });
+  }
+  if (members.some(m => m.student_id === req.user.id)) {
+    return res.status(409).json({ error: 'Веќе си во оваа група.' });
+  }
+
+  const [purchaseResult] = await pool.query(
+    `INSERT INTO purchases (student_id, package_id, group_id, payment_status)
+     VALUES (?, ?, ?, 'pending')`,
+    [req.user.id, package_id, group_id]
+  );
+
+  try {
+    // Овде оди реалниот повик до платежниот процесор, пр.:
+    //   const charge = await stripe.paymentIntents.create({
+    //     amount: pkg.price_mkd * 100,
+    //     currency: 'mkd',
+    //     payment_method: payment_method_id,
+    //     confirm: true
+    //   });
+    // За сега симулираме успешна трансакција додека не се интегрира вистинскиот процесор.
+    const fakeProviderRef = 'SIMULATED-' + Date.now();
+
+    await pool.query(
+      `UPDATE purchases SET payment_status = 'paid', payment_provider_ref = ? WHERE id = ?`,
+      [fakeProviderRef, purchaseResult.insertId]
+    );
+    await pool.query(
+      'INSERT INTO group_members (group_id, student_id) VALUES (?, ?)',
+      [group_id, req.user.id]
+    );
+
+    res.status(201).json({
+      purchase_id: purchaseResult.insertId,
+      status: 'paid',
+      provider_ref: fakeProviderRef
+    });
+  } catch (err) {
+    await pool.query(`UPDATE purchases SET payment_status = 'failed' WHERE id = ?`, [purchaseResult.insertId]);
+    console.error(err);
+    res.status(502).json({ error: 'Плаќањето не успеа. Обиди се повторно.' });
+  }
+});
+
+// GET /purchases/history/:studentId — историја на купувања
+router.get('/history/:studentId', requireAuth, async (req, res) => {
+  const studentId = Number(req.params.studentId);
+  if (req.user.role === 'student' && req.user.id !== studentId) {
+    return res.status(403).json({ error: 'Немаш пристап до туѓи купувања.' });
+  }
+  const [rows] = await pool.query(
+    `SELECT p.*, pk.name AS package_name FROM purchases p
+     JOIN packages pk ON pk.id = p.package_id
+     WHERE p.student_id = ? ORDER BY p.purchased_at DESC`,
+    [studentId]
+  );
+  res.json(rows);
+});
+
+module.exports = router;
