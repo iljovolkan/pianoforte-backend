@@ -61,6 +61,7 @@
   .avatar{width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#fff;}
   .avatar.professor{background:var(--sand);}
   .avatar.student{background:var(--lilac);}
+  .avatar.admin{background:var(--wine);}
   .u-name{font-size:13.5px; font-weight:600;}
   .u-role{font-size:11px; color:var(--mist);}
   .logout-btn{background:none; border:1px solid var(--line); border-radius:7px; padding:7px 12px; font-size:12.5px; color:var(--mist); cursor:pointer;}
@@ -284,16 +285,7 @@
   <div class="login-card">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Најави се за да продолжиш</p></div>
 
-    <div class="role-row" id="roleRow">
-      <div class="role-card" data-role="professor" id="roleProfessor">
-        <span class="emoji">🎹</span><div class="rname">Професор</div><div class="rsub">Индекс · распоред</div>
-      </div>
-      <div class="role-card" data-role="student" id="roleStudent">
-        <span class="emoji">🎧</span><div class="rname">Ученик</div><div class="rsub">Индекс · пакети</div>
-      </div>
-    </div>
-
-    <label class="field-label">Email</label>
+    <label class="field-label" style="margin-top:20px; display:block;">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
     <label class="field-label">Лозинка</label>
     <input class="login-input" id="loginPassword" type="password" placeholder="••••••••">
@@ -435,6 +427,39 @@
         </div>
         <div class="card sched-panel" id="schedPanel">
           <h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- ADMIN PAGE ---- -->
+    <section class="page" id="page-admin">
+      <div class="page-head">
+        <span class="eyebrow">Администрација</span>
+        <h2>Управувај со професори</h2>
+        <p>Создади нова professor сметка. Привремената лозинка се прикажува само еднаш — сподели ja рачно со професорот.</p>
+      </div>
+
+      <div class="index-layout">
+        <div class="card">
+          <div class="form-row">
+            <label>Име и презиме на професорот</label>
+            <input type="text" id="adminProfName" placeholder="пр. Никола Тодоровски">
+          </div>
+          <div class="form-row">
+            <label>Email</label>
+            <input type="email" id="adminProfEmail" placeholder="professor@pianoforte.mk">
+          </div>
+          <button class="send-btn" id="adminCreateProfBtn">Креирај professor сметка</button>
+          <div id="adminError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
+          <div id="adminSuccessBox" style="display:none; margin-top:16px; background:var(--leaf-pale); border:1px solid #cfe3d3; border-radius:10px; padding:16px;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:8px;">✓ Профилот е креиран</div>
+            <div style="font-size:13px; line-height:1.6;" id="adminSuccessText"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:15px; margin-bottom:14px;">Постоечки професори</h3>
+          <div id="adminProfList"></div>
         </div>
       </div>
     </section>
@@ -673,17 +698,6 @@
   function nowStr(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 
   /* ===================== LOGIN LOGIC ===================== */
-  let chosenRole = null;
-  document.getElementById('roleProfessor').addEventListener('click', ()=>selectRole('professor'));
-  document.getElementById('roleStudent').addEventListener('click', ()=>selectRole('student'));
-
-  function selectRole(role){
-    chosenRole = role;
-    document.getElementById('roleProfessor').classList.toggle('sel-professor', role==='professor');
-    document.getElementById('roleStudent').classList.toggle('sel-student', role==='student');
-    validateLoginForm();
-  }
-
   /* ===================== REAL API CONNECTION ===================== */
   const API_BASE = 'https://app.pianoforte.edu.mk';
   async function apiCall(path, options={}){
@@ -695,11 +709,17 @@
     if(!res.ok) throw new Error(data.error || `Грешка (${res.status})`);
     return data;
   }
+  function authApiCall(path, options={}){
+    return apiCall(path, {
+      ...options,
+      headers: {...(options.headers||{}), 'Authorization': 'Bearer ' + (session ? session.token : '')}
+    });
+  }
 
   function validateLoginForm(){
     const email = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPassword').value.trim();
-    document.getElementById('loginBtn').disabled = !(chosenRole && email && pass);
+    document.getElementById('loginBtn').disabled = !(email && pass);
   }
   document.getElementById('loginEmail').addEventListener('input', validateLoginForm);
   document.getElementById('loginPassword').addEventListener('input', validateLoginForm);
@@ -727,9 +747,11 @@
         }
         session = {role:'student', name:user.full_name, studentId:localId, realUserId:user.id, token, isRealAccount:true};
         activeStudentForIndex = localId;
+      } else if(user.role === 'admin'){
+        session = {role:'admin', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
       } else {
-        // professor / admin — сметките за групи/распоред сè уште не постојат во базата,
-        // па тие делови ќе бидат празни додека не се поврзе и тој дел.
+        // professor — групите/распоредот сè уште не постојат во базата за реални
+        // сметки, па тие делови ќе бидат празни додека не се поврзе и тој дел.
         const localPid = 'u' + user.id;
         if(!professors.find(p=>p.id===localPid)){
           professors.push({id:localPid, name:user.full_name});
@@ -860,15 +882,23 @@
     avatar.textContent = session.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     avatar.className = 'avatar ' + session.role;
     document.getElementById('uName').textContent = session.name;
-    document.getElementById('uRole').textContent = (session.role==='professor' ? 'Професор' : 'Ученик') + (session.isRealAccount ? ' · 🔗 жива база' : ' · демо преглед');
-    buildNav(); showPage('index');
-    buildStudentSelect();
-    renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
+    const roleLabel = session.role==='professor' ? 'Професор' : session.role==='admin' ? 'Админ' : 'Ученик';
+    document.getElementById('uRole').textContent = roleLabel + (session.isRealAccount ? ' · 🔗 жива база' : ' · демо преглед');
+    buildNav();
+    if(session.role==='admin'){
+      renderAdminPage();
+    } else {
+      showPage('index');
+      buildStudentSelect();
+      renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
+    }
   }
 
   function buildNav(){
     const nav = document.getElementById('topnav'); nav.innerHTML = '';
-    const tabs = [{id:'index', label:'Индекс'}];
+    const tabs = [];
+    if(session.role==='admin') tabs.push({id:'admin', label:'Админ'});
+    tabs.push({id:'index', label:'Индекс'});
     if(session.role==='professor') tabs.push({id:'schedule', label:'Распоред'});
     tabs.push({id:'billing', label:'Наплата'});
     tabs.push({id:'packages', label:'Пакети'});
@@ -878,9 +908,11 @@
         showPage(t.id);
         if(t.id==='billing') renderBillingPage();
         if(t.id==='schedule') renderSchedulePage();
+        if(t.id==='admin') renderAdminPage();
       });
       nav.appendChild(btn);
     });
+    if(session.role==='admin') showPage('admin');
   }
   function showPage(id){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1305,6 +1337,68 @@
     `;
     wrap.appendChild(card);
   }
+
+  /* ===================== ADMIN PAGE ===================== */
+  async function renderAdminPage(){
+    const listBox = document.getElementById('adminProfList');
+    listBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    try{
+      const profs = await authApiCall('/admin/professors');
+      if(profs.length === 0){
+        listBox.innerHTML = '<div class="empty-state">Сè уште нема регистрирани професори.</div>';
+      } else {
+        listBox.innerHTML = profs.map(p => `
+          <div class="sent-item">
+            <div class="sent-icon">🎹</div>
+            <div class="sent-meta">
+              <div class="t">${p.full_name}</div>
+              <div class="sub">${p.email}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch(err){
+      listBox.innerHTML = `<div class="empty-state">Грешка при вчитување: ${err.message}</div>`;
+    }
+  }
+
+  document.getElementById('adminCreateProfBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('adminProfName').value.trim();
+    const email = document.getElementById('adminProfEmail').value.trim();
+    const errBox = document.getElementById('adminError');
+    const successBox = document.getElementById('adminSuccessBox');
+    errBox.style.display = 'none';
+    successBox.style.display = 'none';
+
+    if(!name || !email){
+      errBox.textContent = 'Пополни име и email.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('adminCreateProfBtn');
+    btn.disabled = true; btn.textContent = 'Се креира...';
+
+    try{
+      const result = await authApiCall('/admin/professors', {
+        method:'POST',
+        body: JSON.stringify({ email, full_name:name })
+      });
+      document.getElementById('adminSuccessText').innerHTML =
+        `<strong>${result.full_name}</strong> (${result.email})<br>
+         Привремена лозинка: <strong style="font-family:'IBM Plex Mono',monospace; background:#fff; padding:2px 8px; border-radius:4px;">${result.temp_password}</strong><br>
+         <span style="color:var(--mist);">Сподели ja рачно со професорот — тој веднаш може да се најави со email + оваа лозинка.</span>`;
+      successBox.style.display = 'block';
+      document.getElementById('adminProfName').value = '';
+      document.getElementById('adminProfEmail').value = '';
+      renderAdminPage();
+    } catch(err){
+      errBox.textContent = err.message || 'Грешка при креирање.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Креирај professor сметка';
+    }
+  });
 
   function renderPackagesPage(){
     const grid = document.getElementById('pkgGrid'); grid.innerHTML='';
