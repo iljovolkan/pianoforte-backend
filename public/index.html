@@ -21,7 +21,7 @@
   h1,h2,h3{font-family:'Fraunces',serif; font-weight:500;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   button{font-family:'Inter',sans-serif;}
- 
+
   /* ================= LOGIN ================= */
   #loginScreen{
     min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
@@ -47,7 +47,7 @@
   .login-btn:hover{transform:translateY(-1px); box-shadow:0 10px 22px rgba(107,78,142,0.25);}
   .login-btn:disabled{opacity:.5; cursor:default; transform:none; box-shadow:none;}
   .login-hint{text-align:center; font-size:11px; color:var(--mist); margin-top:14px; line-height:1.5;}
- 
+
   /* ================= APP SHELL ================= */
   #appShell{display:none; min-height:100vh;}
   header.topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 28px; background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20;}
@@ -65,7 +65,7 @@
   .u-role{font-size:11px; color:var(--mist);}
   .logout-btn{background:none; border:1px solid var(--line); border-radius:7px; padding:7px 12px; font-size:12.5px; color:var(--mist); cursor:pointer;}
   .logout-btn:hover{border-color:var(--wine); color:var(--wine);}
- 
+
   main{max-width:1300px; margin:0 auto; padding:36px 28px 80px;}
   .page{display:none;} .page.active{display:block;}
   .page-head{margin-bottom:26px;}
@@ -73,14 +73,14 @@
   .page-head h2{font-size:26px;}
   .page-head p{color:var(--mist); font-size:14px; margin-top:6px; max-width:560px;}
   .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px;}
- 
+
   /* ---- shared form bits ---- */
   .form-row{margin-bottom:14px;}
   .form-row label{display:block; font-size:12.5px; color:var(--mist); margin-bottom:6px;}
   .form-row input, .form-row select, .form-row textarea{width:100%; background:var(--surface); border:1px solid var(--line); color:var(--ink); padding:10px 12px; border-radius:8px; font-size:14px;}
   .form-row input:focus, .form-row select:focus, .form-row textarea:focus{outline:none; border-color:var(--sand);}
   .form-row textarea{resize:vertical; min-height:56px;}
- 
+
   /* ================= INDEX PAGE ================= */
   .index-layout{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
   .type-toggle{display:flex; gap:8px;}
@@ -120,7 +120,7 @@
   .stat{flex:1; padding:11px; text-align:center; border-right:1px solid var(--line);} .stat:last-child{border-right:none;}
   .stat .num{font-family:'Fraunces',serif; font-size:20px; color:var(--sand-deep);}
   .stat .lbl{font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--mist); text-transform:uppercase;}
- 
+
   /* ================= SCHEDULE PAGE ================= */
   .groups-overview{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;}
   .group-ov-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
@@ -137,7 +137,7 @@
   .tag.level-napreden{background:var(--lilac-pale); color:var(--lilac-deep);}
   .member-chips{display:flex; flex-wrap:wrap; gap:6px;}
   .chip{background:var(--surface-2); border:1px solid var(--line); font-size:11px; padding:4px 9px; border-radius:20px; color:var(--ink);}
- 
+
   .sched-wrap{display:grid; grid-template-columns:1fr 300px; gap:24px; align-items:start;}
   .view-toggle-row{display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
   .view-toggle-btn{background:#fff; border:1px solid var(--line); padding:9px 16px; border-radius:8px; font-size:13.5px; color:var(--mist); cursor:pointer; transition:.2s; font-weight:500;}
@@ -147,7 +147,7 @@
   .cal-nav button{background:#fff; border:1px solid var(--line); width:32px; height:32px; border-radius:7px; cursor:pointer; color:var(--ink); font-size:14px;}
   .cal-nav button:hover{border-color:var(--sand);}
   .cal-nav .cal-nav-label{font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink); min-width:120px; text-align:center;}
- 
+
   /* month view */
   .month-grid{display:grid; grid-template-columns:repeat(7,1fr); border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff;}
   .month-head-cell{background:var(--surface-2); text-align:center; padding:9px 4px; font-size:11.5px; font-weight:600; color:var(--mist); border-bottom:1px solid var(--line);}
@@ -159,7 +159,7 @@
   .mdc-off-label{font-size:9.5px; color:var(--wine); font-family:'IBM Plex Mono',monospace;}
   .mdc-lesson{font-size:10px; background:var(--sand-pale); color:var(--sand-deep); padding:2px 6px; border-radius:20px; margin-bottom:3px; cursor:pointer; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .mdc-lesson:hover{background:var(--sand); color:#fff;}
- 
+
   /* year view */
   .year-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
   .mini-month{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px;}
@@ -192,7 +192,7 @@
   .save-note-btn{width:100%; background:var(--lilac-deep); color:#fff; border:none; padding:11px; border-radius:8px; font-weight:600; font-size:13.5px; cursor:pointer; margin-top:10px; transition:.2s;}
   .save-note-btn:hover{opacity:.9;}
   .clear-slot-btn{width:100%; background:transparent; color:var(--wine); border:1px solid var(--wine-pale); padding:9px; border-radius:8px; font-size:12.5px; cursor:pointer; margin-top:8px;}
- 
+
   /* ================= PACKAGES PAGE ================= */
   .pkg-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;}
   .pkg-card{background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:26px 22px; display:flex; flex-direction:column; transition:.2s;}
@@ -210,7 +210,7 @@
   .pkg-card.featured .pkg-select-btn{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
   .pkg-select-btn:hover{transform:translateY(-1px);}
   .pkg-card.chosen{border-color:var(--leaf); background:var(--leaf-pale);}
- 
+
   .booking-step{margin-top:30px;}
   .booking-step h3{font-size:19px; margin-bottom:6px;}
   .booking-step p.sub{color:var(--mist); font-size:13.5px; margin-bottom:18px;}
@@ -229,7 +229,7 @@
   .slot-pick-card .fill{font-size:12px; color:var(--mist); margin-bottom:14px;}
   .book-btn{width:100%; background:var(--sand-deep); color:#fff; border:none; padding:10px; border-radius:7px; font-weight:600; font-size:13px; cursor:pointer;}
   .book-btn:disabled{background:var(--surface-2); color:var(--mist); cursor:default;}
- 
+
   .payment-modal-overlay{position:fixed; inset:0; background:rgba(59,49,66,0.45); display:none; align-items:center; justify-content:center; z-index:100;}
   .payment-modal-overlay.show{display:flex;}
   .payment-modal{background:#fff; border-radius:16px; padding:30px 28px; max-width:400px; width:92%; box-shadow:0 30px 70px rgba(0,0,0,0.25);}
@@ -241,11 +241,11 @@
   .pay-btn:disabled{opacity:.6;}
   .pm-cancel{width:100%; background:none; border:none; color:var(--mist); font-size:12.5px; padding:10px; cursor:pointer;}
   .pm-note{font-size:11px; color:var(--mist); margin-top:10px; text-align:center; line-height:1.5;}
- 
+
   .pkg-confirm{margin-top:26px; background:var(--leaf-pale); border:1px solid #cfe3d3; border-radius:12px; padding:18px 22px; display:none; align-items:center; gap:14px;}
   .pkg-confirm.show{display:flex;}
   .pkg-confirm .ic{font-size:22px;}
- 
+
   /* ================= BILLING PAGE ================= */
   .billing-table{background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;}
   .billing-row{display:grid; grid-template-columns:2fr 1.4fr 1fr 1.2fr 1fr; gap:12px; align-items:center; padding:14px 20px; border-bottom:1px solid var(--line);}
@@ -267,7 +267,7 @@
   .billing-summary-card .bs-row:last-child{border-bottom:none;}
   .billing-summary-card .bs-label{color:var(--mist);}
   .billing-summary-card .bs-value{font-weight:600;}
- 
+
   @media(max-width:960px){
     .index-layout, .sched-wrap{grid-template-columns:1fr;}
     .pkg-grid, .slot-pick-grid, .groups-overview{grid-template-columns:1fr;}
@@ -278,12 +278,12 @@
 </style>
 </head>
 <body>
- 
+
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Најави се за да продолжиш</p></div>
- 
+
     <div class="role-row" id="roleRow">
       <div class="role-card" data-role="professor" id="roleProfessor">
         <span class="emoji">🎹</span><div class="rname">Професор</div><div class="rsub">Индекс · распоред</div>
@@ -292,36 +292,27 @@
         <span class="emoji">🎧</span><div class="rname">Ученик</div><div class="rsub">Индекс · пакети</div>
       </div>
     </div>
- 
+
     <label class="field-label">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
     <label class="field-label">Лозинка</label>
     <input class="login-input" id="loginPassword" type="password" placeholder="••••••••">
- 
-    <div id="professorLoginFields" style="display:none;">
-      <label class="field-label">Демо-профил (во реален систем ова се препознава автоматски преку email-от)</label>
-      <select class="login-select" id="professorLoginSelect"></select>
-    </div>
- 
-    <div id="studentLoginFields" style="display:none;">
-      <label class="field-label">Демо-профил (во реален систем ова се препознава автоматски преку email-от)</label>
-      <select class="login-select" id="studentLoginSelect"></select>
-    </div>
- 
+
     <button class="login-btn" id="loginBtn" disabled>Најави се</button>
-    <div class="login-hint">Демо прототип — секој email/лозинка функционира, вистинската проверка (bcrypt hash) доаѓа со реалниот backend.</div>
+    <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
+    <div class="login-hint">Реална најава — поврзана со живата база на PianoForte.</div>
     <div style="text-align:center; margin-top:16px;">
       <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">Немаш профил? Регистрирај се →</a>
     </div>
   </div>
 </div>
- 
+
 <!-- ================= REGISTER ================= -->
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:480px;">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Креирај профил за ученик</p></div>
- 
+
     <label class="field-label">Име и презиме</label>
     <input class="login-input" id="regName" placeholder="Име и презиме на детето">
     <label class="field-label">Email</label>
@@ -330,10 +321,10 @@
     <input class="login-input" id="regPassword" type="password" placeholder="••••••••">
     <label class="field-label">Возраст на детето</label>
     <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
- 
+
     <label class="field-label">Инструмент</label>
     <div class="type-toggle" id="regInstrumentToggle" style="flex-wrap:wrap; margin-bottom:18px;"></div>
- 
+
     <button class="login-btn" id="registerBtn">Креирај профил</button>
     <div id="registerError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div style="text-align:center; margin-top:16px;">
@@ -341,7 +332,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ================= EMAIL CONFIRM ================= -->
 <div id="confirmEmailScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
@@ -349,18 +340,18 @@
     <div style="font-size:40px; margin-bottom:14px;">📧</div>
     <h2 style="font-size:20px; margin-bottom:8px;">Испративме потврда на твojot email</h2>
     <p style="color:var(--mist); font-size:13.5px; margin-bottom:24px;" id="confirmEmailAddress"></p>
- 
+
     <div style="background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:18px; text-align:left; margin-bottom:22px;">
       <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">ОД: PianoForte &lt;no-reply@pianoforte.mk&gt;</div>
       <div style="font-weight:600; font-size:14px; margin-bottom:8px;">Потврди го твojot профил на PianoForte</div>
       <div style="font-size:13px; color:var(--ink); opacity:.8; line-height:1.5;">Здраво! Само уште еден чекор — кликни на копчето подолу за да го активираш профилот и да продолжиш со изборот на пакет.</div>
     </div>
- 
+
     <button class="login-btn" id="confirmEmailBtn">📩 Отвори email и потврди (демо)</button>
     <div class="login-hint">Во реален систем ова стигнува како вистински email преку SendGrid/Mailgun. Тука го симулираме со едно копче.</div>
   </div>
 </div>
- 
+
 <!-- ================= APP SHELL ================= -->
 <div id="appShell">
   <header class="topbar">
@@ -372,9 +363,9 @@
       <button class="logout-btn" id="logoutBtn">Одјави се</button>
     </div>
   </header>
- 
+
   <main>
- 
+
     <!-- ---- INDEX PAGE ---- -->
     <section class="page" id="page-index">
       <div class="page-head">
@@ -418,7 +409,7 @@
         </div>
       </div>
     </section>
- 
+
     <!-- ---- SCHEDULE PAGE ---- -->
     <section class="page" id="page-schedule">
       <div class="page-head">
@@ -426,16 +417,16 @@
         <h2>Календар по групи</h2>
         <p>Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.</p>
       </div>
- 
+
       <div class="groups-overview" id="groupsOverview"></div>
- 
+
       <div class="view-toggle-row">
         <button class="view-toggle-btn" data-view="week">Недела</button>
         <button class="view-toggle-btn" data-view="month">Месец</button>
         <button class="view-toggle-btn" data-view="year">Година</button>
         <div class="cal-nav" id="calNav"></div>
       </div>
- 
+
       <div class="sched-wrap">
         <div id="calendarViewport">
           <div class="cal-scroll" id="weekViewWrap"><div class="cal-grid" id="calGrid"></div></div>
@@ -447,7 +438,7 @@
         </div>
       </div>
     </section>
- 
+
     <!-- ---- BILLING PAGE ---- -->
     <section class="page" id="page-billing">
       <div class="page-head">
@@ -457,7 +448,7 @@
       </div>
       <div id="billingContent"></div>
     </section>
- 
+
     <!-- ---- PACKAGES PAGE ---- -->
     <section class="page" id="page-packages">
       <div class="page-head">
@@ -466,7 +457,7 @@
         <p>По изборот на пакет, избираш слободна група/термин и плаќаш со картичка. Резервацијата веднаш се внесува во распоредот на професорот.</p>
       </div>
       <div class="pkg-grid" id="pkgGrid"></div>
- 
+
       <div class="booking-step" id="bookingStep" style="display:none;">
         <h3>Избери термин за групни часови</h3>
         <p class="sub">Филтрирај по возраст и претходно искуство за да ја најдеш вистинската група.</p>
@@ -486,17 +477,17 @@
         </div>
         <div class="slot-pick-grid" id="slotPickGrid"></div>
       </div>
- 
+
       <div class="pkg-confirm" id="pkgConfirm">
         <div class="ic">✓</div>
         <div><div style="font-weight:600; font-size:14.5px;" id="pkgConfirmTitle"></div>
         <div style="font-size:13px; color:var(--mist); margin-top:2px;" id="pkgConfirmSub"></div></div>
       </div>
     </section>
- 
+
   </main>
 </div>
- 
+
 <!-- ================= PAYMENT MODAL ================= -->
 <div class="payment-modal-overlay" id="paymentOverlay">
   <div class="payment-modal">
@@ -514,10 +505,10 @@
     <div class="pm-note">Демо форма — платежните податоци не се складираат. Реалната верзија испраќа само tokenized reference од платежниот процесор.</div>
   </div>
 </div>
- 
+
 <script>
 (function(){
- 
+
   /* ===================== DATA ===================== */
   const INSTRUMENTS = [
     {id:'piano', label:'Пијано', icon:'🎹'},
@@ -529,7 +520,7 @@
   ];
   function instrumentInfo(id){ return INSTRUMENTS.find(x=>x.id===id) || {label:id, icon:'🎵'}; }
   function instrumentLabel(id){ const i=instrumentInfo(id); return `${i.icon} ${i.label}`; }
- 
+
   const students = [
     {id:'s1',name:'Дамјан Костовски',instrument:'piano'},{id:'s2',name:'Ивана Петрова',instrument:'piano'},{id:'s3',name:'Стефан Мицевски',instrument:'piano'},
     {id:'s4',name:'Марта Николовска',instrument:'piano'},{id:'s5',name:'Никола Трајковски',instrument:'piano'},{id:'s6',name:'Ана Ефтимова',instrument:'piano'},
@@ -548,13 +539,13 @@
       .replace(/ѓ/g,'gj').replace(/ж/g,'zh').replace(/ч/g,'ch').replace(/ш/g,'sh').replace(/ц/g,'c')
       + '@demo.mk';
   }
- 
+
   const professors = [
     {id:'pr1', name:'Марија Стојановска'},
     {id:'pr2', name:'Никола Тодоровски'}
   ];
   function professorName(id){ const p=professors.find(x=>x.id===id); return p?p.name:'—'; }
- 
+
   const groups = [
     {id:'g1', name:'Група А', instrument:'piano', capacity:6, ageRange:'7-10', level:'pocetnik', professorId:'pr1', students:['s1','s2','s3','s4','s5']},
     {id:'g2', name:'Група Б', instrument:'piano', capacity:6, ageRange:'11-14', level:'napreden', professorId:'pr1', students:['s6','s7','s8','s9']},
@@ -578,16 +569,16 @@
   let filterAge = 'all';
   let filterLevel = 'all';
   let filterInstrument = 'all';
- 
+
   const materials = {};
   students.forEach(s => materials[s.id] = []);
   materials['s1'].push({id:'m0', title:'Für Elise — воведни тактови', type:'Ноти', note:'Фокус на левата рака, бавно темпо.', status:'opened', time:'09:14'});
   materials['s1'].push({id:'m00', title:'Скали — Ц-дур, две октави', type:'Задача', note:'', status:'done', time:'09:02'});
   let matCounter = 1;
- 
+
   const days = ['Пон','Вто','Сре','Чет','Пет','Саб'];
   const hours = [9,10,11,12,13,14,15,16,17,18];
- 
+
   // Секоја група се состои од ДВА термина неделно, кои се повторуваат
   // низ целата учебна година (пр. Вторник + Четврток во 15:00).
   // schedule: "day-hour" -> {groupId, note}
@@ -613,19 +604,19 @@
     if(keys.length===0) return 'Нема доделен термин';
     return keys.map(k=>k.replace('-',' ')+':00').join('  и  ');
   }
- 
+
   const packages = [
     {id:'p1', name:'Стартер', price:'1.800', per:'месечно', desc:'За почетници кои сакаат да пробаат редовна настава.', feats:['4 групни часа месечно','Пристап до дигитален индекс','Основна поддршка преку email']},
     {id:'p2', name:'Стандард', price:'3.200', per:'месечно', desc:'Најизбран пакет за континуиран напредок.', feats:['8 групни часа месечно','Приоритетен распоред','Месечен извештај за напредок','Аудио + видео материјали'], featured:true},
     {id:'p3', name:'Премиум', price:'5.400', per:'месечно', desc:'За сериозни ученици и подготовка за настапи.', feats:['Неограничени групни часови','Помал број деца во групата','Подготовка за натпревари/настапи','Приоритетна поддршка 7 дена']}
   ];
- 
+
   /* ---- плаќања / претплати ---- */
   const GRACE_DAYS = 5; // колку дена по рокот терминот сè уште стои пред да се ослободи
   const today = new Date();
   function daysFromNow(n){ const d = new Date(today); d.setDate(d.getDate()+n); return d; }
   function fmtDate(d){ return d.toLocaleDateString('mk-MK', {day:'2-digit', month:'2-digit', year:'numeric'}); }
- 
+
   const subscriptions = {
     s1:  {packageId:'p2', groupId:'g1', nextDueDate:daysFromNow(22), released:false},
     s2:  {packageId:'p1', groupId:'g1', nextDueDate:daysFromNow(3),  released:false},
@@ -643,7 +634,7 @@
     s14: {packageId:'p2', groupId:'g3', nextDueDate:daysFromNow(30), released:false},
     s15: {packageId:'p2', groupId:'g3', nextDueDate:daysFromNow(9),  released:false}
   };
- 
+
   // При стартување: секој ученик задоцнет подолго од GRACE_DAYS автоматски
   // го губи местото во групата — терминот се ослободува.
   Object.entries(subscriptions).forEach(([sid, sub])=>{
@@ -654,7 +645,7 @@
       sub.released = true;
     }
   });
- 
+
   function paymentState(sid){
     const sub = subscriptions[sid];
     if(!sub) return {state:'none'};
@@ -666,40 +657,33 @@
   }
   const paymentStateLabel = {paid:'Платено', due_soon:'Наближува рок', late:'Задоцнето', released:'Термин ослободен', none:'Нема пакет'};
   const paymentStateClass = {paid:'status-done', due_soon:'status-delivered', late:'status-opened', released:'status-queued', none:'status-queued'};
- 
+
   /* ===================== SESSION ===================== */
   let session = null;
   let activeStudentForIndex = students[0].id;
   let selectedSlotKey = null;
   let chosenPackage = null;
   let pendingBooking = null; // {groupId, slotKey}
- 
+
   const typeIcon = {'Ноти':'🎼','Аудио':'🎧','Задача':'✎'};
   const statusLabel = {queued:'Во ред', delivered:'Ново', opened:'Отворено', done:'Завршено'};
   const statusClass = {queued:'status-queued', delivered:'status-delivered', opened:'status-opened', done:'status-done'};
- 
+
   function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
   function nowStr(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
- 
+
   /* ===================== LOGIN LOGIC ===================== */
-  const studentLoginSelect = document.getElementById('studentLoginSelect');
-  students.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; studentLoginSelect.appendChild(o); });
-  const professorLoginSelect = document.getElementById('professorLoginSelect');
-  professors.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; professorLoginSelect.appendChild(o); });
- 
   let chosenRole = null;
   document.getElementById('roleProfessor').addEventListener('click', ()=>selectRole('professor'));
   document.getElementById('roleStudent').addEventListener('click', ()=>selectRole('student'));
- 
+
   function selectRole(role){
     chosenRole = role;
     document.getElementById('roleProfessor').classList.toggle('sel-professor', role==='professor');
     document.getElementById('roleStudent').classList.toggle('sel-student', role==='student');
-    document.getElementById('professorLoginFields').style.display = role==='professor' ? 'block' : 'none';
-    document.getElementById('studentLoginFields').style.display = role==='student' ? 'block' : 'none';
     validateLoginForm();
   }
- 
+
   /* ===================== REAL API CONNECTION ===================== */
   const API_BASE = 'https://app.pianoforte.edu.mk';
   async function apiCall(path, options={}){
@@ -711,7 +695,7 @@
     if(!res.ok) throw new Error(data.error || `Грешка (${res.status})`);
     return data;
   }
- 
+
   function validateLoginForm(){
     const email = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPassword').value.trim();
@@ -719,25 +703,54 @@
   }
   document.getElementById('loginEmail').addEventListener('input', validateLoginForm);
   document.getElementById('loginPassword').addEventListener('input', validateLoginForm);
- 
-  document.getElementById('loginBtn').addEventListener('click', ()=>{
-    if(chosenRole === 'professor'){
-      const pid = professorLoginSelect.value;
-      session = {role:'professor', name:professorName(pid), professorId:pid, isRealAccount:false};
-    } else {
-      const sid = studentLoginSelect.value;
-      session = {role:'student', name:studentName(sid), studentId:sid, isRealAccount:false};
-      activeStudentForIndex = sid;
+
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const errBox = document.getElementById('loginError');
+    errBox.style.display = 'none';
+
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Се најавува...';
+
+    try{
+      const { token, user } = await apiCall('/auth/login', {
+        method:'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      if(user.role === 'student'){
+        const localId = 'r' + user.id;
+        if(!students.find(s=>s.id===localId)){
+          students.push({id:localId, name:user.full_name, instrument:null});
+          materials[localId] = [];
+        }
+        session = {role:'student', name:user.full_name, studentId:localId, realUserId:user.id, token, isRealAccount:true};
+        activeStudentForIndex = localId;
+      } else {
+        // professor / admin — сметките за групи/распоред сè уште не постојат во базата,
+        // па тие делови ќе бидат празни додека не се поврзе и тој дел.
+        const localPid = 'u' + user.id;
+        if(!professors.find(p=>p.id===localPid)){
+          professors.push({id:localPid, name:user.full_name});
+        }
+        session = {role:'professor', name:user.full_name, professorId:localPid, realUserId:user.id, token, isRealAccount:true};
+      }
+      startApp();
+    } catch(err){
+      errBox.textContent = err.message || 'Погрешен email или лозинка.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Најави се';
     }
-    startApp();
   });
- 
+
   document.getElementById('logoutBtn').addEventListener('click', ()=>{
     session = null;
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   });
- 
+
   /* ===================== REGISTRATION ===================== */
   let regInstrument = null;
   const regInstrumentToggle = document.getElementById('regInstrumentToggle');
@@ -753,7 +766,7 @@
     });
     regInstrumentToggle.appendChild(btn);
   });
- 
+
   document.getElementById('goToRegisterLink').addEventListener('click', (e)=>{
     e.preventDefault();
     document.getElementById('loginScreen').style.display = 'none';
@@ -764,7 +777,7 @@
     document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   });
- 
+
   let pendingRegistration = null;
   document.getElementById('registerBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('regName').value.trim();
@@ -773,7 +786,7 @@
     const age = document.getElementById('regAge').value;
     const errBox = document.getElementById('registerError');
     errBox.style.display = 'none';
- 
+
     if(!name || !email || !password || !age || !regInstrument){
       errBox.textContent = 'Пополни ги сите полиња и избери инструмент.';
       errBox.style.display = 'block';
@@ -784,17 +797,17 @@
       errBox.style.display = 'block';
       return;
     }
- 
+
     const btn = document.getElementById('registerBtn');
     btn.disabled = true; btn.textContent = 'Се креира профил...';
- 
+
     try{
       // Вистински повик кон живиот backend — ова реално креира ред во MySQL базата
       await apiCall('/auth/register', {
         method:'POST',
         body: JSON.stringify({ email, password, full_name:name, role:'student' })
       });
- 
+
       pendingRegistration = {name, email, password, age, instrument: regInstrument};
       document.getElementById('confirmEmailAddress').textContent = `Испративме потврда до ${email}`;
       document.getElementById('registerScreen').style.display = 'none';
@@ -806,27 +819,27 @@
       btn.disabled = false; btn.textContent = 'Креирај профил';
     }
   });
- 
+
   document.getElementById('confirmEmailBtn').addEventListener('click', async ()=>{
     if(!pendingRegistration) return;
     const btn = document.getElementById('confirmEmailBtn');
     btn.disabled = true; btn.textContent = 'Се потврдува...';
- 
+
     try{
       // Вистински login по "потврдата" — добива реален JWT токен и реален ID од базата
       const { token, user } = await apiCall('/auth/login', {
         method:'POST',
         body: JSON.stringify({ email: pendingRegistration.email, password: pendingRegistration.password })
       });
- 
+
       const newId = 'r' + user.id; // "r" префикс да не се судри со демо id-ата (s1..s18)
       students.push({id:newId, name:user.full_name, instrument:pendingRegistration.instrument});
       materials[newId] = [];
- 
+
       session = {role:'student', name:user.full_name, studentId:newId, realUserId:user.id, token, isRealAccount:true};
       activeStudentForIndex = newId;
       filterInstrument = pendingRegistration.instrument;
- 
+
       document.getElementById('confirmEmailScreen').style.display = 'none';
       pendingRegistration = null;
       startApp();
@@ -838,7 +851,7 @@
       btn.disabled = false; btn.textContent = '📩 Отвори email и потврди (демо)';
     }
   });
- 
+
   /* ===================== APP SHELL / NAV ===================== */
   function startApp(){
     document.getElementById('loginScreen').style.display = 'none';
@@ -852,7 +865,7 @@
     buildStudentSelect();
     renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
   }
- 
+
   function buildNav(){
     const nav = document.getElementById('topnav'); nav.innerHTML = '';
     const tabs = [{id:'index', label:'Индекс'}];
@@ -874,7 +887,7 @@
     document.getElementById('page-'+id).classList.add('active');
     document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active', b.dataset.page===id));
   }
- 
+
   /* ===================== INDEX PAGE ===================== */
   const studentSelect = document.getElementById('studentSelect');
   function buildStudentSelect(){
@@ -888,13 +901,13 @@
     if(myGroups.some(g=>g.students.length)) activeStudentForIndex = myGroups.find(g=>g.students.length).students[0];
   }
   studentSelect.addEventListener('change', e=>{ activeStudentForIndex = e.target.value; renderIndexPage(); });
- 
+
   document.getElementById('typeToggle').addEventListener('click', e=>{
     const btn = e.target.closest('.type-btn'); if(!btn) return;
     document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   });
- 
+
   document.getElementById('sendBtn').addEventListener('click', ()=>{
     const titleInput = document.getElementById('matTitle');
     const noteInput = document.getElementById('matNote');
@@ -905,13 +918,13 @@
     titleInput.value=''; noteInput.value='';
     renderIndexPage();
   });
- 
+
   document.getElementById('roomBtn').addEventListener('click', ()=>{
     const mats = materials[activeStudentForIndex]; let any=false;
     mats.forEach(m=>{ if(m.status==='queued'){ m.status='delivered'; any=true; } });
     if(any) renderIndexPage();
   });
- 
+
   window.openMaterial = function(id){
     const m = materials[activeStudentForIndex].find(x=>x.id===id);
     if(m && m.status==='delivered'){ m.status='opened'; renderIndexPage(); }
@@ -920,7 +933,7 @@
     const m = materials[activeStudentForIndex].find(x=>x.id===id);
     if(m && m.status==='opened'){ m.status='done'; renderIndexPage(); }
   };
- 
+
   function renderIndexPage(){
     const isStudent = session.role === 'student';
     document.getElementById('professorFormCard').style.display = isStudent ? 'none' : 'block';
@@ -928,17 +941,17 @@
     document.getElementById('indexTitle').textContent = isStudent ? 'Твоите материјали' : 'Материјали';
     document.getElementById('indexSub').textContent = isStudent ? 'Материјалите се појавуваат откако ќе влезеш во училница.' : 'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.';
     if(isStudent) activeStudentForIndex = session.studentId;
- 
+
     document.getElementById('tabletName').textContent = studentName(activeStudentForIndex);
     document.getElementById('tabletClock').textContent = nowStr();
     if(!isStudent) studentSelect.value = activeStudentForIndex;
- 
+
     const mats = materials[activeStudentForIndex];
     const queuedCount = mats.filter(m=>m.status==='queued').length;
     const roomBtn = document.getElementById('roomBtn');
     roomBtn.disabled = queuedCount===0;
     roomBtn.textContent = queuedCount>0 ? `Влези во училница (${queuedCount} нови)` : 'Нема нови материјали во ред';
- 
+
     if(!isStudent){
       const sentList = document.getElementById('sentList'); sentList.innerHTML='';
       if(mats.length===0){ sentList.innerHTML = '<div class="empty-state">Сè уште нема испратени материјали за овој ученик.</div>'; }
@@ -952,7 +965,7 @@
         });
       }
     }
- 
+
     const feed = document.getElementById('tabletFeed'); feed.innerHTML='';
     const visible = mats.filter(m=>m.status!=='queued');
     if(visible.length===0){ feed.innerHTML = '<div class="empty-state">Таблетот е празен. Материјалите ќе се појават откако ученикот ќе влезе во училница.</div>'; }
@@ -972,7 +985,7 @@
     document.getElementById('statOpened').textContent = mats.filter(m=>m.status==='opened'||m.status==='done').length;
     document.getElementById('statDone').textContent = mats.filter(m=>m.status==='done').length;
   }
- 
+
   /* ===================== SCHEDULE PAGE ===================== */
   function renderGroupsOverview(){
     const wrap = document.getElementById('groupsOverview'); wrap.innerHTML='';
@@ -994,41 +1007,41 @@
       wrap.appendChild(card);
     });
   }
- 
+
   /* ---- неработни денови (placeholder — ќе се дополни со точна листа) ---- */
   const NON_WORKING_DATES = new Set([
     '2026-01-01','2026-01-07','2026-05-01','2026-05-24','2026-08-02','2026-10-11','2026-12-08'
   ]);
   const MK_MONTHS = ['Јануари','Февруари','Март','Април','Мај','Јуни','Јули','Август','Септември','Октомври','Ноември','Декември'];
   const WEEKDAY_ABBR_BY_JSDAY = ['Нед','Пон','Вто','Сре','Чет','Пет','Саб']; // getDay(): 0=Недела
- 
+
   function isoDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function isNonWorking(d){ return d.getDay()===0 || NON_WORKING_DATES.has(isoDate(d)); }
- 
+
   let calendarView = 'week';
   let monthCursor = new Date(today.getFullYear(), today.getMonth(), 1);
   let yearCursor = today.getFullYear();
- 
+
   function renderSchedulePage(){
     renderGroupsOverview();
- 
+
     document.querySelectorAll('.view-toggle-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===calendarView));
     document.getElementById('weekViewWrap').style.display = calendarView==='week' ? 'block' : 'none';
     document.getElementById('monthViewWrap').style.display = calendarView==='month' ? 'block' : 'none';
     document.getElementById('yearViewWrap').style.display = calendarView==='year' ? 'block' : 'none';
     renderCalNav();
- 
+
     if(calendarView==='week') renderWeekView();
     else if(calendarView==='month') renderMonthView();
     else renderYearView();
- 
+
     renderSchedPanel();
   }
- 
+
   document.querySelectorAll('.view-toggle-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{ calendarView = btn.dataset.view; renderSchedulePage(); });
   });
- 
+
   function renderCalNav(){
     const nav = document.getElementById('calNav'); nav.innerHTML='';
     if(calendarView==='week'){ return; }
@@ -1046,12 +1059,12 @@
     }
     nav.appendChild(prev); nav.appendChild(label); nav.appendChild(next);
   }
- 
+
   function renderWeekView(){
     const grid = document.getElementById('calGrid'); grid.innerHTML='';
     grid.appendChild(makeCell('', 'cal-head'));
     days.forEach(d => grid.appendChild(makeCell(d, 'cal-head')));
- 
+
     hours.forEach(h=>{
       grid.appendChild(makeCell(h+':00', 'cal-time'));
       days.forEach(d=>{
@@ -1071,28 +1084,28 @@
       });
     });
   }
- 
+
   function lessonsOnWeekday(dayAbbr){
     // сите термини (за овој професор) чиј ден-абревијатура одговара
     return Object.entries(schedule)
       .filter(([key, e]) => key.startsWith(dayAbbr+'-') && groups.find(g=>g.id===e.groupId)?.professorId===session.professorId)
       .map(([key, e]) => ({key, hour: key.split('-')[1], group: groups.find(g=>g.id===e.groupId)}));
   }
- 
+
   function renderMonthView(){
     const wrap = document.getElementById('monthViewWrap'); wrap.innerHTML='';
     const grid = document.createElement('div'); grid.className='month-grid';
     ['Пон','Вто','Сре','Чет','Пет','Саб','Нед'].forEach(d=>{
       const h = document.createElement('div'); h.className='month-head-cell'; h.textContent=d; grid.appendChild(h);
     });
- 
+
     const year = monthCursor.getFullYear(), month = monthCursor.getMonth();
     const firstOfMonth = new Date(year, month, 1);
     const startOffset = (firstOfMonth.getDay()+6)%7; // Monday=0
     const daysInMonth = new Date(year, month+1, 0).getDate();
- 
+
     for(let i=0;i<startOffset;i++){ const c=document.createElement('div'); c.className='month-day-cell blank'; grid.appendChild(c); }
- 
+
     for(let day=1; day<=daysInMonth; day++){
       const dateObj = new Date(year, month, day);
       const nonWorking = isNonWorking(dateObj);
@@ -1112,7 +1125,7 @@
       grid.appendChild(cell);
     }
     wrap.appendChild(grid);
- 
+
     wrap.querySelectorAll('.mdc-lesson').forEach(el=>{
       el.addEventListener('click', (ev)=>{
         ev.stopPropagation();
@@ -1121,11 +1134,11 @@
       });
     });
   }
- 
+
   function renderYearView(){
     const wrap = document.getElementById('yearViewWrap'); wrap.innerHTML='';
     const grid = document.createElement('div'); grid.className='year-grid';
- 
+
     for(let m=0; m<12; m++){
       const mini = document.createElement('div'); mini.className='mini-month';
       const daysInMonth = new Date(yearCursor, m+1, 0).getDate();
@@ -1144,16 +1157,16 @@
       grid.appendChild(mini);
     }
     wrap.appendChild(grid);
- 
+
     const legend = document.createElement('div'); legend.className='year-legend';
     legend.innerHTML = `<span><span class="lg-swatch" style="background:var(--sand);"></span>Има часови</span>
       <span><span class="lg-swatch" style="background:#E9B9BE;"></span>Неработен ден</span>
       <span><span class="lg-swatch" style="background:var(--surface-2);"></span>Работен ден без часови</span>`;
     wrap.appendChild(legend);
   }
- 
+
   function makeCell(text, cls){ const c=document.createElement('div'); c.className='cal-cell '+cls; c.textContent=text; return c; }
- 
+
   function renderSchedPanel(){
     const panel = document.getElementById('schedPanel');
     if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>`; return; }
@@ -1163,7 +1176,7 @@
     const myGroups = groups.filter(g=>g.professorId===session.professorId);
     const groupOptions = '<option value="">— Слободен термин —</option>' +
       myGroups.map(g=>`<option value="${g.id}" ${entry && entry.groupId===g.id?'selected':''}>${g.name} · ${ageLabel(g.ageRange)} · ${levelLabel(g.level)} (${g.students.length}/${g.capacity})</option>`).join('');
- 
+
     let membersHtml = '';
     if(entry){
       const g = groups.find(x=>x.id===entry.groupId);
@@ -1172,7 +1185,7 @@
         <div class="pm-title">Деца во групата (${g.students.length}/${g.capacity})</div>
         <div class="member-chips">${g.students.length ? g.students.map(sid=>`<span class="chip">${studentName(sid)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div></div>`;
     }
- 
+
     panel.innerHTML = `
       <h3>${day}, ${hour}:00</h3><span class="slot-tag">Групен термин</span>
       <div class="form-row"><label>Група на овој термин</label>
@@ -1193,21 +1206,21 @@
     const clearBtn = document.getElementById('clearSlotBtn');
     if(clearBtn) clearBtn.addEventListener('click', ()=>{ delete schedule[selectedSlotKey]; renderSchedulePage(); });
   }
- 
+
   /* ===================== PACKAGES PAGE ===================== */
   /* ===================== BILLING PAGE ===================== */
   function billingIcon(state){
     return {paid:'✓', due_soon:'⏳', late:'⚠', released:'✕', none:'—'}[state] || '—';
   }
- 
+
   function renderBillingPage(){
     const wrap = document.getElementById('billingContent');
     wrap.innerHTML = '';
- 
+
     if(session.role === 'professor'){
       document.getElementById('billingTitle').textContent = 'Статус на плаќање — твоите ученици';
       document.getElementById('billingSub').textContent = 'Само учениците од твоите групи. Задоцнетите уплати автоматски го ослободуваат терминот.';
- 
+
       const myGroups = groups.filter(g=>g.professorId===session.professorId);
       const rows = [];
       myGroups.forEach(g=>{
@@ -1219,7 +1232,7 @@
       // прикажи ги задоцнетите/наближува рок први
       const order = {late:0, due_soon:1, paid:2, released:3, none:4};
       rows.sort((a,b)=>order[a.ps.state]-order[b.ps.state]);
- 
+
       const table = document.createElement('div'); table.className='billing-table';
       table.innerHTML = `<div class="billing-row head"><div>Ученик</div><div>Група</div><div>Пакет</div><div>Рок за плаќање</div><div>Статус</div></div>`;
       if(rows.length===0){
@@ -1241,22 +1254,22 @@
       wrap.appendChild(table);
       return;
     }
- 
+
     // ---- student view ----
     document.getElementById('billingTitle').textContent = 'Твојата уплата';
     document.getElementById('billingSub').textContent = 'Овде гледаш кога е следната рата и дали е сè во ред со твоето место.';
- 
+
     const sid = session.studentId;
     const ps = paymentState(sid);
- 
+
     if(ps.state === 'none'){
       wrap.innerHTML = `<div class="empty-state">Сè уште немаш активен пакет. Оди на „Пакети" за да избереш.</div>`;
       return;
     }
- 
+
     const group = ps.sub ? groups.find(g=>g.id===ps.sub.groupId) : null;
     const pkg = ps.sub ? packages.find(p=>p.id===ps.sub.packageId) : null;
- 
+
     // banner
     let banner = '';
     if(ps.state === 'released'){
@@ -1281,7 +1294,7 @@
         </div></div>`;
     }
     wrap.innerHTML = banner;
- 
+
     const card = document.createElement('div'); card.className = 'billing-summary-card';
     card.innerHTML = `
       <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${pkg?pkg.name:'—'}</span></div>
@@ -1292,7 +1305,7 @@
     `;
     wrap.appendChild(card);
   }
- 
+
   function renderPackagesPage(){
     const grid = document.getElementById('pkgGrid'); grid.innerHTML='';
     packages.forEach(p=>{
@@ -1318,10 +1331,10 @@
       });
     });
   }
- 
+
   function levelLabel(level){ return level==='pocetnik' ? 'Почетник' : 'Со предзнаење'; }
   function ageLabel(range){ const a = AGE_RANGES.find(x=>x.id===range); return a ? a.label : range; }
- 
+
   function renderFilterChips(){
     const instWrap = document.getElementById('instrumentFilterChips'); instWrap.innerHTML='';
     [{id:'all', label:'Сите инструменти', icon:'🎵'}, ...INSTRUMENTS].forEach(inst=>{
@@ -1348,23 +1361,23 @@
       levelWrap.appendChild(chip);
     });
   }
- 
+
   function renderBookingStep(){
     renderFilterChips();
     const wrap = document.getElementById('slotPickGrid'); wrap.innerHTML='';
- 
+
     const filtered = groups.filter(g=>{
       const instOk = filterInstrument==='all' || g.instrument===filterInstrument;
       const ageOk = filterAge==='all' || g.ageRange===filterAge;
       const levelOk = filterLevel==='all' || g.level===filterLevel;
       return instOk && ageOk && levelOk;
     });
- 
+
     if(filtered.length===0){
       wrap.innerHTML = '<div class="no-match">Нема групи што одговараат на избраните филтри. Пробај да ги промениш инструментот, возраста или нивото.</div>';
       return;
     }
- 
+
     filtered.forEach(g=>{
       const slotLabel = slotsLabel(g.id);
       const spotsLeft = g.capacity - g.students.length;
@@ -1392,7 +1405,7 @@
       });
     });
   }
- 
+
   /* ---- payment modal ---- */
   const overlay = document.getElementById('paymentOverlay');
   function openPaymentModal(){
@@ -1404,7 +1417,7 @@
     overlay.classList.add('show');
   }
   document.getElementById('payCancelBtn').addEventListener('click', ()=>{ overlay.classList.remove('show'); pendingBooking=null; });
- 
+
   document.getElementById('payConfirmBtn').addEventListener('click', ()=>{
     const name = document.getElementById('cardName').value.trim();
     const num = document.getElementById('cardNumber').value.trim();
@@ -1431,22 +1444,22 @@
       };
       overlay.classList.remove('show');
       payBtn.disabled = false; payBtn.textContent = 'Плати';
- 
+
       const p = packages.find(x=>x.id===chosenPackage);
       document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
       document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година, кај проф. ${professorName(g.professorId)}. Оваа информација останува иста додека продолжуваш со редовни месечни уплати — следна рата доспева на ${fmtDate(subscriptions[session.studentId].nextDueDate)}.<br><br>📧 Испративме потврда за уплатата на <strong>${studentEmail(session.studentId)}</strong>.`;
       document.getElementById('pkgConfirm').classList.add('show');
       document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
- 
+
       renderBookingStep();
       renderSchedulePage();
       renderBillingPage();
       pendingBooking = null;
     }, 1100);
   });
- 
+
 })();
 </script>
- 
+
 </body>
 </html>
