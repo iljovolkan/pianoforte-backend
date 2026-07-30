@@ -173,7 +173,7 @@
   .year-legend{display:flex; gap:16px; margin-top:16px; font-size:11.5px; color:var(--mist); align-items:center;}
   .year-legend .lg-swatch{width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle;}
   .cal-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fff;}
-  .cal-grid{display:grid; grid-template-columns:70px repeat(6, 1fr); min-width:760px;}
+  .cal-grid{display:grid; grid-template-columns:70px repeat(5, 1fr); min-width:680px;}
   .cal-cell{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px 6px; font-size:12px; min-height:56px;}
   .cal-head{background:var(--surface-2); font-weight:600; text-align:center; padding:10px 6px; font-size:12.5px; position:sticky; top:0;}
   .cal-time{background:var(--surface-2); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--mist); display:flex; align-items:flex-start; justify-content:center; padding-top:8px;}
@@ -601,25 +601,25 @@
   materials['s1'].push({id:'m00', title:'Скали — Ц-дур, две октави', type:'Задача', note:'', status:'done', time:'09:02'});
   let matCounter = 1;
 
-  const days = ['Пон','Вто','Сре','Чет','Пет','Саб'];
-  const hours = [9,10,11,12,13,14,15,16,17,18];
+  const days = ['Пон','Вто','Сре','Чет','Пет']; // саботите се неработни, нема термини таму
+  const hours = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
 
   // Секоја група се состои од ДВА термина неделно, кои се повторуваат
   // низ целата учебна година (пр. Вторник + Четврток во 15:00).
   // schedule: "day-hour" -> {groupId, note}
   const schedule = {
-    'Пон-10': {groupId:'g1', note:''},
-    'Сре-10': {groupId:'g1', note:''},
-    'Вто-16': {groupId:'g2', note:'Подготовка за настап, вежба перформанс.'},
-    'Чет-16': {groupId:'g2', note:''},
-    'Сре-11': {groupId:'g3', note:''},
-    'Пет-11': {groupId:'g3', note:''},
-    'Пон-17': {groupId:'g4', note:''},
-    'Сре-17': {groupId:'g4', note:''},
-    'Вто-15': {groupId:'g5', note:''},
-    'Чет-15': {groupId:'g5', note:''},
-    'Пон-18': {groupId:'g6', note:''},
-    'Сре-18': {groupId:'g6', note:''}
+    'Пон-14:30': {groupId:'g1', note:''},
+    'Сре-14:30': {groupId:'g1', note:''},
+    'Вто-16:00': {groupId:'g2', note:'Подготовка за настап, вежба перформанс.'},
+    'Чет-16:00': {groupId:'g2', note:''},
+    'Сре-15:15': {groupId:'g3', note:''},
+    'Пет-15:15': {groupId:'g3', note:''},
+    'Пон-17:30': {groupId:'g4', note:''},
+    'Сре-17:30': {groupId:'g4', note:''},
+    'Вто-15:15': {groupId:'g5', note:''},
+    'Чет-15:15': {groupId:'g5', note:''},
+    'Пон-18:15': {groupId:'g6', note:''},
+    'Сре-18:15': {groupId:'g6', note:''}
   };
   function findGroupSlots(groupId){
     return Object.keys(schedule).filter(key => schedule[key].groupId === groupId).sort();
@@ -627,7 +627,7 @@
   function slotsLabel(groupId){
     const keys = findGroupSlots(groupId);
     if(keys.length===0) return 'Нема доделен термин';
-    return keys.map(k=>k.replace('-',' ')+':00').join('  и  ');
+    return keys.map(k=>k.replace('-',' ')).join('  и  ');
   }
 
   const packages = [
@@ -1058,7 +1058,7 @@
   const WEEKDAY_ABBR_BY_JSDAY = ['Нед','Пон','Вто','Сре','Чет','Пет','Саб']; // getDay(): 0=Недела
 
   function isoDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function isNonWorking(d){ return d.getDay()===0 || NON_WORKING_DATES.has(isoDate(d)); }
+  function isNonWorking(d){ return d.getDay()===0 || d.getDay()===6 || NON_WORKING_DATES.has(isoDate(d)); }
 
   let calendarView = 'week';
   let monthCursor = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1108,7 +1108,7 @@
     days.forEach(d => grid.appendChild(makeCell(d, 'cal-head')));
 
     hours.forEach(h=>{
-      grid.appendChild(makeCell(h+':00', 'cal-time'));
+      grid.appendChild(makeCell(h, 'cal-time'));
       days.forEach(d=>{
         const key = d+'-'+h;
         const rawEntry = schedule[key];
@@ -1160,7 +1160,7 @@
       } else {
         const lessons = lessonsOnWeekday(dayAbbr);
         lessons.forEach(l=>{
-          inner += `<span class="mdc-lesson" data-key="${l.key}" title="${l.group.name} · ${l.hour}:00">${l.hour}:00 ${l.group.name}</span>`;
+          inner += `<span class="mdc-lesson" data-key="${l.key}" title="${l.group.name} · ${l.hour}">${l.hour} ${l.group.name}</span>`;
         });
       }
       cell.innerHTML = inner;
@@ -1229,7 +1229,7 @@
     }
 
     panel.innerHTML = `
-      <h3>${day}, ${hour}:00</h3><span class="slot-tag">Групен термин</span>
+      <h3>${day}, ${hour}</h3><span class="slot-tag">Групен термин</span>
       <div class="form-row"><label>Група на овој термин</label>
         <select class="login-select" id="slotGroupSelect" style="margin-bottom:0;">${groupOptions}</select></div>
       ${membersHtml}
