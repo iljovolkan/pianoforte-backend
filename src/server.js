@@ -10,6 +10,7 @@ const materialsRoutes = require('./routes/materials');
 const packagesRoutes = require('./routes/packages');
 const purchasesRoutes = require('./routes/purchases');
 const adminRoutes = require('./routes/admin');
+const subscriptionsRoutes = require('./routes/subscriptions');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/materials', materialsRoutes);
 app.use('/packages', packagesRoutes);
 app.use('/purchases', purchasesRoutes);
 app.use('/admin', adminRoutes);
+app.use('/subscriptions', subscriptionsRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
