@@ -4,10 +4,10 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /groups — листа на групи со членови и капацитет
+// GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво
 router.get('/', requireAuth, async (req, res) => {
   const [groups] = await pool.query(
-    'SELECT id, name, capacity, professor_id FROM groups_table'
+    'SELECT id, name, capacity, professor_id, instrument, age_range, level FROM groups_table'
   );
 
   for (const g of groups) {
@@ -24,18 +24,21 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(groups);
 });
 
-// POST /groups  { name, capacity }  — само професор/админ
+// POST /groups  { name, capacity, instrument, age_range, level }  — само професор/админ
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { name, capacity } = req.body;
+  const { name, capacity, instrument, age_range, level } = req.body;
   if (!name) return res.status(400).json({ error: 'Името на групата е задолжително.' });
   const cap = capacity || 6;
   if (cap < 1 || cap > 6) return res.status(400).json({ error: 'Капацитетот мора да биде помеѓу 1 и 6.' });
+  if (level && !['pocetnik', 'napreden'].includes(level)) {
+    return res.status(400).json({ error: 'Невалидно ниво.' });
+  }
 
   const [result] = await pool.query(
-    'INSERT INTO groups_table (name, capacity, professor_id) VALUES (?, ?, ?)',
-    [name, cap, req.user.id]
+    'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level) VALUES (?, ?, ?, ?, ?, ?)',
+    [name, cap, req.user.id, instrument || 'piano', age_range || '7-10', level || 'pocetnik']
   );
-  res.status(201).json({ id: result.insertId, name, capacity: cap });
+  res.status(201).json({ id: result.insertId, name, capacity: cap, instrument, age_range, level });
 });
 
 // POST /groups/:id/members  { student_id }  — додава дете во група, проверува капацитет
