@@ -62,10 +62,20 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       [group_id, req.user.id]
     );
 
+    // Создава/продолжува претплата — следна рата за 30 дена
+    const nextDue = new Date();
+    nextDue.setDate(nextDue.getDate() + 30);
+    await pool.query(
+      `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released)
+       VALUES (?, ?, ?, ?, FALSE)`,
+      [req.user.id, package_id, group_id, nextDue.toISOString().slice(0, 10)]
+    );
+
     res.status(201).json({
       purchase_id: purchaseResult.insertId,
       status: 'paid',
-      provider_ref: fakeProviderRef
+      provider_ref: fakeProviderRef,
+      next_due_date: nextDue.toISOString().slice(0, 10)
     });
   } catch (err) {
     await pool.query(`UPDATE purchases SET payment_status = 'failed' WHERE id = ?`, [purchaseResult.insertId]);
