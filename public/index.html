@@ -377,9 +377,9 @@
             <div class="form-row">
               <label>Тип</label>
               <div class="type-toggle" id="typeToggle">
-                <div class="type-btn active" data-type="Ноти">🎼 Ноти</div>
-                <div class="type-btn" data-type="Аудио">🎧 Аудио</div>
-                <div class="type-btn" data-type="Задача">✎ Задача</div>
+                <div class="type-btn active" data-type="note">🎼 Ноти</div>
+                <div class="type-btn" data-type="audio">🎧 Аудио</div>
+                <div class="type-btn" data-type="task">✎ Задача</div>
               </div>
             </div>
             <div class="form-row"><label>Белешка за ученикот (опционално)</label><textarea id="matNote" placeholder="пр. Внимавај на динамиката во тактови 9–12."></textarea></div>
@@ -546,39 +546,18 @@
   function instrumentInfo(id){ return INSTRUMENTS.find(x=>x.id===id) || {label:id, icon:'🎵'}; }
   function instrumentLabel(id){ const i=instrumentInfo(id); return `${i.icon} ${i.label}`; }
 
-  const students = [
-    {id:'s1',name:'Дамјан Костовски',instrument:'piano'},{id:'s2',name:'Ивана Петрова',instrument:'piano'},{id:'s3',name:'Стефан Мицевски',instrument:'piano'},
-    {id:'s4',name:'Марта Николовска',instrument:'piano'},{id:'s5',name:'Никола Трајковски',instrument:'piano'},{id:'s6',name:'Ана Ефтимова',instrument:'piano'},
-    {id:'s7',name:'Борис Ѓорѓиевски',instrument:'piano'},{id:'s8',name:'Елена Спасовска',instrument:'piano'},{id:'s9',name:'Филип Атанасов',instrument:'piano'},
-    {id:'s10',name:'Христина Јовановска',instrument:'piano'},{id:'s11',name:'Давид Стоименов',instrument:'piano'},{id:'s12',name:'Сара Илиевска',instrument:'piano'},
-    {id:'s13',name:'Марко Ристовски',instrument:'piano'},{id:'s14',name:'Теа Ангеловска',instrument:'piano'},{id:'s15',name:'Игор Спасов',instrument:'piano'},
-    {id:'s16',name:'Петар Величковски',instrument:'gitara'},{id:'s17',name:'Симона Дамјановска',instrument:'gitara'},
-    {id:'s18',name:'Александар Костадинов',instrument:'tapani'}
-  ];
-  let nextStudentNum = 19;
+  const students = []; // се полни динамички од реални корисници (членови на групи)
   function studentName(id){ const s=students.find(x=>x.id===id); return s?s.name:'—'; }
-  function studentEmail(id){
-    const s = students.find(x=>x.id===id);
-    if(!s) return '';
-    return s.name.split(' ')[0].toLowerCase()
-      .replace(/ѓ/g,'gj').replace(/ж/g,'zh').replace(/ч/g,'ch').replace(/ш/g,'sh').replace(/ц/g,'c')
-      + '@demo.mk';
-  }
+  function cacheStudent(u){ if(!students.find(s=>s.id===u.id)) students.push({id:u.id, name:u.full_name}); }
 
-  const professors = [
-    {id:'pr1', name:'Марија Стојановска'},
-    {id:'pr2', name:'Никола Тодоровски'}
-  ];
-  function professorName(id){ const p=professors.find(x=>x.id===id); return p?p.name:'—'; }
+  const professors = []; // имињата на професорите не се јавно изложени преку API
+  function professorName(id){ const p=professors.find(x=>x.id===id); return p?p.name:'Твojот професор'; }
 
-  const groups = [
-    {id:'g1', name:'Група А', instrument:'piano', capacity:6, ageRange:'7-10', level:'pocetnik', professorId:'pr1', students:['s1','s2','s3','s4','s5']},
-    {id:'g2', name:'Група Б', instrument:'piano', capacity:6, ageRange:'11-14', level:'napreden', professorId:'pr1', students:['s6','s7','s8','s9']},
-    {id:'g3', name:'Група В', instrument:'piano', capacity:6, ageRange:'4-6', level:'pocetnik', professorId:'pr2', students:['s10','s11','s12','s13','s14','s15']},
-    {id:'g4', name:'Група Г', instrument:'piano', capacity:6, ageRange:'11-14', level:'pocetnik', professorId:'pr2', students:[]},
-    {id:'g5', name:'Гитара — почетници', instrument:'gitara', capacity:6, ageRange:'7-10', level:'pocetnik', professorId:'pr1', students:['s16','s17']},
-    {id:'g6', name:'Тапани — напредни', instrument:'tapani', capacity:6, ageRange:'11-14', level:'napreden', professorId:'pr2', students:['s18']}
-  ];
+  let groups = [];       // GET /groups
+  let schedule = {};     // изградено од GET /schedule: "МК_ден-HH:MM" -> {slotId, groupId, note}
+  let packages = [];     // GET /packages
+  let subscriptions = []; // GET /subscriptions (сурови редови)
+
   const AGE_RANGES = [
     {id:'all', label:'Сите возрасти'},
     {id:'4-6', label:'4–6 год.'},
@@ -595,32 +574,15 @@
   let filterLevel = 'all';
   let filterInstrument = 'all';
 
-  const materials = {};
-  students.forEach(s => materials[s.id] = []);
-  materials['s1'].push({id:'m0', title:'Für Elise — воведни тактови', type:'Ноти', note:'Фокус на левата рака, бавно темпо.', status:'opened', time:'09:14'});
-  materials['s1'].push({id:'m00', title:'Скали — Ц-дур, две октави', type:'Задача', note:'', status:'done', time:'09:02'});
-  let matCounter = 1;
+  const materials = {}; // кеш по studentId, вчитува се на барање од GET /materials/:id
 
   const days = ['Пон','Вто','Сре','Чет','Пет']; // саботите се неработни, нема термини таму
   const hours = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
+  const MK_TO_EN_DAY = {'Пон':'mon','Вто':'tue','Сре':'wed','Чет':'thu','Пет':'fri'};
+  const EN_TO_MK_DAY = {mon:'Пон', tue:'Вто', wed:'Сре', thu:'Чет', fri:'Пет'};
 
   // Секоја група се состои од ДВА термина неделно, кои се повторуваат
   // низ целата учебна година (пр. Вторник + Четврток во 15:00).
-  // schedule: "day-hour" -> {groupId, note}
-  const schedule = {
-    'Пон-14:30': {groupId:'g1', note:''},
-    'Сре-14:30': {groupId:'g1', note:''},
-    'Вто-16:00': {groupId:'g2', note:'Подготовка за настап, вежба перформанс.'},
-    'Чет-16:00': {groupId:'g2', note:''},
-    'Сре-15:15': {groupId:'g3', note:''},
-    'Пет-15:15': {groupId:'g3', note:''},
-    'Пон-17:30': {groupId:'g4', note:''},
-    'Сре-17:30': {groupId:'g4', note:''},
-    'Вто-15:15': {groupId:'g5', note:''},
-    'Чет-15:15': {groupId:'g5', note:''},
-    'Пон-18:15': {groupId:'g6', note:''},
-    'Сре-18:15': {groupId:'g6', note:''}
-  };
   function findGroupSlots(groupId){
     return Object.keys(schedule).filter(key => schedule[key].groupId === groupId).sort();
   }
@@ -630,52 +592,16 @@
     return keys.map(k=>k.replace('-',' ')).join('  и  ');
   }
 
-  const packages = [
-    {id:'p1', name:'Стартер', price:'1.800', per:'месечно', desc:'За почетници кои сакаат да пробаат редовна настава.', feats:['4 групни часа месечно','Пристап до дигитален индекс','Основна поддршка преку email']},
-    {id:'p2', name:'Стандард', price:'3.200', per:'месечно', desc:'Најизбран пакет за континуиран напредок.', feats:['8 групни часа месечно','Приоритетен распоред','Месечен извештај за напредок','Аудио + видео материјали'], featured:true},
-    {id:'p3', name:'Премиум', price:'5.400', per:'месечно', desc:'За сериозни ученици и подготовка за настапи.', feats:['Неограничени групни часови','Помал број деца во групата','Подготовка за натпревари/настапи','Приоритетна поддршка 7 дена']}
-  ];
-
   /* ---- плаќања / претплати ---- */
   const GRACE_DAYS = 5; // колку дена по рокот терминот сè уште стои пред да се ослободи
   const today = new Date();
   function daysFromNow(n){ const d = new Date(today); d.setDate(d.getDate()+n); return d; }
-  function fmtDate(d){ return d.toLocaleDateString('mk-MK', {day:'2-digit', month:'2-digit', year:'numeric'}); }
+  function fmtDate(d){ return new Date(d).toLocaleDateString('mk-MK', {day:'2-digit', month:'2-digit', year:'numeric'}); }
 
-  const subscriptions = {
-    s1:  {packageId:'p2', groupId:'g1', nextDueDate:daysFromNow(22), released:false},
-    s2:  {packageId:'p1', groupId:'g1', nextDueDate:daysFromNow(3),  released:false},
-    s3:  {packageId:'p2', groupId:'g1', nextDueDate:daysFromNow(18), released:false},
-    s4:  {packageId:'p2', groupId:'g1', nextDueDate:daysFromNow(10), released:false},
-    s5:  {packageId:'p1', groupId:'g1', nextDueDate:daysFromNow(-2), released:false},
-    s6:  {packageId:'p3', groupId:'g2', nextDueDate:daysFromNow(-8), released:false},
-    s7:  {packageId:'p2', groupId:'g2', nextDueDate:daysFromNow(25), released:false},
-    s8:  {packageId:'p2', groupId:'g2', nextDueDate:daysFromNow(6),  released:false},
-    s9:  {packageId:'p1', groupId:'g2', nextDueDate:daysFromNow(1),  released:false},
-    s10: {packageId:'p2', groupId:'g3', nextDueDate:daysFromNow(12), released:false},
-    s11: {packageId:'p1', groupId:'g3', nextDueDate:daysFromNow(-1), released:false},
-    s12: {packageId:'p3', groupId:'g3', nextDueDate:daysFromNow(20), released:false},
-    s13: {packageId:'p1', groupId:'g3', nextDueDate:daysFromNow(4),  released:false},
-    s14: {packageId:'p2', groupId:'g3', nextDueDate:daysFromNow(30), released:false},
-    s15: {packageId:'p2', groupId:'g3', nextDueDate:daysFromNow(9),  released:false}
-  };
-
-  // При стартување: секој ученик задоцнет подолго од GRACE_DAYS автоматски
-  // го губи местото во групата — терминот се ослободува.
-  Object.entries(subscriptions).forEach(([sid, sub])=>{
-    const diffDays = Math.ceil((sub.nextDueDate - today) / (1000*60*60*24));
-    if(diffDays < -GRACE_DAYS && !sub.released){
-      const g = groups.find(x=>x.id===sub.groupId);
-      if(g){ g.students = g.students.filter(x=>x!==sid); }
-      sub.released = true;
-    }
-  });
-
-  function paymentState(sid){
-    const sub = subscriptions[sid];
+  function paymentStateFromSub(sub){
     if(!sub) return {state:'none'};
     if(sub.released) return {state:'released', sub};
-    const diffDays = Math.ceil((sub.nextDueDate - today) / (1000*60*60*24));
+    const diffDays = Math.ceil((new Date(sub.next_due_date) - today) / (1000*60*60*24));
     if(diffDays < 0) return {state:'late', diffDays, sub};
     if(diffDays <= 5) return {state:'due_soon', diffDays, sub};
     return {state:'paid', diffDays, sub};
@@ -685,12 +611,13 @@
 
   /* ===================== SESSION ===================== */
   let session = null;
-  let activeStudentForIndex = students[0].id;
+  let activeStudentForIndex = null;
   let selectedSlotKey = null;
   let chosenPackage = null;
   let pendingBooking = null; // {groupId, slotKey}
 
-  const typeIcon = {'Ноти':'🎼','Аудио':'🎧','Задача':'✎'};
+  const typeIcon = {note:'🎼', audio:'🎧', task:'✎'};
+  const typeLabelMk = {note:'Ноти', audio:'Аудио', task:'Задача'};
   const statusLabel = {queued:'Во ред', delivered:'Ново', opened:'Отворено', done:'Завршено'};
   const statusClass = {queued:'status-queued', delivered:'status-delivered', opened:'status-opened', done:'status-done'};
 
@@ -714,6 +641,31 @@
       ...options,
       headers: {...(options.headers||{}), 'Authorization': 'Bearer ' + (session ? session.token : '')}
     });
+  }
+
+  /* ---- вчитување реални податоци од API ---- */
+  async function loadGroups(){
+    try{
+      groups = await authApiCall('/groups');
+      groups.forEach(g => (g.members||[]).forEach(cacheStudent));
+    } catch(err){ console.error('loadGroups', err); groups = []; }
+  }
+  async function loadSchedule(){
+    schedule = {};
+    try{
+      const rows = await authApiCall('/schedule');
+      rows.forEach(r=>{
+        const mkDay = EN_TO_MK_DAY[r.day_of_week];
+        if(!mkDay) return;
+        schedule[mkDay+'-'+r.start_time] = { slotId: r.id, groupId: r.group_id, note: r.note || '' };
+      });
+    } catch(err){ console.error('loadSchedule', err); }
+  }
+  async function loadPackages(){
+    try{ packages = await authApiCall('/packages'); } catch(err){ packages = []; }
+  }
+  async function loadSubscriptions(){
+    try{ subscriptions = await authApiCall('/subscriptions'); } catch(err){ subscriptions = []; }
   }
 
   function validateLoginForm(){
@@ -740,25 +692,13 @@
       });
 
       if(user.role === 'student'){
-        const localId = 'r' + user.id;
-        if(!students.find(s=>s.id===localId)){
-          students.push({id:localId, name:user.full_name, instrument:null});
-          materials[localId] = [];
-        }
-        session = {role:'student', name:user.full_name, studentId:localId, realUserId:user.id, token, isRealAccount:true};
-        activeStudentForIndex = localId;
+        session = {role:'student', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
       } else if(user.role === 'admin'){
         session = {role:'admin', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
       } else {
-        // professor — групите/распоредот сè уште не постојат во базата за реални
-        // сметки, па тие делови ќе бидат празни додека не се поврзе и тој дел.
-        const localPid = 'u' + user.id;
-        if(!professors.find(p=>p.id===localPid)){
-          professors.push({id:localPid, name:user.full_name});
-        }
-        session = {role:'professor', name:user.full_name, professorId:localPid, realUserId:user.id, token, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
       }
-      startApp();
+      await startApp();
     } catch(err){
       errBox.textContent = err.message || 'Погрешен email или лозинка.';
       errBox.style.display = 'block';
@@ -854,17 +794,12 @@
         body: JSON.stringify({ email: pendingRegistration.email, password: pendingRegistration.password })
       });
 
-      const newId = 'r' + user.id; // "r" префикс да не се судри со демо id-ата (s1..s18)
-      students.push({id:newId, name:user.full_name, instrument:pendingRegistration.instrument});
-      materials[newId] = [];
-
-      session = {role:'student', name:user.full_name, studentId:newId, realUserId:user.id, token, isRealAccount:true};
-      activeStudentForIndex = newId;
+      session = {role:'student', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
       filterInstrument = pendingRegistration.instrument;
 
       document.getElementById('confirmEmailScreen').style.display = 'none';
       pendingRegistration = null;
-      startApp();
+      await startApp();
       showPage('packages');
       document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active', b.dataset.page==='packages'));
     } catch(err){
@@ -875,7 +810,7 @@
   });
 
   /* ===================== APP SHELL / NAV ===================== */
-  function startApp(){
+  async function startApp(){
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'block';
     const avatar = document.getElementById('avatar');
@@ -889,7 +824,15 @@
       renderAdminPage();
     } else {
       showPage('index');
-      buildStudentSelect();
+      document.getElementById('tabletFeed').innerHTML = '<div class="empty-state">Се вчитува...</div>';
+      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions()]);
+      if(session.role==='student'){
+        activeStudentForIndex = session.realUserId;
+        await loadMaterialsFor(activeStudentForIndex);
+      } else {
+        buildStudentSelect();
+        if(activeStudentForIndex) await loadMaterialsFor(activeStudentForIndex);
+      }
       renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
     }
   }
@@ -924,15 +867,26 @@
   const studentSelect = document.getElementById('studentSelect');
   function buildStudentSelect(){
     studentSelect.innerHTML = '';
-    const myGroups = groups.filter(g=>g.professorId===session.professorId);
+    if(session.role !== 'professor') return;
+    const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
+    let firstStudent = null;
     myGroups.forEach(g=>{
+      if(!g.members || g.members.length===0) return;
       const og = document.createElement('optgroup'); og.label = g.name;
-      g.students.forEach(sid=>{ const o=document.createElement('option'); o.value=sid; o.textContent=studentName(sid); og.appendChild(o); });
+      g.members.forEach(m=>{
+        cacheStudent(m);
+        const o=document.createElement('option'); o.value=m.id; o.textContent=m.full_name; og.appendChild(o);
+        if(!firstStudent) firstStudent = m.id;
+      });
       studentSelect.appendChild(og);
     });
-    if(myGroups.some(g=>g.students.length)) activeStudentForIndex = myGroups.find(g=>g.students.length).students[0];
+    if(firstStudent && !activeStudentForIndex) activeStudentForIndex = firstStudent;
   }
-  studentSelect.addEventListener('change', e=>{ activeStudentForIndex = e.target.value; renderIndexPage(); });
+  studentSelect.addEventListener('change', async e=>{
+    activeStudentForIndex = Number(e.target.value);
+    await loadMaterialsFor(activeStudentForIndex);
+    renderIndexPage();
+  });
 
   document.getElementById('typeToggle').addEventListener('click', e=>{
     const btn = e.target.closest('.type-btn'); if(!btn) return;
@@ -940,30 +894,68 @@
     btn.classList.add('active');
   });
 
-  document.getElementById('sendBtn').addEventListener('click', ()=>{
+  async function loadMaterialsFor(studentId){
+    if(studentId==null) return [];
+    try{
+      const rows = await authApiCall('/materials/' + studentId);
+      materials[studentId] = rows;
+      return rows;
+    } catch(err){
+      materials[studentId] = [];
+      return [];
+    }
+  }
+
+  document.getElementById('sendBtn').addEventListener('click', async ()=>{
     const titleInput = document.getElementById('matTitle');
     const noteInput = document.getElementById('matNote');
     const title = titleInput.value.trim();
     if(!title){ titleInput.style.borderColor='var(--wine)'; setTimeout(()=>{titleInput.style.borderColor='';},1000); return; }
+    if(!activeStudentForIndex){ alert('Избери ученик прво.'); return; }
     const activeType = document.querySelector('.type-btn.active').dataset.type;
-    materials[activeStudentForIndex].push({id:'m'+(matCounter++), title, type:activeType, note:noteInput.value.trim(), status:'queued', time:nowStr()});
-    titleInput.value=''; noteInput.value='';
-    renderIndexPage();
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true; btn.textContent = 'Се испраќа...';
+    try{
+      await authApiCall('/materials', {
+        method:'POST',
+        body: JSON.stringify({ student_id: activeStudentForIndex, title, type: activeType, note: noteInput.value.trim() })
+      });
+      titleInput.value=''; noteInput.value='';
+      await loadMaterialsFor(activeStudentForIndex);
+      renderIndexPage();
+    } catch(err){
+      alert('Грешка при испраќање: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Испрати до ученикот';
+    }
   });
 
-  document.getElementById('roomBtn').addEventListener('click', ()=>{
-    const mats = materials[activeStudentForIndex]; let any=false;
-    mats.forEach(m=>{ if(m.status==='queued'){ m.status='delivered'; any=true; } });
-    if(any) renderIndexPage();
+  document.getElementById('roomBtn').addEventListener('click', async ()=>{
+    const mats = materials[activeStudentForIndex] || [];
+    const queued = mats.filter(m=>m.status==='queued');
+    if(queued.length===0) return;
+    try{
+      await Promise.all(queued.map(m => authApiCall('/materials/'+m.id+'/status', {
+        method:'PUT', body: JSON.stringify({ status:'delivered' })
+      })));
+      await loadMaterialsFor(activeStudentForIndex);
+      renderIndexPage();
+    } catch(err){ alert('Грешка: ' + err.message); }
   });
 
-  window.openMaterial = function(id){
-    const m = materials[activeStudentForIndex].find(x=>x.id===id);
-    if(m && m.status==='delivered'){ m.status='opened'; renderIndexPage(); }
+  window.openMaterial = async function(id){
+    try{
+      await authApiCall('/materials/'+id+'/status', { method:'PUT', body: JSON.stringify({ status:'opened' }) });
+      await loadMaterialsFor(activeStudentForIndex);
+      renderIndexPage();
+    } catch(err){ alert('Грешка: ' + err.message); }
   };
-  window.completeMaterial = function(id){
-    const m = materials[activeStudentForIndex].find(x=>x.id===id);
-    if(m && m.status==='opened'){ m.status='done'; renderIndexPage(); }
+  window.completeMaterial = async function(id){
+    try{
+      await authApiCall('/materials/'+id+'/status', { method:'PUT', body: JSON.stringify({ status:'done' }) });
+      await loadMaterialsFor(activeStudentForIndex);
+      renderIndexPage();
+    } catch(err){ alert('Грешка: ' + err.message); }
   };
 
   function renderIndexPage(){
@@ -972,13 +964,25 @@
     document.getElementById('sentList').parentElement.style.display = isStudent ? 'none' : 'block';
     document.getElementById('indexTitle').textContent = isStudent ? 'Твоите материјали' : 'Материјали';
     document.getElementById('indexSub').textContent = isStudent ? 'Материјалите се појавуваат откако ќе влезеш во училница.' : 'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.';
-    if(isStudent) activeStudentForIndex = session.studentId;
+    if(isStudent) activeStudentForIndex = session.realUserId;
 
-    document.getElementById('tabletName').textContent = studentName(activeStudentForIndex);
+    if(!activeStudentForIndex){
+      document.getElementById('tabletName').textContent = '—';
+      document.getElementById('tabletFeed').innerHTML = '<div class="empty-state">Нема избран ученик. Избери или додај ученик во некоја од твоите групи.</div>';
+      document.getElementById('roomBtn').disabled = true;
+      document.getElementById('roomBtn').textContent = 'Нема нови материјали';
+      document.getElementById('statSent').textContent = '0';
+      document.getElementById('statOpened').textContent = '0';
+      document.getElementById('statDone').textContent = '0';
+      if(!isStudent) document.getElementById('sentList').innerHTML = '<div class="empty-state">Избери ученик за да видиш историја.</div>';
+      return;
+    }
+
+    document.getElementById('tabletName').textContent = isStudent ? session.name : studentName(activeStudentForIndex);
     document.getElementById('tabletClock').textContent = nowStr();
-    if(!isStudent) studentSelect.value = activeStudentForIndex;
+    if(!isStudent && studentSelect.value) studentSelect.value = activeStudentForIndex;
 
-    const mats = materials[activeStudentForIndex];
+    const mats = materials[activeStudentForIndex] || [];
     const queuedCount = mats.filter(m=>m.status==='queued').length;
     const roomBtn = document.getElementById('roomBtn');
     roomBtn.disabled = queuedCount===0;
@@ -989,9 +993,10 @@
       if(mats.length===0){ sentList.innerHTML = '<div class="empty-state">Сè уште нема испратени материјали за овој ученик.</div>'; }
       else {
         [...mats].reverse().forEach(m=>{
+          const timeStr = m.sent_at ? new Date(m.sent_at).toLocaleTimeString('mk-MK',{hour:'2-digit',minute:'2-digit'}) : '';
           const row = document.createElement('div'); row.className='sent-item';
           row.innerHTML = `<div class="sent-icon">${typeIcon[m.type]}</div>
-            <div class="sent-meta"><div class="t">${escapeHtml(m.title)}</div><div class="sub">${m.type} · испратено во ${m.time}</div></div>
+            <div class="sent-meta"><div class="t">${escapeHtml(m.title)}</div><div class="sub">${typeLabelMk[m.type]} · испратено во ${timeStr}</div></div>
             <div class="status-pill ${statusClass[m.status]}">${statusLabel[m.status]}</div>`;
           sentList.appendChild(row);
         });
@@ -1008,7 +1013,7 @@
         let actions = '';
         if(m.status==='delivered') actions = `<div class="mc-actions"><button class="mc-btn" onclick="openMaterial('${m.id}')">Отвори материјал</button></div>`;
         else if(m.status==='opened') actions = `<div class="mc-actions"><button class="mc-btn done" onclick="completeMaterial('${m.id}')">Означи како завршено</button></div>`;
-        card.innerHTML = `<div class="mc-top"><div><div class="mc-title">${typeIcon[m.type]} ${escapeHtml(m.title)}</div><div class="mc-sub">${m.type}</div></div>
+        card.innerHTML = `<div class="mc-top"><div><div class="mc-title">${typeIcon[m.type]} ${escapeHtml(m.title)}</div><div class="mc-sub">${typeLabelMk[m.type]}</div></div>
             ${m.status==='delivered' ? '<span class="new-badge">НОВО</span>' : `<span class="status-pill ${statusClass[m.status]}">${statusLabel[m.status]}</span>`}</div>${noteHtml}${actions}`;
         feed.appendChild(card);
       });
@@ -1021,20 +1026,55 @@
   /* ===================== SCHEDULE PAGE ===================== */
   function renderGroupsOverview(){
     const wrap = document.getElementById('groupsOverview'); wrap.innerHTML='';
-    const myGroups = groups.filter(g=>g.professorId===session.professorId);
+    const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
+
+    const createCard = document.createElement('div');
+    createCard.className = 'group-ov-card';
+    createCard.style.background = 'var(--surface-2)';
+    createCard.innerHTML = `
+      <h4 style="margin-bottom:10px;">+ Нова група</h4>
+      <div class="form-row"><input type="text" id="newGroupName" placeholder="Име (пр. Гитара — почетници)"></div>
+      <div class="form-row"><select id="newGroupInstrument" class="login-select" style="margin-bottom:0;">
+        ${INSTRUMENTS.map(i=>`<option value="${i.id}">${i.icon} ${i.label}</option>`).join('')}
+      </select></div>
+      <div style="height:8px;"></div>
+      <div class="form-row"><select id="newGroupAge" class="login-select" style="margin-bottom:0;">
+        ${AGE_RANGES.filter(a=>a.id!=='all').map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}
+      </select></div>
+      <div style="height:8px;"></div>
+      <div class="form-row"><select id="newGroupLevel" class="login-select" style="margin-bottom:0;">
+        ${LEVELS.filter(l=>l.id!=='all').map(l=>`<option value="${l.id}">${l.label}</option>`).join('')}
+      </select></div>
+      <button class="send-btn" id="newGroupBtn" style="margin-top:6px;">Создади група</button>
+    `;
+    wrap.appendChild(createCard);
+    document.getElementById('newGroupBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('newGroupName').value.trim();
+      if(!name){ alert('Внеси име на групата.'); return; }
+      const instrument = document.getElementById('newGroupInstrument').value;
+      const age_range = document.getElementById('newGroupAge').value;
+      const level = document.getElementById('newGroupLevel').value;
+      try{
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity:6, instrument, age_range, level }) });
+        await loadGroups();
+        renderSchedulePage();
+      } catch(err){ alert('Грешка: ' + err.message); }
+    });
+
     myGroups.forEach(g=>{
       const slotLabel = slotsLabel(g.id);
-      const full = g.students.length >= g.capacity;
+      const memberCount = g.members ? g.members.length : 0;
+      const full = memberCount >= g.capacity;
       const card = document.createElement('div'); card.className='group-ov-card';
       card.innerHTML = `
-        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${g.students.length}/${g.capacity}</span></div>
+        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span></div>
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
-          <span class="tag age">${ageLabel(g.ageRange)}</span>
+          <span class="tag age">${ageLabel(g.age_range)}</span>
           <span class="tag level-${g.level}">${levelLabel(g.level)}</span>
         </div>
         <div class="group-ov-slot">🕐 ${slotLabel}</div>
-        <div class="member-chips">${g.students.length ? g.students.map(sid=>`<span class="chip">${studentName(sid)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
       `;
       wrap.appendChild(card);
     });
@@ -1112,12 +1152,13 @@
       days.forEach(d=>{
         const key = d+'-'+h;
         const rawEntry = schedule[key];
-        const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professorId===session.professorId ? rawEntry : null;
+        const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professor_id===session.realUserId ? rawEntry : null;
         const cell = document.createElement('div');
         cell.className = 'cal-cell cal-slot' + (entry?' booked':'') + (selectedSlotKey===key?' selected':'');
         if(entry){
           const g = groups.find(x=>x.id===entry.groupId);
-          cell.innerHTML = `<span class="slot-group">${g.name}</span><span class="slot-count">${g.students.length}/${g.capacity} деца</span>${entry.note?'<span class="slot-note-flag">✎ белешка</span>':''}`;
+          const memberCount = g.members ? g.members.length : 0;
+          cell.innerHTML = `<span class="slot-group">${g.name}</span><span class="slot-count">${memberCount}/${g.capacity} деца</span>${entry.note?'<span class="slot-note-flag">✎ белешка</span>':''}`;
         } else {
           cell.innerHTML = `<span class="slot-empty">Слободно</span>`;
         }
@@ -1130,7 +1171,7 @@
   function lessonsOnWeekday(dayAbbr){
     // сите термини (за овој професор) чиј ден-абревијатура одговара
     return Object.entries(schedule)
-      .filter(([key, e]) => key.startsWith(dayAbbr+'-') && groups.find(g=>g.id===e.groupId)?.professorId===session.professorId)
+      .filter(([key, e]) => key.startsWith(dayAbbr+'-') && groups.find(g=>g.id===e.groupId)?.professor_id===session.realUserId)
       .map(([key, e]) => ({key, hour: key.split('-')[1], group: groups.find(g=>g.id===e.groupId)}));
   }
 
@@ -1211,21 +1252,29 @@
 
   function renderSchedPanel(){
     const panel = document.getElementById('schedPanel');
+    if(session.role !== 'professor'){
+      panel.innerHTML = `<h3>Распоред</h3><span class="slot-tag">Само професор може да менува термини</span>`;
+      return;
+    }
     if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>`; return; }
     const [day, hour] = selectedSlotKey.split('-');
     const rawEntry = schedule[selectedSlotKey];
-    const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professorId===session.professorId ? rawEntry : null;
-    const myGroups = groups.filter(g=>g.professorId===session.professorId);
+    const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professor_id===session.realUserId ? rawEntry : null;
+    const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
     const groupOptions = '<option value="">— Слободен термин —</option>' +
-      myGroups.map(g=>`<option value="${g.id}" ${entry && entry.groupId===g.id?'selected':''}>${g.name} · ${ageLabel(g.ageRange)} · ${levelLabel(g.level)} (${g.students.length}/${g.capacity})</option>`).join('');
+      myGroups.map(g=>{
+        const mc = g.members ? g.members.length : 0;
+        return `<option value="${g.id}" ${entry && entry.groupId===g.id?'selected':''}>${g.name} · ${ageLabel(g.age_range)} · ${levelLabel(g.level)} (${mc}/${g.capacity})</option>`;
+      }).join('');
 
     let membersHtml = '';
     if(entry){
       const g = groups.find(x=>x.id===entry.groupId);
+      const mc = g.members ? g.members.length : 0;
       membersHtml = `<div class="panel-members">
-        <div class="tag-row"><span class="tag age">${ageLabel(g.ageRange)}</span><span class="tag level-${g.level}">${levelLabel(g.level)}</span></div>
-        <div class="pm-title">Деца во групата (${g.students.length}/${g.capacity})</div>
-        <div class="member-chips">${g.students.length ? g.students.map(sid=>`<span class="chip">${studentName(sid)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div></div>`;
+        <div class="tag-row"><span class="tag age">${ageLabel(g.age_range)}</span><span class="tag level-${g.level}">${levelLabel(g.level)}</span></div>
+        <div class="pm-title">Деца во групата (${mc}/${g.capacity})</div>
+        <div class="member-chips">${mc ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div></div>`;
     }
 
     panel.innerHTML = `
@@ -1239,14 +1288,40 @@
       <button class="save-note-btn" id="saveSlotBtn">Зачувај</button>
       ${entry?'<button class="clear-slot-btn" id="clearSlotBtn">Ослободи термин</button>':''}
     `;
-    document.getElementById('saveSlotBtn').addEventListener('click', ()=>{
+    document.getElementById('saveSlotBtn').addEventListener('click', async ()=>{
       const gid = document.getElementById('slotGroupSelect').value;
       const note = document.getElementById('slotNote').value.trim();
-      if(gid){ schedule[selectedSlotKey] = {groupId:gid, note}; } else { delete schedule[selectedSlotKey]; }
-      renderSchedulePage();
+      const btn = document.getElementById('saveSlotBtn');
+      btn.disabled = true; btn.textContent = 'Се зачувува...';
+      try{
+        if(entry && gid && Number(gid) === entry.groupId){
+          // само ажурирање белешка на постоечки термин
+          await authApiCall('/schedule/'+entry.slotId, { method:'PUT', body: JSON.stringify({ note }) });
+        } else if(gid){
+          // нов термин (или смена на група на овој термин)
+          if(entry) await authApiCall('/schedule/'+entry.slotId, { method:'DELETE' });
+          await authApiCall('/schedule', { method:'POST', body: JSON.stringify({
+            group_id: Number(gid), day_of_week: MK_TO_EN_DAY[day], start_time: hour, note
+          })});
+        } else if(entry){
+          await authApiCall('/schedule/'+entry.slotId, { method:'DELETE' });
+        }
+        await loadSchedule();
+        renderSchedulePage();
+      } catch(err){
+        alert('Грешка: ' + err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Зачувај';
+      }
     });
     const clearBtn = document.getElementById('clearSlotBtn');
-    if(clearBtn) clearBtn.addEventListener('click', ()=>{ delete schedule[selectedSlotKey]; renderSchedulePage(); });
+    if(clearBtn) clearBtn.addEventListener('click', async ()=>{
+      try{
+        await authApiCall('/schedule/'+entry.slotId, { method:'DELETE' });
+        await loadSchedule();
+        renderSchedulePage();
+      } catch(err){ alert('Грешка: ' + err.message); }
+    });
   }
 
   /* ===================== PACKAGES PAGE ===================== */
@@ -1263,31 +1338,22 @@
       document.getElementById('billingTitle').textContent = 'Статус на плаќање — твоите ученици';
       document.getElementById('billingSub').textContent = 'Само учениците од твоите групи. Задоцнетите уплати автоматски го ослободуваат терминот.';
 
-      const myGroups = groups.filter(g=>g.professorId===session.professorId);
-      const rows = [];
-      myGroups.forEach(g=>{
-        g.students.forEach(sid=>{
-          const ps = paymentState(sid);
-          rows.push({sid, groupName:g.name, ps});
-        });
-      });
-      // прикажи ги задоцнетите/наближува рок први
+      const rows = subscriptions.map(sub => ({ sub, ps: paymentStateFromSub(sub) }));
       const order = {late:0, due_soon:1, paid:2, released:3, none:4};
       rows.sort((a,b)=>order[a.ps.state]-order[b.ps.state]);
 
       const table = document.createElement('div'); table.className='billing-table';
       table.innerHTML = `<div class="billing-row head"><div>Ученик</div><div>Група</div><div>Пакет</div><div>Рок за плаќање</div><div>Статус</div></div>`;
       if(rows.length===0){
-        table.innerHTML += `<div class="billing-row"><div class="empty-state" style="grid-column:1/-1;">Нема ученици во твоите групи сè уште.</div></div>`;
+        table.innerHTML += `<div class="billing-row"><div class="empty-state" style="grid-column:1/-1;">Нема ученици со активен пакет во твоите групи сè уште.</div></div>`;
       } else {
         rows.forEach(r=>{
-          const pkg = r.ps.sub ? packages.find(p=>p.id===r.ps.sub.packageId) : null;
-          const dueLabel = r.ps.sub ? fmtDate(r.ps.sub.nextDueDate) : '—';
-          const daysNote = r.ps.state==='late' ? `${Math.abs(r.ps.diffDays)} дена задоцнето` : r.ps.state==='due_soon' ? `за ${r.ps.diffDays} дена` : r.ps.state==='paid' ? `за ${r.ps.diffDays} дена` : '';
+          const dueLabel = fmtDate(r.sub.next_due_date);
+          const daysNote = r.ps.state==='late' ? `${Math.abs(r.ps.diffDays)} дена задоцнето` : (r.ps.state==='due_soon'||r.ps.state==='paid') ? `за ${r.ps.diffDays} дена` : '';
           table.innerHTML += `<div class="billing-row">
-            <div class="bname">${studentName(r.sid)}</div>
-            <div class="bsub">${r.groupName}</div>
-            <div class="bsub">${pkg?pkg.name:'—'}</div>
+            <div class="bname">${escapeHtml(r.sub.student_name)}</div>
+            <div class="bsub">${escapeHtml(r.sub.group_name)}</div>
+            <div class="bsub">${escapeHtml(r.sub.package_name)}</div>
             <div class="bdue">${dueLabel}<div class="bsub">${daysNote}</div></div>
             <div><span class="status-pill ${paymentStateClass[r.ps.state]}">${billingIcon(r.ps.state)} ${paymentStateLabel[r.ps.state]}</span></div>
           </div>`;
@@ -1301,23 +1367,21 @@
     document.getElementById('billingTitle').textContent = 'Твојата уплата';
     document.getElementById('billingSub').textContent = 'Овде гледаш кога е следната рата и дали е сè во ред со твоето место.';
 
-    const sid = session.studentId;
-    const ps = paymentState(sid);
+    const sub = subscriptions[0]; // GET /subscriptions за ученик враќа само своја (најнова)
+    const ps = paymentStateFromSub(sub);
 
     if(ps.state === 'none'){
       wrap.innerHTML = `<div class="empty-state">Сè уште немаш активен пакет. Оди на „Пакети" за да избереш.</div>`;
       return;
     }
 
-    const group = ps.sub ? groups.find(g=>g.id===ps.sub.groupId) : null;
-    const pkg = ps.sub ? packages.find(p=>p.id===ps.sub.packageId) : null;
+    const group = groups.find(g=>g.id===sub.group_id);
 
-    // banner
     let banner = '';
     if(ps.state === 'released'){
       banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
         <div class="n-title">Терминот ти е ослободен поради задоцнета уплата</div>
-        <div class="n-body">Местото во ${group?group.name:'групата'} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети" — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.</div>
+        <div class="n-body">Местото во ${sub.group_name||'групата'} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети" — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.</div>
         </div></div>`;
     } else if(ps.state === 'late'){
       banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
@@ -1327,21 +1391,20 @@
     } else if(ps.state === 'due_soon'){
       banner = `<div class="notif-banner warn"><div class="n-ic">⏳</div><div>
         <div class="n-title">Твојата месечна рата доспева наскоро</div>
-        <div class="n-body">Рок за плаќање: <strong>${fmtDate(ps.sub.nextDueDate)}</strong> (за ${ps.diffDays} ${ps.diffDays===1?'ден':'дена'}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</div>
+        <div class="n-body">Рок за плаќање: <strong>${fmtDate(sub.next_due_date)}</strong> (за ${ps.diffDays} ${ps.diffDays===1?'ден':'дена'}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</div>
         </div></div>`;
     } else {
       banner = `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
         <div class="n-title">Сè е во ред</div>
-        <div class="n-body">Следната рата доспева на ${fmtDate(ps.sub.nextDueDate)}. Местото ти е сигурно резервирано до тогаш.</div>
+        <div class="n-body">Следната рата доспева на ${fmtDate(sub.next_due_date)}. Местото ти е сигурно резервирано до тогаш.</div>
         </div></div>`;
     }
     wrap.innerHTML = banner;
 
     const card = document.createElement('div'); card.className = 'billing-summary-card';
     card.innerHTML = `
-      <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${pkg?pkg.name:'—'}</span></div>
-      <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${group?group.name:'—'}</span></div>
-      <div class="bs-row"><span class="bs-label">Професор</span><span class="bs-value">${group && ps.state!=='released' ? professorName(group.professorId) : '—'}</span></div>
+      <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${escapeHtml(sub.package_name||'—')}</span></div>
+      <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${escapeHtml(sub.group_name||'—')}</span></div>
       <div class="bs-row"><span class="bs-label">Термин</span><span class="bs-value">${group && ps.state!=='released' ? slotsLabel(group.id) : '—'}</span></div>
       <div class="bs-row"><span class="bs-label">Статус на уплата</span><span class="status-pill ${paymentStateClass[ps.state]}">${billingIcon(ps.state)} ${paymentStateLabel[ps.state]}</span></div>
     `;
@@ -1412,20 +1475,22 @@
 
   function renderPackagesPage(){
     const grid = document.getElementById('pkgGrid'); grid.innerHTML='';
-    packages.forEach(p=>{
+    packages.forEach((p,idx)=>{
+      const featured = idx === 1; // средниот пакет се истакнува, ако постои
       const card = document.createElement('div');
-      card.className = 'pkg-card' + (p.featured?' featured':'') + (chosenPackage===p.id?' chosen':'');
+      card.className = 'pkg-card' + (featured?' featured':'') + (chosenPackage===p.id?' chosen':'');
+      const feats = [`${p.lessons_per_month>=999 ? 'Неограничени' : p.lessons_per_month} групни часа месечно`];
       card.innerHTML = `
-        ${p.featured?'<span class="pkg-badge">НАЈИЗБРАН</span>':'<span class="pkg-badge" style="visibility:hidden;">.</span>'}
-        <h3>${p.name}</h3><div class="pkg-desc">${p.desc}</div>
-        <div class="pkg-price">${p.price} <small>ден. / ${p.per}</small></div>
-        <ul class="pkg-feats">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+        ${featured?'<span class="pkg-badge">НАЈИЗБРАН</span>':'<span class="pkg-badge" style="visibility:hidden;">.</span>'}
+        <h3>${escapeHtml(p.name)}</h3><div class="pkg-desc">${escapeHtml(p.description||'')}</div>
+        <div class="pkg-price">${Number(p.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small></div>
+        <ul class="pkg-feats">${feats.map(f=>`<li>${f}</li>`).join('')}</ul>
         <button class="pkg-select-btn" data-pkg="${p.id}">${chosenPackage===p.id?'✓ Избран пакет':'Избери пакет'}</button>`;
       grid.appendChild(card);
     });
     grid.querySelectorAll('.pkg-select-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        chosenPackage = btn.dataset.pkg;
+        chosenPackage = Number(btn.dataset.pkg);
         renderPackagesPage();
         if(session.role === 'student'){
           renderBookingStep();
@@ -1472,7 +1537,7 @@
 
     const filtered = groups.filter(g=>{
       const instOk = filterInstrument==='all' || g.instrument===filterInstrument;
-      const ageOk = filterAge==='all' || g.ageRange===filterAge;
+      const ageOk = filterAge==='all' || g.age_range===filterAge;
       const levelOk = filterLevel==='all' || g.level===filterLevel;
       return instOk && ageOk && levelOk;
     });
@@ -1484,18 +1549,19 @@
 
     filtered.forEach(g=>{
       const slotLabel = slotsLabel(g.id);
-      const spotsLeft = g.capacity - g.students.length;
-      const alreadyMember = session.role==='student' && g.students.includes(session.studentId);
+      const memberCount = g.members ? g.members.length : 0;
+      const spotsLeft = g.spots_left != null ? g.spots_left : (g.capacity - memberCount);
+      const alreadyMember = session.role==='student' && g.members && g.members.some(m=>m.id===session.realUserId);
       const card = document.createElement('div'); card.className='slot-pick-card';
       card.innerHTML = `
         <h4>${g.name}</h4>
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
-          <span class="tag age">${ageLabel(g.ageRange)}</span>
+          <span class="tag age">${ageLabel(g.age_range)}</span>
           <span class="tag level-${g.level}">${levelLabel(g.level)}</span>
         </div>
         <div class="when">🕐 ${slotLabel}<div class="bsub" style="margin-top:2px;">Ист термин низ целата учебна година</div></div>
-        <div class="fill">${g.students.length}/${g.capacity} деца ${spotsLeft>0 ? '· '+spotsLeft+' слободни места' : '· пополнето'}</div>
+        <div class="fill">${memberCount}/${g.capacity} деца ${spotsLeft>0 ? '· '+spotsLeft+' слободни места' : '· пополнето'}</div>
         <button class="book-btn" data-group="${g.id}" ${(spotsLeft<=0 || alreadyMember) ? 'disabled' : ''}>
           ${alreadyMember ? 'Веќе си во групата' : (spotsLeft<=0 ? 'Нема слободни места' : 'Резервирај термин')}
         </button>`;
@@ -1503,7 +1569,7 @@
     });
     wrap.querySelectorAll('.book-btn:not(:disabled)').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        const gid = btn.dataset.group;
+        const gid = Number(btn.dataset.group);
         pendingBooking = {groupId: gid};
         openPaymentModal();
       });
@@ -1515,14 +1581,14 @@
   function openPaymentModal(){
     const g = groups.find(x=>x.id===pendingBooking.groupId);
     const p = packages.find(x=>x.id===chosenPackage);
-    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)} · ${p.price} ден.`;
+    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)} · ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.`;
     document.getElementById('cardName').value=''; document.getElementById('cardNumber').value='';
     document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
     overlay.classList.add('show');
   }
   document.getElementById('payCancelBtn').addEventListener('click', ()=>{ overlay.classList.remove('show'); pendingBooking=null; });
 
-  document.getElementById('payConfirmBtn').addEventListener('click', ()=>{
+  document.getElementById('payConfirmBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('cardName').value.trim();
     const num = document.getElementById('cardNumber').value.trim();
     const exp = document.getElementById('cardExpiry').value.trim();
@@ -1534,32 +1600,39 @@
     }
     const payBtn = document.getElementById('payConfirmBtn');
     payBtn.disabled = true; payBtn.textContent = 'Се обработува...';
-    setTimeout(()=>{
-      const g = groups.find(x=>x.id===pendingBooking.groupId);
-      if(session.role==='student' && !g.students.includes(session.studentId)){
-        g.students.push(session.studentId);
-      }
-      // креирање/освежување претплата — рокот за следна рата почнува од денес (+30 дена)
-      subscriptions[session.studentId] = {
-        packageId: chosenPackage,
-        groupId: g.id,
-        nextDueDate: daysFromNow(30),
-        released: false
-      };
-      overlay.classList.remove('show');
-      payBtn.disabled = false; payBtn.textContent = 'Плати';
 
+    try{
+      // "payment_method_id" тука е само симулирана референца — вистинскиот Stripe/CPay
+      // token ќе дојде од нивна JS библиотека кога ќе се интегрира платежниот процесор.
+      const result = await authApiCall('/purchases', {
+        method:'POST',
+        body: JSON.stringify({
+          package_id: chosenPackage,
+          group_id: pendingBooking.groupId,
+          payment_method_id: 'SIMULATED-' + Date.now()
+        })
+      });
+
+      await loadGroups();
+      await loadSubscriptions();
+
+      const g = groups.find(x=>x.id===pendingBooking.groupId);
       const p = packages.find(x=>x.id===chosenPackage);
+
+      overlay.classList.remove('show');
       document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
-      document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година, кај проф. ${professorName(g.professorId)}. Оваа информација останува иста додека продолжуваш со редовни месечни уплати — следна рата доспева на ${fmtDate(subscriptions[session.studentId].nextDueDate)}.<br><br>📧 Испративме потврда за уплатата на <strong>${studentEmail(session.studentId)}</strong>.`;
+      document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Оваа информација останува иста додека продолжуваш со редовни месечни уплати — следна рата доспева на ${fmtDate(result.next_due_date)}.<br><br>📧 Испративме потврда за уплатата на твojot email.`;
       document.getElementById('pkgConfirm').classList.add('show');
       document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
 
       renderBookingStep();
-      renderSchedulePage();
       renderBillingPage();
       pendingBooking = null;
-    }, 1100);
+    } catch(err){
+      alert('Плаќањето не успеа: ' + err.message);
+    } finally {
+      payBtn.disabled = false; payBtn.textContent = 'Плати';
+    }
   });
 
 })();
