@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
@@ -70,6 +71,21 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
        VALUES (?, ?, ?, ?, FALSE)`,
       [req.user.id, package_id, group_id, nextDue.toISOString().slice(0, 10)]
     );
+
+    await sendMail({
+      to: req.user.email,
+      subject: 'Потврда за уплата — PianoForte',
+      html: `
+        <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+          <h2>Плаќањето е успешно!</h2>
+          <p>Пакет: <strong>${pkg.name}</strong></p>
+          <p>Група: <strong>${group.name}</strong></p>
+          <p>Износ: <strong>${pkg.price_mkd} ден.</strong></p>
+          <p>Следна рата доспева на: <strong>${nextDue.toLocaleDateString('mk-MK')}</strong></p>
+          <p style="color:#888; font-size:13px; margin-top:20px;">Референца: ${fakeProviderRef}</p>
+        </div>
+      `
+    });
 
     res.status(201).json({
       purchase_id: purchaseResult.insertId,
