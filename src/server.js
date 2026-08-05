@@ -11,6 +11,7 @@ const packagesRoutes = require('./routes/packages');
 const purchasesRoutes = require('./routes/purchases');
 const adminRoutes = require('./routes/admin');
 const subscriptionsRoutes = require('./routes/subscriptions');
+const { startCronJobs } = require('./cron');
 
 const app = express();
 
@@ -41,4 +42,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`PianoForte backend работи на http://localhost:${PORT}`);
+  startCronJobs();
 });
