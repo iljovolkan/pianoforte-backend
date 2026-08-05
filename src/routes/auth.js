@@ -106,6 +106,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Погрешен email или лозинка.' });
     }
 
+    // Учениците мора прво да го потврдат email-от (линк од регистрацискиот email)
+    // пред да можат да се најават. Професорски/admin сметки се создаваат рачно
+    // од admin-от, кој веќе го потврдил идентитетот, па тие не се блокираат овде.
+    if (user.role === 'student' && !user.email_verified) {
+      return res.status(403).json({ error: 'Прво потврди го email-от — провери го твojot inbox и кликни на линкот што ти го испративме.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, email: user.email },
       process.env.JWT_SECRET,
