@@ -462,6 +462,11 @@
           <div id="adminProfList"></div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Регистрирани ученици</h3>
+        <div id="adminStudentList"></div>
+      </div>
     </section>
 
     <!-- ---- BILLING PAGE ---- -->
@@ -1412,6 +1417,17 @@
   }
 
   /* ===================== ADMIN PAGE ===================== */
+  async function deleteUser(id, label){
+    if(!confirm(`Дали сигурно сакаш да ja избришеш сметката на „${label}"? Ова не може да се врати.`)) return;
+    try{
+      await authApiCall('/admin/users/'+id, { method:'DELETE' });
+      renderAdminPage();
+    } catch(err){
+      alert('Грешка при бришење: ' + err.message);
+    }
+  }
+  window.deleteUser = deleteUser;
+
   async function renderAdminPage(){
     const listBox = document.getElementById('adminProfList');
     listBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
@@ -1424,14 +1440,37 @@
           <div class="sent-item">
             <div class="sent-icon">🎹</div>
             <div class="sent-meta">
-              <div class="t">${p.full_name}</div>
-              <div class="sub">${p.email}</div>
+              <div class="t">${escapeHtml(p.full_name)}</div>
+              <div class="sub">${escapeHtml(p.email)}</div>
             </div>
+            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${p.id}, '${escapeHtml(p.full_name)}')">Избриши</button>
           </div>
         `).join('');
       }
     } catch(err){
       listBox.innerHTML = `<div class="empty-state">Грешка при вчитување: ${err.message}</div>`;
+    }
+
+    const studentBox = document.getElementById('adminStudentList');
+    studentBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    try{
+      const studs = await authApiCall('/admin/students');
+      if(studs.length === 0){
+        studentBox.innerHTML = '<div class="empty-state">Сè уште нема регистрирани ученици.</div>';
+      } else {
+        studentBox.innerHTML = studs.map(s => `
+          <div class="sent-item">
+            <div class="sent-icon">🎧</div>
+            <div class="sent-meta">
+              <div class="t">${escapeHtml(s.full_name)}</div>
+              <div class="sub">${escapeHtml(s.email)} · регистриран ${new Date(s.created_at).toLocaleDateString('mk-MK')} ${s.email_verified ? '· ✓ потврден email' : '· ⏳ непотврден email'}</div>
+            </div>
+            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${s.id}, '${escapeHtml(s.full_name)}')">Избриши</button>
+          </div>
+        `).join('');
+      }
+    } catch(err){
+      studentBox.innerHTML = `<div class="empty-state">Грешка при вчитување: ${err.message}</div>`;
     }
   }
 
