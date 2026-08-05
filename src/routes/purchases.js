@@ -5,19 +5,51 @@ const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
+const SCHOOL_YEAR_MONTHS = 8;   // училишна година = 8 месеци настава
+const FULL_PLAN_DISCOUNT = 0.05; // 5% попуст ако се плаќа наеднаш
+
+/**
+ * Пресметува распоред на рати според избраниот план.
+ * Враќа низа { number, total, amount, offsetDays }.
+ */
+function buildInstallmentSchedule(plan, monthlyPrice) {
+  const annualTotal = monthlyPrice * SCHOOL_YEAR_MONTHS;
+
+  if (plan === 'full') {
+    const amount = Math.round(annualTotal * (1 - FULL_PLAN_DISCOUNT));
+    return [{ number: 1, total: 1, amount, offsetDays: 0 }];
+  }
+
+  if (plan === 'two') {
+    const first = Math.round(annualTotal / 2);
+    const second = annualTotal - first;
+    return [
+      { number: 1, total: 2, amount: first, offsetDays: 0 },
+      { number: 2, total: 2, amount: second, offsetDays: 150 } // ~5 месеци подоцна
+    ];
+  }
+
+  // 'eight' — стандардно, монтено, без попуст
+  const schedule = [];
+  for (let i = 0; i < SCHOOL_YEAR_MONTHS; i++) {
+    schedule.push({ number: i + 1, total: SCHOOL_YEAR_MONTHS, amount: monthlyPrice, offsetDays: i * 30 });
+  }
+  return schedule;
+}
+
 /**
  * POST /purchases
- * body: { package_id, group_id, payment_method_id }
+ * body: { package_id, group_id, payment_method_id, payment_plan }
+ * payment_plan: 'full' | 'two' | 'eight' (стандардно 'eight' ако не е внесено)
  *
  * ВАЖНО: "payment_method_id" е tokenized референца добиена на клиентска страна
  * од платежниот процесор (пр. Stripe.js "PaymentMethod" или CPay/NestPay hosted
  * fields). Бројот на картичка, CVV и датумот на истек НИКОГАШ не поминуваат
- * низ нашиот сервер — тоа би значело PCI-DSS обврска што сакаме да ја избегнеме.
- * Клиентската апликација (сајтот) комуницира директно со процесорот, добива
- * token, и само токенот стигнува овде.
+ * низ нашиот сервер.
  */
 router.post('/', requireAuth, requireRole('student'), async (req, res) => {
-  const { package_id, group_id, payment_method_id } = req.body;
+  const { package_id, group_id, payment_method_id, payment_plan } = req.body;
+  const plan = ['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight';
 
   if (!package_id || !group_id || !payment_method_id) {
     return res.status(400).json({ error: 'package_id, group_id и payment_method_id се задолжителни.' });
@@ -44,14 +76,8 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   );
 
   try {
-    // Овде оди реалниот повик до платежниот процесор, пр.:
-    //   const charge = await stripe.paymentIntents.create({
-    //     amount: pkg.price_mkd * 100,
-    //     currency: 'mkd',
-    //     payment_method: payment_method_id,
-    //     confirm: true
-    //   });
-    // За сега симулираме успешна трансакција додека не се интегрира вистинскиот процесор.
+    // Овде оди реалниот повик до платежниот процесор за ПРВАТА рата, пр.:
+    //   const charge = await stripe.paymentIntents.create({ amount: schedule[0].amount * 100, ... });
     const fakeProviderRef = 'SIMULATED-' + Date.now();
 
     await pool.query(
@@ -63,14 +89,47 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       [group_id, req.user.id]
     );
 
-    // Создава/продолжува претплата — следна рата за 30 дена
-    const nextDue = new Date();
-    nextDue.setDate(nextDue.getDate() + 30);
-    await pool.query(
-      `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released)
-       VALUES (?, ?, ?, ?, FALSE)`,
-      [req.user.id, package_id, group_id, nextDue.toISOString().slice(0, 10)]
+    const schedule = buildInstallmentSchedule(plan, Number(pkg.price_mkd));
+    const today = new Date();
+    const firstDueDate = today.toISOString().slice(0, 10);
+
+    const [subResult] = await pool.query(
+      `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released, payment_plan)
+       VALUES (?, ?, ?, ?, FALSE, ?)`,
+      [req.user.id, package_id, group_id, firstDueDate, plan]
     );
+
+    let nextPendingDueDate = null;
+    for (const inst of schedule) {
+      const dueDate = new Date(today);
+      dueDate.setDate(dueDate.getDate() + inst.offsetDays);
+      const isFirst = inst.number === 1;
+      await pool.query(
+        `INSERT INTO installments (subscription_id, installment_number, total_installments, amount, due_date, status, paid_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [subResult.insertId, inst.number, inst.total, inst.amount, dueDate.toISOString().slice(0, 10),
+         isFirst ? 'paid' : 'pending', isFirst ? new Date() : null]
+      );
+      if (!isFirst && !nextPendingDueDate) nextPendingDueDate = dueDate;
+    }
+
+    // ако има повеќе од 1 рата, ажурирај next_due_date на следната неплатена;
+    // ако сите рати се веќе платени (пр. "целосно" план), нема причина за
+    // предупредување — терминот се смета за сигурен цела учебна година
+    if (nextPendingDueDate) {
+      await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
+        [nextPendingDueDate.toISOString().slice(0, 10), subResult.insertId]);
+    } else {
+      const farFuture = new Date(today);
+      farFuture.setDate(farFuture.getDate() + 365);
+      await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
+        [farFuture.toISOString().slice(0, 10), subResult.insertId]);
+    }
+
+    const planLabel = { full: 'Целосно (1 уплата)', two: '2 рати', eight: '8 месечни рати' }[plan];
+    const remainingHtml = schedule.length > 1
+      ? `<p>Останати рати: <strong>${schedule.length - 1}</strong>. Следна рата: <strong>${nextPendingDueDate ? nextPendingDueDate.toLocaleDateString('mk-MK') : '—'}</strong> (${schedule[1].amount} ден.)</p>`
+      : '';
 
     await sendMail({
       to: req.user.email,
@@ -80,8 +139,9 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
           <h2>Плаќањето е успешно!</h2>
           <p>Пакет: <strong>${pkg.name}</strong></p>
           <p>Група: <strong>${group.name}</strong></p>
-          <p>Износ: <strong>${pkg.price_mkd} ден.</strong></p>
-          <p>Следна рата доспева на: <strong>${nextDue.toLocaleDateString('mk-MK')}</strong></p>
+          <p>План на плаќање: <strong>${planLabel}</strong></p>
+          <p>Прва рата (платена сега): <strong>${schedule[0].amount} ден.</strong></p>
+          ${remainingHtml}
           <p style="color:#888; font-size:13px; margin-top:20px;">Референца: ${fakeProviderRef}</p>
         </div>
       `
@@ -89,9 +149,12 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
 
     res.status(201).json({
       purchase_id: purchaseResult.insertId,
+      subscription_id: subResult.insertId,
       status: 'paid',
       provider_ref: fakeProviderRef,
-      next_due_date: nextDue.toISOString().slice(0, 10)
+      payment_plan: plan,
+      installments: schedule.length,
+      next_due_date: nextPendingDueDate ? nextPendingDueDate.toISOString().slice(0, 10) : null
     });
   } catch (err) {
     await pool.query(`UPDATE purchases SET payment_status = 'failed' WHERE id = ?`, [purchaseResult.insertId]);
