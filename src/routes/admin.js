@@ -52,4 +52,28 @@ router.get('/professors', requireAuth, requireRole('admin'), async (req, res) =>
   res.json(rows);
 });
 
+// GET /admin/students — листа на сите ученици кои се регистрирале (само admin)
+router.get('/students', requireAuth, requireRole('admin'), async (req, res) => {
+  const [rows] = await pool.query(
+    "SELECT id, email, full_name, email_verified, created_at FROM users WHERE role = 'student' ORDER BY created_at DESC"
+  );
+  res.json(rows);
+});
+
+// DELETE /admin/users/:id — бришe сметка (ученик/професор). Само admin.
+// FOREIGN KEY ... ON DELETE CASCADE ги брише и поврзаните редови
+// (материјали, членства во групи, претплати/купувања за ученик;
+// групите и нивниот распоред за професор).
+router.delete('/users/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  const targetId = Number(req.params.id);
+  if (targetId === req.user.id) {
+    return res.status(400).json({ error: 'Не можеш да ja избришеш сопствената сметка.' });
+  }
+  const [[user]] = await pool.query('SELECT id, role FROM users WHERE id = ?', [targetId]);
+  if (!user) return res.status(404).json({ error: 'Корисникот не постои.' });
+
+  await pool.query('DELETE FROM users WHERE id = ?', [targetId]);
+  res.json({ ok: true });
+});
+
 module.exports = router;
