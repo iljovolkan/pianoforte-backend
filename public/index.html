@@ -523,6 +523,17 @@
   <div class="payment-modal">
     <h3>Плаќање со картичка</h3>
     <p class="psub" id="paymentSub">Пакет · термин</p>
+
+    <div class="form-row">
+      <label>План на плаќање</label>
+      <div class="type-toggle" id="planToggle" style="margin-bottom:0;">
+        <div class="type-btn active" data-plan="eight">8 рати</div>
+        <div class="type-btn" data-plan="two">2 рати</div>
+        <div class="type-btn" data-plan="full">Целосно −5%</div>
+      </div>
+    </div>
+    <div id="planSummary" style="font-size:12.5px; color:var(--mist); margin:8px 0 18px;"></div>
+
     <div class="card-only-badge">💳 Само онлајн плаќање со картичка</div>
     <div class="form-row"><label>Име на картичка</label><input type="text" id="cardName" placeholder="како на картичката"></div>
     <div class="form-row"><label>Број на картичка</label><input type="text" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19"></div>
@@ -530,7 +541,7 @@
       <div class="form-row"><label>Истек</label><input type="text" id="cardExpiry" placeholder="MM/ГГ" maxlength="5"></div>
       <div class="form-row"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="3"></div>
     </div>
-    <button class="pay-btn" id="payConfirmBtn">Плати</button>
+    <button class="pay-btn" id="payConfirmBtn">Плати ja првата рата</button>
     <button class="pm-cancel" id="payCancelBtn">Откажи</button>
     <div class="pm-note">Демо форма — платежните податоци не се складираат. Реалната верзија испраќа само tokenized reference од платежниот процесор.</div>
   </div>
@@ -562,6 +573,7 @@
   let schedule = {};     // изградено од GET /schedule: "МК_ден-HH:MM" -> {slotId, groupId, note}
   let packages = [];     // GET /packages
   let subscriptions = []; // GET /subscriptions (сурови редови)
+  let installments = []; // GET /installments
 
   const AGE_RANGES = [
     {id:'all', label:'Сите возрасти'},
@@ -671,6 +683,9 @@
   }
   async function loadSubscriptions(){
     try{ subscriptions = await authApiCall('/subscriptions'); } catch(err){ subscriptions = []; }
+  }
+  async function loadInstallments(){
+    try{ installments = await authApiCall('/installments'); } catch(err){ installments = []; }
   }
 
   function validateLoginForm(){
@@ -809,7 +824,7 @@
     } else {
       showPage('index');
       document.getElementById('tabletFeed').innerHTML = '<div class="empty-state">Се вчитува...</div>';
-      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions()]);
+      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments()]);
       if(session.role==='student'){
         activeStudentForIndex = session.realUserId;
         await loadMaterialsFor(activeStudentForIndex);
@@ -1314,20 +1329,24 @@
     return {paid:'✓', due_soon:'⏳', late:'⚠', released:'✕', none:'—'}[state] || '—';
   }
 
+  const installmentStatusLabel = {pending:'Чека', paid:'Платена', released:'Откажана'};
+  const installmentStatusClass = {pending:'status-delivered', paid:'status-done', released:'status-queued'};
+  const planFullLabel = {full:'Целосно (1 уплата)', two:'2 рати', eight:'8 месечни рати'};
+
   function renderBillingPage(){
     const wrap = document.getElementById('billingContent');
     wrap.innerHTML = '';
 
     if(session.role === 'professor'){
       document.getElementById('billingTitle').textContent = 'Статус на плаќање — твоите ученици';
-      document.getElementById('billingSub').textContent = 'Само учениците од твоите групи. Задоцнетите уплати автоматски го ослободуваат терминот.';
+      document.getElementById('billingSub').textContent = 'Само учениците од твоите групи. Задоцнетите рати автоматски го ослободуваат терминот.';
 
       const rows = subscriptions.map(sub => ({ sub, ps: paymentStateFromSub(sub) }));
       const order = {late:0, due_soon:1, paid:2, released:3, none:4};
       rows.sort((a,b)=>order[a.ps.state]-order[b.ps.state]);
 
       const table = document.createElement('div'); table.className='billing-table';
-      table.innerHTML = `<div class="billing-row head"><div>Ученик</div><div>Група</div><div>Пакет</div><div>Рок за плаќање</div><div>Статус</div></div>`;
+      table.innerHTML = `<div class="billing-row head"><div>Ученик</div><div>Група</div><div>Пакет / план</div><div>Следна рата</div><div>Статус</div></div>`;
       if(rows.length===0){
         table.innerHTML += `<div class="billing-row"><div class="empty-state" style="grid-column:1/-1;">Нема ученици со активен пакет во твоите групи сè уште.</div></div>`;
       } else {
@@ -1337,7 +1356,7 @@
           table.innerHTML += `<div class="billing-row">
             <div class="bname">${escapeHtml(r.sub.student_name)}</div>
             <div class="bsub">${escapeHtml(r.sub.group_name)}</div>
-            <div class="bsub">${escapeHtml(r.sub.package_name)}</div>
+            <div class="bsub">${escapeHtml(r.sub.package_name)} · ${planFullLabel[r.sub.payment_plan]||''}</div>
             <div class="bdue">${dueLabel}<div class="bsub">${daysNote}</div></div>
             <div><span class="status-pill ${paymentStateClass[r.ps.state]}">${billingIcon(r.ps.state)} ${paymentStateLabel[r.ps.state]}</span></div>
           </div>`;
@@ -1348,8 +1367,8 @@
     }
 
     // ---- student view ----
-    document.getElementById('billingTitle').textContent = 'Твојата уплата';
-    document.getElementById('billingSub').textContent = 'Овде гледаш кога е следната рата и дали е сè во ред со твоето место.';
+    document.getElementById('billingTitle').textContent = 'Твojot план на плаќање';
+    document.getElementById('billingSub').textContent = 'Овде гледаш ja целата распоредба на рати и дали е сè во ред со твоето место.';
 
     const sub = subscriptions[0]; // GET /subscriptions за ученик враќа само своја (најнова)
     const ps = paymentStateFromSub(sub);
@@ -1360,6 +1379,7 @@
     }
 
     const group = groups.find(g=>g.id===sub.group_id);
+    const myInstallments = installments.filter(i=>i.subscription_id===sub.id);
 
     let banner = '';
     if(ps.state === 'released'){
@@ -1369,18 +1389,29 @@
         </div></div>`;
     } else if(ps.state === 'late'){
       banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
-        <div class="n-title">Задоцнета уплата — ${Math.abs(ps.diffDays)} дена</div>
+        <div class="n-title">Задоцнета рата — ${Math.abs(ps.diffDays)} дена</div>
         <div class="n-body">Ако не платиш наскоро, терминот ти се ослободува. При следна уплата постои ризик да бидеш префрлен кај друг професор.</div>
         </div></div>`;
     } else if(ps.state === 'due_soon'){
       banner = `<div class="notif-banner warn"><div class="n-ic">⏳</div><div>
-        <div class="n-title">Твојата месечна рата доспева наскоро</div>
+        <div class="n-title">Твojata следна рата доспева наскоро</div>
         <div class="n-body">Рок за плаќање: <strong>${fmtDate(sub.next_due_date)}</strong> (за ${ps.diffDays} ${ps.diffDays===1?'ден':'дена'}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</div>
         </div></div>`;
+    } else if(ps.state === 'paid'){
+      const hasPending = myInstallments.some(i=>i.status==='pending');
+      banner = hasPending
+        ? `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
+            <div class="n-title">Сè е во ред</div>
+            <div class="n-body">Следната рата доспева на ${fmtDate(sub.next_due_date)}. Местото ти е сигурно резервирано до тогаш.</div>
+            </div></div>`
+        : `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
+            <div class="n-title">Целиот пакет е платен</div>
+            <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
+            </div></div>`;
     } else {
       banner = `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
-        <div class="n-title">Сè е во ред</div>
-        <div class="n-body">Следната рата доспева на ${fmtDate(sub.next_due_date)}. Местото ти е сигурно резервирано до тогаш.</div>
+        <div class="n-title">Целиот пакет е платен</div>
+        <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
         </div></div>`;
     }
     wrap.innerHTML = banner;
@@ -1389,11 +1420,46 @@
     card.innerHTML = `
       <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${escapeHtml(sub.package_name||'—')}</span></div>
       <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${escapeHtml(sub.group_name||'—')}</span></div>
+      <div class="bs-row"><span class="bs-label">План на плаќање</span><span class="bs-value">${planFullLabel[sub.payment_plan]||'—'}</span></div>
       <div class="bs-row"><span class="bs-label">Термин</span><span class="bs-value">${group && ps.state!=='released' ? slotsLabel(group.id) : '—'}</span></div>
-      <div class="bs-row"><span class="bs-label">Статус на уплата</span><span class="status-pill ${paymentStateClass[ps.state]}">${billingIcon(ps.state)} ${paymentStateLabel[ps.state]}</span></div>
     `;
     wrap.appendChild(card);
+
+    if(myInstallments.length > 0){
+      const instTable = document.createElement('div');
+      instTable.className = 'billing-table';
+      instTable.style.marginTop = '16px';
+      instTable.innerHTML = `<div class="billing-row head" style="grid-template-columns:1fr 1fr 1fr 1fr;"><div>Рата</div><div>Износ</div><div>Рок</div><div>Статус</div></div>`;
+      myInstallments.forEach(inst=>{
+        const isPending = inst.status === 'pending';
+        instTable.innerHTML += `<div class="billing-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+          <div class="bname">${inst.installment_number}/${inst.total_installments}</div>
+          <div class="bsub">${Number(inst.amount).toLocaleString('mk-MK')} ден.</div>
+          <div class="bsub">${fmtDate(inst.due_date)}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="status-pill ${installmentStatusClass[inst.status]}">${installmentStatusLabel[inst.status]}</span>
+            ${isPending ? `<button class="mc-btn" style="flex:none;" onclick="payInstallment(${inst.id})">Плати</button>` : ''}
+          </div>
+        </div>`;
+      });
+      wrap.appendChild(instTable);
+    }
   }
+
+  window.payInstallment = async function(installmentId){
+    try{
+      const result = await authApiCall('/installments/'+installmentId+'/pay', {
+        method:'POST',
+        body: JSON.stringify({ payment_method_id: 'SIMULATED-' + Date.now() })
+      });
+      await loadInstallments();
+      await loadSubscriptions();
+      renderBillingPage();
+      alert('Ратата е успешно платена! 📧 Испративме потврда на email.');
+    } catch(err){
+      alert('Грешка при плаќање: ' + err.message);
+    }
+  };
 
   /* ===================== ADMIN PAGE ===================== */
   async function deleteUser(id, label){
@@ -1595,15 +1661,45 @@
   }
 
   /* ---- payment modal ---- */
+  const SCHOOL_YEAR_MONTHS = 8;
+  const FULL_PLAN_DISCOUNT = 0.05;
+  let selectedPlan = 'eight';
+
+  function planSummaryText(plan, monthlyPrice){
+    const annual = monthlyPrice * SCHOOL_YEAR_MONTHS;
+    if(plan === 'full'){
+      const amount = Math.round(annual * (1 - FULL_PLAN_DISCOUNT));
+      return `1 уплата од ${amount.toLocaleString('mk-MK')} ден. (наместо ${annual.toLocaleString('mk-MK')} ден. — заштеда 5%)`;
+    }
+    if(plan === 'two'){
+      const first = Math.round(annual/2);
+      return `2 уплати: ${first.toLocaleString('mk-MK')} ден. сега, ${(annual-first).toLocaleString('mk-MK')} ден. за ~5 месеци`;
+    }
+    return `8 месечни уплати од по ${monthlyPrice.toLocaleString('mk-MK')} ден.`;
+  }
+
   const overlay = document.getElementById('paymentOverlay');
   function openPaymentModal(){
     const g = groups.find(x=>x.id===pendingBooking.groupId);
     const p = packages.find(x=>x.id===chosenPackage);
-    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)} · ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.`;
+    selectedPlan = 'eight';
+    document.querySelectorAll('#planToggle .type-btn').forEach(b=>b.classList.toggle('active', b.dataset.plan==='eight'));
+    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)}`;
+    document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
     document.getElementById('cardName').value=''; document.getElementById('cardNumber').value='';
     document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
     overlay.classList.add('show');
   }
+
+  document.getElementById('planToggle').addEventListener('click', e=>{
+    const btn = e.target.closest('.type-btn'); if(!btn) return;
+    document.querySelectorAll('#planToggle .type-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPlan = btn.dataset.plan;
+    const p = packages.find(x=>x.id===chosenPackage);
+    document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
+  });
+
   document.getElementById('payCancelBtn').addEventListener('click', ()=>{ overlay.classList.remove('show'); pendingBooking=null; });
 
   document.getElementById('payConfirmBtn').addEventListener('click', async ()=>{
@@ -1627,19 +1723,22 @@
         body: JSON.stringify({
           package_id: chosenPackage,
           group_id: pendingBooking.groupId,
-          payment_method_id: 'SIMULATED-' + Date.now()
+          payment_method_id: 'SIMULATED-' + Date.now(),
+          payment_plan: selectedPlan
         })
       });
 
       await loadGroups();
       await loadSubscriptions();
+      await loadInstallments();
 
       const g = groups.find(x=>x.id===pendingBooking.groupId);
       const p = packages.find(x=>x.id===chosenPackage);
+      const planLabel = {full:'целосно, во 1 уплата', two:'на 2 рати', eight:'на 8 месечни рати'}[selectedPlan];
 
       overlay.classList.remove('show');
       document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
-      document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Оваа информација останува иста додека продолжуваш со редовни месечни уплати — следна рата доспева на ${fmtDate(result.next_due_date)}.<br><br>📧 Испративме потврда за уплатата на твojot email.`;
+      document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Избра да плаќаш <strong>${planLabel}</strong>.${result.next_due_date ? ` Следна рата доспева на ${fmtDate(result.next_due_date)}.` : ' Целиот пакет е платен.'}<br><br>📧 Испративме потврда за уплатата на твojot email.`;
       document.getElementById('pkgConfirm').classList.add('show');
       document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
 
@@ -1649,7 +1748,7 @@
     } catch(err){
       alert('Плаќањето не успеа: ' + err.message);
     } finally {
-      payBtn.disabled = false; payBtn.textContent = 'Плати';
+      payBtn.disabled = false; payBtn.textContent = 'Плати ja првата рата';
     }
   });
 
