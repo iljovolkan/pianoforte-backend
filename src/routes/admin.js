@@ -31,7 +31,7 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
   const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
   const [result] = await pool.query(
-    'INSERT INTO users (email, password_hash, role, full_name) VALUES (?, ?, ?, ?)',
+    'INSERT INTO users (email, password_hash, role, full_name, email_verified) VALUES (?, ?, ?, ?, TRUE)',
     [email, passwordHash, 'professor', full_name]
   );
 
