@@ -11,6 +11,7 @@ const packagesRoutes = require('./routes/packages');
 const purchasesRoutes = require('./routes/purchases');
 const adminRoutes = require('./routes/admin');
 const subscriptionsRoutes = require('./routes/subscriptions');
+const installmentsRoutes = require('./routes/installments');
 const { startCronJobs } = require('./cron');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/packages', packagesRoutes);
 app.use('/purchases', purchasesRoutes);
 app.use('/admin', adminRoutes);
 app.use('/subscriptions', subscriptionsRoutes);
+app.use('/installments', installmentsRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
