@@ -330,17 +330,17 @@
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:440px; text-align:center;">
     <div style="font-size:40px; margin-bottom:14px;">📧</div>
-    <h2 style="font-size:20px; margin-bottom:8px;">Испративме потврда на твojot email</h2>
+    <h2 style="font-size:20px; margin-bottom:8px;">Испративме вистински email до тебе</h2>
     <p style="color:var(--mist); font-size:13.5px; margin-bottom:24px;" id="confirmEmailAddress"></p>
 
     <div style="background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:18px; text-align:left; margin-bottom:22px;">
-      <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">ОД: PianoForte &lt;no-reply@pianoforte.mk&gt;</div>
+      <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">ОД: PianoForte &lt;info@pianoforte.edu.mk&gt;</div>
       <div style="font-weight:600; font-size:14px; margin-bottom:8px;">Потврди го твojot профил на PianoForte</div>
-      <div style="font-size:13px; color:var(--ink); opacity:.8; line-height:1.5;">Здраво! Само уште еден чекор — кликни на копчето подолу за да го активираш профилот и да продолжиш со изборот на пакет.</div>
+      <div style="font-size:13px; color:var(--ink); opacity:.8; line-height:1.5;">Отвори го твojot inbox (провери и spam папка) и кликни на копчето во email-от — дури тогаш ќе можеш да се најавиш.</div>
     </div>
 
-    <button class="login-btn" id="confirmEmailBtn">📩 Отвори email и потврди (демо)</button>
-    <div class="login-hint">Во реален систем ова стигнува како вистински email преку SendGrid/Mailgun. Тука го симулираме со едно копче.</div>
+    <button class="login-btn" id="confirmEmailBtn">Разбрав, одам на најава</button>
+    <div class="login-hint">Најавата нема да работи додека не го потврдиш email-от преку линкот.</div>
   </div>
 </div>
 
@@ -787,31 +787,10 @@
     }
   });
 
-  document.getElementById('confirmEmailBtn').addEventListener('click', async ()=>{
-    if(!pendingRegistration) return;
-    const btn = document.getElementById('confirmEmailBtn');
-    btn.disabled = true; btn.textContent = 'Се потврдува...';
-
-    try{
-      // Вистински login по "потврдата" — добива реален JWT токен и реален ID од базата
-      const { token, user } = await apiCall('/auth/login', {
-        method:'POST',
-        body: JSON.stringify({ email: pendingRegistration.email, password: pendingRegistration.password })
-      });
-
-      session = {role:'student', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
-      filterInstrument = pendingRegistration.instrument;
-
-      document.getElementById('confirmEmailScreen').style.display = 'none';
-      pendingRegistration = null;
-      await startApp();
-      showPage('packages');
-      document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active', b.dataset.page==='packages'));
-    } catch(err){
-      alert('Не успеа потврдата: ' + (err.message || 'непозната грешка'));
-    } finally {
-      btn.disabled = false; btn.textContent = '📩 Отвори email и потврди (демо)';
-    }
+  document.getElementById('confirmEmailBtn').addEventListener('click', ()=>{
+    pendingRegistration = null;
+    document.getElementById('confirmEmailScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
   });
 
   /* ===================== APP SHELL / NAV ===================== */
