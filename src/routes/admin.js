@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { runDailyMaintenance } = require('../cron');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -74,6 +75,18 @@ router.delete('/users/:id', requireAuth, requireRole('admin'), async (req, res) 
 
   await pool.query('DELETE FROM users WHERE id = ?', [targetId]);
   res.json({ ok: true });
+});
+
+// POST /admin/run-maintenance — рачно активирање на дневната задача (потсетници +
+// автоматско ослободување), корисно за тестирање без да се чека до 08:00
+router.post('/run-maintenance', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await runDailyMaintenance();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Грешка при извршување на задачата.' });
+  }
 });
 
 module.exports = router;
