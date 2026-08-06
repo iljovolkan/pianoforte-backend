@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -9,10 +10,37 @@ const { sendMail } = require('../mailer');
 const router = express.Router();
 const SALT_ROUNDS = 12;
 const APP_URL = process.env.APP_BASE_URL || 'https://app.pianoforte.edu.mk';
+const ACCESS_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '2h';
+const REFRESH_TOKEN_DAYS = 30;
+
+// Спречува brute-force обиди за најава/регистрација — макс. 10 обиди на 15 мин по IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Премногу обиди за најава. Пробај повторно за 15 минути.' }
+});
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Премногу обиди за регистрација. Пробај повторно подоцна.' }
+});
+
+function issueTokens(user) {
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_TTL }
+  );
+  const refreshToken = crypto.randomBytes(40).toString('hex');
+  return { accessToken, refreshToken };
+}
 
 // POST /auth/register  { email, password, full_name, role }
-// role треба во пракса да е ограничено (пр. само admin/професор смее да создава professor акаунти).
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   const { email, password, full_name, role } = req.body;
 
   if (!email || !password || !full_name || !role) {
@@ -85,7 +113,7 @@ router.get('/verify', async (req, res) => {
 });
 
 // POST /auth/login  { email, password }
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email и лозинка се задолжителни.' });
@@ -95,8 +123,6 @@ router.post('/login', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     const user = rows[0];
 
-    // Намерно иста порака за "непостоечки email" и "погрешна лозинка" —
-    // да не откриваме дали email-от постои во системот.
     if (!user) {
       return res.status(401).json({ error: 'Погрешен email или лозинка.' });
     }
@@ -106,27 +132,56 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Погрешен email или лозинка.' });
     }
 
-    // Учениците мора прво да го потврдат email-от (линк од регистрацискиот email)
-    // пред да можат да се најават. Професорски/admin сметки се создаваат рачно
-    // од admin-от, кој веќе го потврдил идентитетот, па тие не се блокираат овде.
     if (user.role === 'student' && !user.email_verified) {
       return res.status(403).json({ error: 'Прво потврди го email-от — провери го твojot inbox и кликни на линкот што ти го испративме.' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    const { accessToken, refreshToken } = issueTokens(user);
+    const expires = new Date();
+    expires.setDate(expires.getDate() + REFRESH_TOKEN_DAYS);
+    await pool.query('UPDATE users SET refresh_token = ?, refresh_token_expires = ? WHERE id = ?',
+      [refreshToken, expires, user.id]);
 
     res.json({
-      token,
+      token: accessToken,
+      refreshToken,
       user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified }
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Грешка на серверот.' });
   }
+});
+
+// POST /auth/refresh  { refreshToken }  — издава нов пристапен токен без повторна лозинка
+router.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'Недостасува refreshToken.' });
+
+  const [rows] = await pool.query(
+    'SELECT * FROM users WHERE refresh_token = ? AND refresh_token_expires > NOW()',
+    [refreshToken]
+  );
+  const user = rows[0];
+  if (!user) return res.status(401).json({ error: 'Сесијата истечe — најави се повторно.' });
+
+  const { accessToken, refreshToken: newRefreshToken } = issueTokens(user);
+  const expires = new Date();
+  expires.setDate(expires.getDate() + REFRESH_TOKEN_DAYS);
+  await pool.query('UPDATE users SET refresh_token = ?, refresh_token_expires = ? WHERE id = ?',
+    [newRefreshToken, expires, user.id]);
+
+  res.json({
+    token: accessToken,
+    refreshToken: newRefreshToken,
+    user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified }
+  });
+});
+
+// POST /auth/logout — го поништува refresh токенот (одјава на серверска страна)
+router.post('/logout', requireAuth, async (req, res) => {
+  await pool.query('UPDATE users SET refresh_token = NULL, refresh_token_expires = NULL WHERE id = ?', [req.user.id]);
+  res.json({ ok: true });
 });
 
 // GET /auth/me  — сопствен профил, потврдува дека токенот работи
