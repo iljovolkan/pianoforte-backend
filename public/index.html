@@ -567,7 +567,7 @@
     </div>
     <button class="pay-btn" id="payConfirmBtn">Плати ja првата рата</button>
     <button class="pm-cancel" id="payCancelBtn">Откажи</button>
-    <div class="pm-note">Демо форма — платежните податоци не се складираат. Реалната верзија испраќа само tokenized reference од платежниот процесор.</div>
+    <div class="pm-note">Плаќањето сè уште не е поврзано со вистински платежен процесор — не се врши вистинска наплата. Картичните податоци не се складираат.</div>
   </div>
 </div>
 
@@ -897,7 +897,7 @@
     avatar.className = 'avatar ' + session.role;
     document.getElementById('uName').textContent = session.name;
     const roleLabel = session.role==='professor' ? 'Професор' : session.role==='admin' ? 'Админ' : 'Ученик';
-    document.getElementById('uRole').textContent = roleLabel + (session.isRealAccount ? ' · 🔗 жива база' : ' · демо преглед');
+    document.getElementById('uRole').textContent = roleLabel;
     buildNav();
     if(session.role==='admin'){
       renderAdminPage();
