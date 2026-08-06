@@ -17,7 +17,7 @@
     --wine:#B3555F; --wine-pale:#F6E4E6;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh;}
+  body{background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden;}
   h1,h2,h3{font-family:'Fraunces',serif; font-weight:500;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   button{font-family:'Inter',sans-serif;}
@@ -275,6 +275,25 @@
     .cal-grid{min-width:680px;}
     .billing-row{grid-template-columns:1fr; gap:4px;}
     .year-grid{grid-template-columns:1fr;}
+  }
+
+  @media(max-width:640px){
+    header.topbar{
+      flex-wrap:wrap; padding:12px 14px; gap:10px; row-gap:10px;
+    }
+    .brand{font-size:16px; flex-shrink:0;}
+    .topnav{
+      order:3; width:100%; overflow-x:auto; flex-wrap:nowrap;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:4px;
+    }
+    .topnav::-webkit-scrollbar{display:none;}
+    .topnav button{padding:8px 12px; font-size:13px; white-space:nowrap; flex-shrink:0;}
+    .user-chip{gap:6px;}
+    .user-chip .u-name, .user-chip .u-role{display:none;}
+    .avatar{width:28px; height:28px; font-size:11px;}
+    .logout-btn{padding:6px 9px; font-size:11.5px;}
+    main{padding:20px 14px 60px;}
+    .page-head h2{font-size:21px;}
   }
 </style>
 </head>
