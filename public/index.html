@@ -402,6 +402,11 @@
               </div>
             </div>
             <div class="form-row"><label>Белешка за ученикот (опционално)</label><textarea id="matNote" placeholder="пр. Внимавај на динамиката во тактови 9–12."></textarea></div>
+            <div class="form-row">
+              <label>Фајл (опционално — PDF ноти, аудио mp3/wav/m4a, слика)</label>
+              <input type="file" id="matFile" accept=".pdf,audio/*,image/jpeg,image/png">
+              <div id="matFileName" style="font-size:11.5px; color:var(--mist); margin-top:4px;"></div>
+            </div>
             <button class="send-btn" id="sendBtn">Испрати до ученикот</button>
           </div>
           <div class="sent-list"><h3>Историја на испратени материјали</h3><div id="sentList"></div></div>
@@ -664,19 +669,72 @@
   /* ===================== REAL API CONNECTION ===================== */
   const API_BASE = 'https://app.pianoforte.edu.mk';
   async function apiCall(path, options={}){
+    const isFormData = options.body instanceof FormData;
     const res = await fetch(API_BASE + path, {
       ...options,
-      headers: {'Content-Type':'application/json', ...(options.headers||{})}
+      headers: {...(isFormData ? {} : {'Content-Type':'application/json'}), ...(options.headers||{})}
     });
     const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || `Грешка (${res.status})`);
+    if(!res.ok) { const err = new Error(data.error || `Грешка (${res.status})`); err.status = res.status; throw err; }
     return data;
   }
-  function authApiCall(path, options={}){
-    return apiCall(path, {
-      ...options,
-      headers: {...(options.headers||{}), 'Authorization': 'Bearer ' + (session ? session.token : '')}
-    });
+
+  let isRefreshingSession = false;
+  async function tryRefreshSession(){
+    if(!session || !session.refreshToken) return false;
+    try{
+      const { token, refreshToken, user } = await apiCall('/auth/refresh', {
+        method:'POST', body: JSON.stringify({ refreshToken: session.refreshToken })
+      });
+      session.token = token; session.refreshToken = refreshToken;
+      saveSessionToStorage();
+      return true;
+    } catch(err){
+      return false;
+    }
+  }
+
+  async function authApiCall(path, options={}){
+    try{
+      return await apiCall(path, {
+        ...options,
+        headers: {...(options.headers||{}), 'Authorization': 'Bearer ' + (session ? session.token : '')}
+      });
+    } catch(err){
+      // истечен пристапен токен — пробај тивко обновување, потоа повтори еднаш
+      if(err.status === 401 && !isRefreshingSession && session && session.refreshToken){
+        isRefreshingSession = true;
+        const refreshed = await tryRefreshSession();
+        isRefreshingSession = false;
+        if(refreshed){
+          return apiCall(path, {
+            ...options,
+            headers: {...(options.headers||{}), 'Authorization': 'Bearer ' + session.token}
+          });
+        }
+        // обновувањето не успеа — сесијата реално истекла
+        clearSessionStorage();
+        session = null;
+        document.getElementById('appShell').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+      }
+      throw err;
+    }
+  }
+
+  /* ---- истрајност на сесијата низ рефреш на страницата ---- */
+  function saveSessionToStorage(){
+    if(!session) return;
+    try{ sessionStorage.setItem('pf_session', JSON.stringify(session)); } catch(e){}
+  }
+  function clearSessionStorage(){
+    try{ sessionStorage.removeItem('pf_session'); } catch(e){}
+  }
+  function loadSessionFromStorage(){
+    try{
+      const raw = sessionStorage.getItem('pf_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
   }
 
   /* ---- вчитување реални податоци од API ---- */
@@ -725,18 +783,19 @@
     btn.disabled = true; btn.textContent = 'Се најавува...';
 
     try{
-      const { token, user } = await apiCall('/auth/login', {
+      const { token, refreshToken, user } = await apiCall('/auth/login', {
         method:'POST',
         body: JSON.stringify({ email, password })
       });
 
       if(user.role === 'student'){
-        session = {role:'student', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
+        session = {role:'student', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else if(user.role === 'admin'){
-        session = {role:'admin', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
+        session = {role:'admin', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else {
-        session = {role:'professor', name:user.full_name, realUserId:user.id, token, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
       }
+      saveSessionToStorage();
       await startApp();
     } catch(err){
       errBox.textContent = err.message || 'Погрешен email или лозинка.';
@@ -746,8 +805,10 @@
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    try{ await authApiCall('/auth/logout', { method:'POST' }); } catch(e){}
     session = null;
+    clearSessionStorage();
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   });
@@ -924,9 +985,15 @@
     }
   }
 
+  document.getElementById('matFile').addEventListener('change', e=>{
+    const f = e.target.files[0];
+    document.getElementById('matFileName').textContent = f ? `${f.name} (${(f.size/1024/1024).toFixed(1)} MB)` : '';
+  });
+
   document.getElementById('sendBtn').addEventListener('click', async ()=>{
     const titleInput = document.getElementById('matTitle');
     const noteInput = document.getElementById('matNote');
+    const fileInput = document.getElementById('matFile');
     const title = titleInput.value.trim();
     if(!title){ titleInput.style.borderColor='var(--wine)'; setTimeout(()=>{titleInput.style.borderColor='';},1000); return; }
     if(!activeStudentForIndex){ alert('Избери ученик прво.'); return; }
@@ -934,11 +1001,15 @@
     const btn = document.getElementById('sendBtn');
     btn.disabled = true; btn.textContent = 'Се испраќа...';
     try{
-      await authApiCall('/materials', {
-        method:'POST',
-        body: JSON.stringify({ student_id: activeStudentForIndex, title, type: activeType, note: noteInput.value.trim() })
-      });
-      titleInput.value=''; noteInput.value='';
+      const formData = new FormData();
+      formData.append('student_id', activeStudentForIndex);
+      formData.append('title', title);
+      formData.append('type', activeType);
+      formData.append('note', noteInput.value.trim());
+      if(fileInput.files[0]) formData.append('file', fileInput.files[0]);
+
+      await authApiCall('/materials', { method:'POST', body: formData });
+      titleInput.value=''; noteInput.value=''; fileInput.value=''; document.getElementById('matFileName').textContent='';
       await loadMaterialsFor(activeStudentForIndex);
       renderIndexPage();
     } catch(err){
@@ -974,6 +1045,20 @@
       await loadMaterialsFor(activeStudentForIndex);
       renderIndexPage();
     } catch(err){ alert('Грешка: ' + err.message); }
+  };
+
+  window.openMaterialFile = async function(id){
+    try{
+      const res = await fetch(API_BASE + '/materials/' + id + '/file', {
+        headers: { 'Authorization': 'Bearer ' + session.token }
+      });
+      if(!res.ok) throw new Error('Не успеа преземањето на фајлот.');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch(err){
+      alert('Грешка: ' + err.message);
+    }
   };
 
   function renderIndexPage(){
@@ -1028,11 +1113,12 @@
       [...visible].reverse().forEach(m=>{
         const card = document.createElement('div'); card.className='material-card';
         const noteHtml = m.note ? `<div class="mc-note">${escapeHtml(m.note)}</div>` : '';
+        const fileHtml = m.has_file ? `<div class="mc-note" style="cursor:pointer; color:var(--sand-deep);" onclick="openMaterialFile(${m.id})">📎 ${escapeHtml(m.file_name||'Прикачен фајл')} (${m.file_size ? (m.file_size/1024/1024).toFixed(1)+' MB' : ''})</div>` : '';
         let actions = '';
         if(m.status==='delivered') actions = `<div class="mc-actions"><button class="mc-btn" onclick="openMaterial('${m.id}')">Отвори материјал</button></div>`;
         else if(m.status==='opened') actions = `<div class="mc-actions"><button class="mc-btn done" onclick="completeMaterial('${m.id}')">Означи како завршено</button></div>`;
         card.innerHTML = `<div class="mc-top"><div><div class="mc-title">${typeIcon[m.type]} ${escapeHtml(m.title)}</div><div class="mc-sub">${typeLabelMk[m.type]}</div></div>
-            ${m.status==='delivered' ? '<span class="new-badge">НОВО</span>' : `<span class="status-pill ${statusClass[m.status]}">${statusLabel[m.status]}</span>`}</div>${noteHtml}${actions}`;
+            ${m.status==='delivered' ? '<span class="new-badge">НОВО</span>' : `<span class="status-pill ${statusClass[m.status]}">${statusLabel[m.status]}</span>`}</div>${noteHtml}${fileHtml}${actions}`;
         feed.appendChild(card);
       });
     }
@@ -1770,6 +1856,20 @@
       payBtn.disabled = false; payBtn.textContent = 'Плати ja првата рата';
     }
   });
+
+  /* ---- обиди се да ja обновиш сесијата ако веќе постои (по рефреш на страницата) ---- */
+  (async function restoreSession(){
+    const stored = loadSessionFromStorage();
+    if(!stored || !stored.token) return;
+    session = stored;
+    try{
+      await authApiCall('/auth/me'); // проверка дали токенот (или refresh) сè уште важи
+      await startApp();
+    } catch(err){
+      session = null;
+      clearSessionStorage();
+    }
+  })();
 
 })();
 </script>
