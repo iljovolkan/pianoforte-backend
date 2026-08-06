@@ -312,9 +312,46 @@
     <button class="login-btn" id="loginBtn" disabled>Најави се</button>
     <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div class="login-hint">Реална најава — поврзана со живата база на PianoForte.</div>
-    <div style="text-align:center; margin-top:16px;">
+    <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
       <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">Немаш профил? Регистрирај се →</a>
+      <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;">Ja заборави лозинката?</a>
     </div>
+  </div>
+</div>
+
+<!-- ================= FORGOT PASSWORD ================= -->
+<div id="forgotPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
+  background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
+  <div class="login-card">
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Ресетирај ja лозинката</p></div>
+    <div id="forgotPasswordForm">
+      <label class="field-label" style="margin-top:20px; display:block;">Email</label>
+      <input class="login-input" id="forgotEmail" type="email" placeholder="твоја@email.com">
+      <button class="login-btn" id="forgotSubmitBtn">Испрати линк за ресетирање</button>
+      <div id="forgotError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
+    </div>
+    <div id="forgotPasswordSuccess" style="display:none; text-align:center;">
+      <div style="font-size:40px; margin-bottom:14px;">📧</div>
+      <p style="color:var(--ink); font-size:14px; line-height:1.6;">Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).</p>
+    </div>
+    <div style="text-align:center; margin-top:18px;">
+      <a href="#" id="backToLoginFromForgotLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">← Назад кон најава</a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RESET PASSWORD ================= -->
+<div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
+  background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
+  <div class="login-card">
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Постави нова лозинка</p></div>
+    <label class="field-label" style="margin-top:20px; display:block;">Нова лозинка</label>
+    <input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери">
+    <label class="field-label">Потврди ja лозинката</label>
+    <input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja">
+    <button class="login-btn" id="resetSubmitBtn">Зачувај ja новата лозинка</button>
+    <div id="resetError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
+    <div id="resetSuccess" style="display:none; color:var(--leaf); font-size:13px; text-align:center; margin-top:10px;"></div>
   </div>
 </div>
 
@@ -834,6 +871,85 @@
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('registerScreen').style.display = 'flex';
   });
+
+  /* ===================== FORGOT / RESET PASSWORD ===================== */
+  document.getElementById('goToForgotPasswordLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    document.getElementById('forgotPasswordForm').style.display = 'block';
+    document.getElementById('forgotPasswordSuccess').style.display = 'none';
+    document.getElementById('forgotError').style.display = 'none';
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('forgotPasswordScreen').style.display = 'flex';
+  });
+  document.getElementById('backToLoginFromForgotLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    document.getElementById('forgotPasswordScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  });
+
+  document.getElementById('forgotSubmitBtn').addEventListener('click', async ()=>{
+    const email = document.getElementById('forgotEmail').value.trim();
+    const errBox = document.getElementById('forgotError');
+    errBox.style.display = 'none';
+    if(!email){ errBox.textContent = 'Внеси email.'; errBox.style.display = 'block'; return; }
+
+    const btn = document.getElementById('forgotSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Се испраќа...';
+    try{
+      await apiCall('/auth/forgot-password', { method:'POST', body: JSON.stringify({ email }) });
+      document.getElementById('forgotPasswordForm').style.display = 'none';
+      document.getElementById('forgotPasswordSuccess').style.display = 'block';
+    } catch(err){
+      errBox.textContent = err.message || 'Грешка. Пробај повторно.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Испрати линк за ресетирање';
+    }
+  });
+
+  document.getElementById('resetSubmitBtn').addEventListener('click', async ()=>{
+    const p1 = document.getElementById('resetPassword1').value;
+    const p2 = document.getElementById('resetPassword2').value;
+    const errBox = document.getElementById('resetError');
+    const successBox = document.getElementById('resetSuccess');
+    errBox.style.display = 'none'; successBox.style.display = 'none';
+
+    if(p1.length < 8){ errBox.textContent = 'Лозинката мора да има барем 8 карактери.'; errBox.style.display='block'; return; }
+    if(p1 !== p2){ errBox.textContent = 'Лозинките не се совпаѓаат.'; errBox.style.display='block'; return; }
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset_token');
+    if(!token){ errBox.textContent = 'Невалиден линк.'; errBox.style.display='block'; return; }
+
+    const btn = document.getElementById('resetSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Се зачувува...';
+    try{
+      await apiCall('/auth/reset-password', { method:'POST', body: JSON.stringify({ token, password: p1 }) });
+      successBox.textContent = '✓ Лозинката е сменета! Пренасочување кон најава...';
+      successBox.style.display = 'block';
+      setTimeout(()=>{
+        window.history.replaceState({}, '', window.location.pathname);
+        document.getElementById('resetPasswordScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+      }, 2000);
+    } catch(err){
+      errBox.textContent = err.message || 'Линкот не важи или е истечен.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Зачувај ja новата лозинка';
+    }
+  });
+
+  // ако страницата се отвора со ?reset_token=... во URL-то, покажи го екранот за нова лозинка
+  (function checkResetTokenInUrl(){
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('reset_token')){
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('resetPasswordScreen').style.display = 'flex';
+    }
+  })();
+
   document.getElementById('backToLoginLink').addEventListener('click', (e)=>{
     e.preventDefault();
     document.getElementById('registerScreen').style.display = 'none';
@@ -1859,6 +1975,7 @@
 
   /* ---- обиди се да ja обновиш сесијата ако веќе постои (по рефреш на страницата) ---- */
   (async function restoreSession(){
+    if(new URLSearchParams(window.location.search).get('reset_token')) return; // приоритет на reset екранот
     const stored = loadSessionFromStorage();
     if(!stored || !stored.token) return;
     session = stored;
