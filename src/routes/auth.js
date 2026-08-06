@@ -28,6 +28,13 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Премногу обиди за регистрација. Пробај повторно подоцна.' }
 });
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Премногу обиди. Пробај повторно за еден час.' }
+});
 
 function issueTokens(user) {
   const accessToken = jwt.sign(
@@ -192,6 +199,65 @@ router.get('/me', requireAuth, async (req, res) => {
   );
   if (rows.length === 0) return res.status(404).json({ error: 'Корисникот не постои.' });
   res.json(rows[0]);
+});
+
+// POST /auth/forgot-password  { email }
+// Секогаш враќа успех (без разлика дали email-от постои) — да не откриваме
+// дали некоја адреса е регистрирана во системот.
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email е задолжителен.' });
+
+  const [rows] = await pool.query('SELECT id, full_name FROM users WHERE email = ?', [email]);
+  const user = rows[0];
+
+  if (user) {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 час
+    await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+      [resetToken, expires, user.id]);
+
+    const resetLink = `${APP_URL}/?reset_token=${resetToken}`;
+    await sendMail({
+      to: email,
+      subject: 'Ресетирање лозинка — PianoForte',
+      html: `
+        <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+          <h2>Заборави ja лозинката?</h2>
+          <p>Здраво, ${user.full_name}!</p>
+          <p>Кликни на копчето подолу за да поставиш нова лозинка. Линкот важи 1 час.</p>
+          <p style="margin:24px 0;">
+            <a href="${resetLink}" style="background:#A97E33; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">Постави нова лозинка</a>
+          </p>
+          <p style="color:#888; font-size:13px;">Ако не си го побарал ова, слободно игнорирај го email-от — лозинката останува непроменета.</p>
+        </div>
+      `
+    });
+  }
+
+  res.json({ ok: true, message: 'Ако email-от постои во системот, испративме линк за ресетирање.' });
+});
+
+// POST /auth/reset-password  { token, password }
+router.post('/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Токенот и новата лозинка се задолжителни.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Лозинката мора да има барем 8 карактери.' });
+
+  const [rows] = await pool.query(
+    'SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+    [token]
+  );
+  const user = rows[0];
+  if (!user) return res.status(400).json({ error: 'Линкот не важи или е истечен. Побарај нов.' });
+
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  await pool.query(
+    'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, refresh_token = NULL, refresh_token_expires = NULL WHERE id = ?',
+    [passwordHash, user.id]
+  );
+
+  res.json({ ok: true, message: 'Лозинката е успешно променета. Најави се со новата лозинка.' });
 });
 
 module.exports = router;
