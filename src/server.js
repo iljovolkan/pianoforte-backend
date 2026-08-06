@@ -16,6 +16,11 @@ const { startCronJobs } = require('./cron');
 
 const app = express();
 
+// Railway (и слични хостинзи) работат преку reverse proxy — без ова, Express
+// не ja гледа вистинската IP адреса на клиентот (сите барања изгледаат исто),
+// што го прави rate limiting-от неточен/неактивен.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
