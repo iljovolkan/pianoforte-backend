@@ -737,13 +737,16 @@
 
   // Секоја група се состои од ДВА термина неделно, кои се повторуваат
   // низ целата учебна година (пр. Вторник + Четврток во 15:00).
+  // Клучевите во `schedule` се "professorId_ден-време" (различни професори
+  // можат слободно да имаат термини во исто ден+време — ограничувањето
+  // важи само по професор, не глобално).
   function findGroupSlots(groupId){
-    return Object.keys(schedule).filter(key => schedule[key].groupId === groupId).sort();
+    return Object.values(schedule).filter(entry => entry.groupId === groupId);
   }
   function slotsLabel(groupId){
-    const keys = findGroupSlots(groupId);
-    if(keys.length===0) return 'Нема доделен термин';
-    return keys.map(k=>k.replace('-',' ')).join('  и  ');
+    const entries = findGroupSlots(groupId);
+    if(entries.length===0) return 'Нема доделен термин';
+    return entries.map(e=>`${e.day} ${e.time}`).sort().join('  и  ');
   }
 
   /* ---- плаќања / претплати ---- */
@@ -864,7 +867,8 @@
       rows.forEach(r=>{
         const mkDay = EN_TO_MK_DAY[r.day_of_week];
         if(!mkDay) return;
-        schedule[mkDay+'-'+r.start_time] = { slotId: r.id, groupId: r.group_id, note: r.note || '' };
+        const key = r.professor_id + '_' + mkDay + '-' + r.start_time;
+        schedule[key] = { slotId: r.id, groupId: r.group_id, note: r.note || '', professorId: r.professor_id, day: mkDay, time: r.start_time };
       });
     } catch(err){ console.error('loadSchedule', err); }
   }
@@ -1471,8 +1475,8 @@
       grid.appendChild(makeCell(h, 'cal-time'));
       days.forEach(d=>{
         const key = d+'-'+h;
-        const rawEntry = schedule[key];
-        const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professor_id===session.realUserId ? rawEntry : null;
+        const rawEntry = schedule[session.realUserId + '_' + key];
+        const entry = rawEntry || null;
         const cell = document.createElement('div');
         cell.className = 'cal-cell cal-slot' + (entry?' booked':'') + (selectedSlotKey===key?' selected':'');
         if(entry){
@@ -1490,9 +1494,9 @@
 
   function lessonsOnWeekday(dayAbbr){
     // сите термини (за овој професор) чиј ден-абревијатура одговара
-    return Object.entries(schedule)
-      .filter(([key, e]) => key.startsWith(dayAbbr+'-') && groups.find(g=>g.id===e.groupId)?.professor_id===session.realUserId)
-      .map(([key, e]) => ({key, hour: key.split('-')[1], group: groups.find(g=>g.id===e.groupId)}));
+    return Object.values(schedule)
+      .filter(e => e.day === dayAbbr && e.professorId === session.realUserId)
+      .map(e => ({key: e.day+'-'+e.time, hour: e.time, group: groups.find(g=>g.id===e.groupId)}));
   }
 
   function renderMonthView(){
@@ -1578,8 +1582,7 @@
     }
     if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>`; return; }
     const [day, hour] = selectedSlotKey.split('-');
-    const rawEntry = schedule[selectedSlotKey];
-    const entry = rawEntry && groups.find(g=>g.id===rawEntry.groupId)?.professor_id===session.realUserId ? rawEntry : null;
+    const entry = schedule[session.realUserId + '_' + selectedSlotKey] || null;
     const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
     const groupOptions = '<option value="">— Слободен термин —</option>' +
       myGroups.map(g=>{
