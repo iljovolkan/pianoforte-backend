@@ -7,20 +7,24 @@ const { runDailyMaintenance } = require('../cron');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
+const VALID_INSTRUMENTS = ['piano', 'gitara', 'el-gitara', 'tapani', 'peenje', 'violina'];
 
 function generateTempPassword(){
   // 12-карактерна случајна лозинка (hex), доволно силна за привремена употреба
   return crypto.randomBytes(6).toString('hex');
 }
 
-// POST /admin/professors  { email, full_name }  — само admin
-// Создава professor сметка со генерирана привремена лозинка.
-// Лозинката се враќа САМО во овој одговор (еднаш) — админот ја споделува рачно
-// со професорот (телефон/порака), додека не се додаде реален email сервис.
+// POST /admin/professors  { email, full_name, instrument }  — само admin
+// Создава professor сметка со генерирана привремена лозинка, "заклучена" на
+// еден инструмент — тоj professor понатаму смее да создава групи само за
+// тоj инструмент (проверено на серверска страна во groups.js).
 router.post('/professors', requireAuth, requireRole('admin'), async (req, res) => {
-  const { email, full_name } = req.body;
-  if (!email || !full_name) {
-    return res.status(400).json({ error: 'Email и име се задолжителни.' });
+  const { email, full_name, instrument } = req.body;
+  if (!email || !full_name || !instrument) {
+    return res.status(400).json({ error: 'Email, име и инструмент се задолжителни.' });
+  }
+  if (!VALID_INSTRUMENTS.includes(instrument)) {
+    return res.status(400).json({ error: 'Невалиден инструмент.' });
   }
 
   const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -32,8 +36,8 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
   const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
   const [result] = await pool.query(
-    'INSERT INTO users (email, password_hash, role, full_name, email_verified) VALUES (?, ?, ?, ?, TRUE)',
-    [email, passwordHash, 'professor', full_name]
+    'INSERT INTO users (email, password_hash, role, full_name, email_verified, instrument) VALUES (?, ?, ?, ?, TRUE, ?)',
+    [email, passwordHash, 'professor', full_name, instrument]
   );
 
   res.status(201).json({
@@ -41,6 +45,7 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
     email,
     full_name,
     role: 'professor',
+    instrument,
     temp_password: tempPassword // еднократно во одговорот, не се чува никаде во чист текст
   });
 });
@@ -48,7 +53,7 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
 // GET /admin/professors — листа на сите професори (само admin)
 router.get('/professors', requireAuth, requireRole('admin'), async (req, res) => {
   const [rows] = await pool.query(
-    "SELECT id, email, full_name, created_at FROM users WHERE role = 'professor' ORDER BY created_at DESC"
+    "SELECT id, email, full_name, instrument, created_at FROM users WHERE role = 'professor' ORDER BY created_at DESC"
   );
   res.json(rows);
 });
@@ -62,9 +67,6 @@ router.get('/students', requireAuth, requireRole('admin'), async (req, res) => {
 });
 
 // DELETE /admin/users/:id — бришe сметка (ученик/професор). Само admin.
-// FOREIGN KEY ... ON DELETE CASCADE ги брише и поврзаните редови
-// (материјали, членства во групи, претплати/купувања за ученик;
-// групите и нивниот распоред за професор).
 router.delete('/users/:id', requireAuth, requireRole('admin'), async (req, res) => {
   const targetId = Number(req.params.id);
   if (targetId === req.user.id) {
@@ -77,8 +79,7 @@ router.delete('/users/:id', requireAuth, requireRole('admin'), async (req, res) 
   res.json({ ok: true });
 });
 
-// POST /admin/run-maintenance — рачно активирање на дневната задача (потсетници +
-// автоматско ослободување), корисно за тестирање без да се чека до 08:00
+// POST /admin/run-maintenance — рачно активирање на дневната задача
 router.post('/run-maintenance', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const result = await runDailyMaintenance();
