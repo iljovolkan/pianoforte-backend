@@ -20,7 +20,7 @@ async function runDailyMaintenance() {
      JOIN users u ON u.id = s.student_id
      JOIN packages p ON p.id = s.package_id
      JOIN groups_table g ON g.id = s.group_id
-     WHERE i.status = 'pending' AND s.released = FALSE`
+     WHERE i.status = 'pending' AND s.released = FALSE AND s.payment_plan != 'trial'`
   );
 
   const today = new Date();
