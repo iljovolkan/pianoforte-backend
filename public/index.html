@@ -586,6 +586,10 @@
             <label>Email</label>
             <input type="email" id="adminProfEmail" placeholder="professor@pianoforte.mk">
           </div>
+          <div class="form-row">
+            <label>Инструмент (professor-от ќе смее да создава групи само за овој инструмент)</label>
+            <select id="adminProfInstrument" class="login-select" style="margin-bottom:0;"></select>
+          </div>
           <button class="send-btn" id="adminCreateProfBtn">Креирај professor сметка</button>
           <div id="adminError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
           <div id="adminSuccessBox" style="display:none; margin-top:16px; background:var(--leaf-pale); border:1px solid #cfe3d3; border-radius:10px; padding:16px;">
@@ -910,7 +914,7 @@
       } else if(user.role === 'admin'){
         session = {role:'admin', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else {
-        session = {role:'professor', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, realUserId:user.id, instrument:user.instrument, token, refreshToken, isRealAccount:true};
       }
       saveSessionToStorage();
       await startApp();
@@ -1357,10 +1361,11 @@
     createCard.style.background = 'var(--surface-2)';
     createCard.innerHTML = `
       <h4 style="margin-bottom:10px;">+ Нова група</h4>
-      <div class="form-row"><input type="text" id="newGroupName" placeholder="Име (пр. Гитара — почетници)"></div>
-      <div class="form-row"><select id="newGroupInstrument" class="login-select" style="margin-bottom:0;">
-        ${INSTRUMENTS.map(i=>`<option value="${i.id}">${i.icon} ${i.label}</option>`).join('')}
-      </select></div>
+      <div class="form-row"><input type="text" id="newGroupName" placeholder="Име (пр. Пијано — почетници)"></div>
+      <div class="form-row">
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Инструмент (според твojot профил)</label>
+        <div style="padding:10px 12px; background:var(--ink-2); border:1px solid var(--line); border-radius:8px; font-size:14px;">${instrumentLabel(session.instrument)}</div>
+      </div>
       <div style="height:8px;"></div>
       <div class="form-row"><select id="newGroupAge" class="login-select" style="margin-bottom:0;">
         ${AGE_RANGES.filter(a=>a.id!=='all').map(a=>`<option value="${a.id}">${a.label}</option>`).join('')}
@@ -1375,11 +1380,10 @@
     document.getElementById('newGroupBtn').addEventListener('click', async ()=>{
       const name = document.getElementById('newGroupName').value.trim();
       if(!name){ alert('Внеси име на групата.'); return; }
-      const instrument = document.getElementById('newGroupInstrument').value;
       const age_range = document.getElementById('newGroupAge').value;
       const level = document.getElementById('newGroupLevel').value;
       try{
-        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity:6, instrument, age_range, level }) });
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity:6, age_range, level }) });
         await loadGroups();
         renderSchedulePage();
       } catch(err){ alert('Грешка: ' + err.message); }
@@ -1807,10 +1811,10 @@
       } else {
         listBox.innerHTML = profs.map(p => `
           <div class="sent-item">
-            <div class="sent-icon">🎹</div>
+            <div class="sent-icon">${p.instrument ? instrumentInfo(p.instrument).icon : '🎹'}</div>
             <div class="sent-meta">
               <div class="t">${escapeHtml(p.full_name)}</div>
-              <div class="sub">${escapeHtml(p.email)}</div>
+              <div class="sub">${escapeHtml(p.email)} · ${p.instrument ? instrumentLabel(p.instrument) : 'нема доделен инструмент'}</div>
             </div>
             <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${p.id}, '${escapeHtml(p.full_name)}')">Избриши</button>
           </div>
@@ -1843,9 +1847,13 @@
     }
   }
 
+  document.getElementById('adminProfInstrument').innerHTML =
+    INSTRUMENTS.map(i=>`<option value="${i.id}">${i.icon} ${i.label}</option>`).join('');
+
   document.getElementById('adminCreateProfBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('adminProfName').value.trim();
     const email = document.getElementById('adminProfEmail').value.trim();
+    const instrument = document.getElementById('adminProfInstrument').value;
     const errBox = document.getElementById('adminError');
     const successBox = document.getElementById('adminSuccessBox');
     errBox.style.display = 'none';
@@ -1863,10 +1871,10 @@
     try{
       const result = await authApiCall('/admin/professors', {
         method:'POST',
-        body: JSON.stringify({ email, full_name:name })
+        body: JSON.stringify({ email, full_name:name, instrument })
       });
       document.getElementById('adminSuccessText').innerHTML =
-        `<strong>${result.full_name}</strong> (${result.email})<br>
+        `<strong>${result.full_name}</strong> (${result.email}) · ${instrumentLabel(result.instrument)}<br>
          Привремена лозинка: <strong style="font-family:'IBM Plex Mono',monospace; background:#fff; padding:2px 8px; border-radius:4px;">${result.temp_password}</strong><br>
          <span style="color:var(--mist);">Сподели ja рачно со професорот — тој веднаш може да се најави со email + оваа лозинка.</span>`;
       successBox.style.display = 'block';
