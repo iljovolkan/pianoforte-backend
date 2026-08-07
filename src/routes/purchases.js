@@ -5,34 +5,31 @@ const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
-const SCHOOL_YEAR_MONTHS = 8;   // училишна година = 8 месеци настава
-const FULL_PLAN_DISCOUNT = 0.05; // 5% попуст ако се плаќа наеднаш
+const HALF_YEAR_DISCOUNT = 0.03; // -3% за полугодишен пакет наеднаш
+const FULL_YEAR_DISCOUNT = 0.05; // -5% за целогодишен пакет наеднаш
 
 /**
- * Пресметува распоред на рати според избраниот план.
- * Враќа низа { number, total, amount, offsetDays }.
+ * Пресметува распоред на рати според избраниот план, за 'annual' пакет
+ * (price_mkd = МЕСЕЧНА цена, 8 месеци годишно).
  */
-function buildInstallmentSchedule(plan, monthlyPrice) {
-  const annualTotal = monthlyPrice * SCHOOL_YEAR_MONTHS;
+function buildAnnualSchedule(plan, monthlyPrice) {
+  const annualTotal = monthlyPrice * 8;
 
   if (plan === 'full') {
-    const amount = Math.round(annualTotal * (1 - FULL_PLAN_DISCOUNT));
+    const amount = Math.round(annualTotal * (1 - FULL_YEAR_DISCOUNT));
     return [{ number: 1, total: 1, amount, offsetDays: 0 }];
   }
-
   if (plan === 'two') {
-    const first = Math.round(annualTotal / 2);
-    const second = annualTotal - first;
+    const halfPrice = Math.round((annualTotal / 2) * (1 - HALF_YEAR_DISCOUNT));
     return [
-      { number: 1, total: 2, amount: first, offsetDays: 0 },
-      { number: 2, total: 2, amount: second, offsetDays: 150 } // ~5 месеци подоцна
+      { number: 1, total: 2, amount: halfPrice, offsetDays: 0 },
+      { number: 2, total: 2, amount: halfPrice, offsetDays: 150 }
     ];
   }
-
-  // 'eight' — стандардно, монтено, без попуст
+  // 'eight' — стандардно, месечно, без попуст
   const schedule = [];
-  for (let i = 0; i < SCHOOL_YEAR_MONTHS; i++) {
-    schedule.push({ number: i + 1, total: SCHOOL_YEAR_MONTHS, amount: monthlyPrice, offsetDays: i * 30 });
+  for (let i = 0; i < 8; i++) {
+    schedule.push({ number: i + 1, total: 8, amount: monthlyPrice, offsetDays: i * 30 });
   }
   return schedule;
 }
@@ -40,16 +37,12 @@ function buildInstallmentSchedule(plan, monthlyPrice) {
 /**
  * POST /purchases
  * body: { package_id, group_id, payment_method_id, payment_plan }
- * payment_plan: 'full' | 'two' | 'eight' (стандардно 'eight' ако не е внесено)
- *
- * ВАЖНО: "payment_method_id" е tokenized референца добиена на клиентска страна
- * од платежниот процесор (пр. Stripe.js "PaymentMethod" или CPay/NestPay hosted
- * fields). Бројот на картичка, CVV и датумот на истек НИКОГАШ не поминуваат
- * низ нашиот сервер.
+ * payment_plan важи само за package_type='annual' ('full'|'two'|'eight').
+ * За 'trial' пакети, планот секогаш е една еднократна уплата.
  */
 router.post('/', requireAuth, requireRole('student'), async (req, res) => {
-  const { package_id, group_id, payment_method_id, payment_plan } = req.body;
-  const plan = ['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight';
+  const { package_id, group_id, payment_method_id } = req.body;
+  let { payment_plan } = req.body;
 
   if (!package_id || !group_id || !payment_method_id) {
     return res.status(400).json({ error: 'package_id, group_id и payment_method_id се задолжителни.' });
@@ -57,9 +50,15 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
 
   const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
   if (!pkg) return res.status(404).json({ error: 'Пакетот не постои.' });
+  if (pkg.package_type === 'individual') {
+    return res.status(400).json({ error: 'Индивидуалните часови се закажуваат преку /individual-bookings, не преку /purchases.' });
+  }
 
   const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [group_id]);
   if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+  if (group.instrument !== pkg.instrument) {
+    return res.status(400).json({ error: 'Пакетот и групата се за различни инструменти.' });
+  }
 
   const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [group_id]);
   if (members.length >= group.capacity) {
@@ -69,6 +68,8 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     return res.status(409).json({ error: 'Веќе си во оваа група.' });
   }
 
+  const plan = pkg.package_type === 'trial' ? 'trial' : (['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight');
+
   const [purchaseResult] = await pool.query(
     `INSERT INTO purchases (student_id, package_id, group_id, payment_status)
      VALUES (?, ?, ?, 'pending')`,
@@ -76,8 +77,6 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   );
 
   try {
-    // Овде оди реалниот повик до платежниот процесор за ПРВАТА рата, пр.:
-    //   const charge = await stripe.paymentIntents.create({ amount: schedule[0].amount * 100, ... });
     const fakeProviderRef = 'SIMULATED-' + Date.now();
 
     await pool.query(
@@ -89,7 +88,12 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       [group_id, req.user.id]
     );
 
-    const schedule = buildInstallmentSchedule(plan, Number(pkg.price_mkd));
+    // распоред на рати: 'trial' = 1 еднократна уплата за целата цена на пакетот;
+    // 'annual' = 8/2/целосно според buildAnnualSchedule
+    const schedule = plan === 'trial'
+      ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
+      : buildAnnualSchedule(plan, Number(pkg.price_mkd));
+
     const today = new Date();
     const firstDueDate = today.toISOString().slice(0, 10);
 
@@ -113,9 +117,8 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       if (!isFirst && !nextPendingDueDate) nextPendingDueDate = dueDate;
     }
 
-    // ако има повеќе од 1 рата, ажурирај next_due_date на следната неплатена;
-    // ако сите рати се веќе платени (пр. "целосно" план), нема причина за
-    // предупредување — терминот се смета за сигурен цела учебна година
+    // 'trial' и 'full' немаат преостанати рати — терминот е "сигурен" долго време
+    // (trial не влегува во дневната cron проверка воопшто — видете cron.js)
     if (nextPendingDueDate) {
       await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
         [nextPendingDueDate.toISOString().slice(0, 10), subResult.insertId]);
@@ -126,7 +129,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
         [farFuture.toISOString().slice(0, 10), subResult.insertId]);
     }
 
-    const planLabel = { full: 'Целосно (1 уплата)', two: '2 рати', eight: '8 месечни рати' }[plan];
+    const planLabel = { full: 'Целосно (1 уплата)', two: '2 полугодишни рати', eight: '8 месечни рати', trial: 'Пробен пакет (1 уплата)' }[plan];
     const remainingHtml = schedule.length > 1
       ? `<p>Останати рати: <strong>${schedule.length - 1}</strong>. Следна рата: <strong>${nextPendingDueDate ? nextPendingDueDate.toLocaleDateString('mk-MK') : '—'}</strong> (${schedule[1].amount} ден.)</p>`
       : '';
