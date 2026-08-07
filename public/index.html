@@ -24,7 +24,8 @@
     --wine:#B3555F; --wine-pale:#F6E4E6;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden;}
+  html{overflow-x:hidden; width:100%;}
+  body{background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; overflow-x:hidden; width:100%; overscroll-behavior-x:none;}
   h1,h2,h3{font-family:'Fraunces',serif; font-weight:500;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   button{font-family:'Inter',sans-serif;}
@@ -181,7 +182,7 @@
   .mini-cell.blank{background:transparent;}
   .year-legend{display:flex; gap:16px; margin-top:16px; font-size:11.5px; color:var(--mist); align-items:center;}
   .year-legend .lg-swatch{width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle;}
-  .cal-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fff; width:100%; -webkit-overflow-scrolling:touch;}
+  .cal-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fff; width:100%; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;}
   .cal-grid{display:grid; grid-template-columns:70px repeat(5, 1fr); min-width:680px;}
   .cal-cell{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px 6px; font-size:12px; min-height:56px;}
   .cal-head{background:var(--surface-2); font-weight:600; text-align:center; padding:10px 6px; font-size:12.5px; position:sticky; top:0;}
@@ -293,7 +294,7 @@
     .brand{font-size:16px; flex-shrink:0;}
     .topnav{
       order:3; width:100%; overflow-x:auto; flex-wrap:nowrap;
-      -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:4px;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:4px; overscroll-behavior-x:contain;
     }
     .topnav::-webkit-scrollbar{display:none;}
     .topnav button{padding:8px 12px; font-size:13px; white-space:nowrap; flex-shrink:0;}
