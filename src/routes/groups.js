@@ -24,9 +24,13 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(groups);
 });
 
-// POST /groups  { name, capacity, instrument, age_range, level }  — само професор/админ
+// POST /groups  { name, capacity, age_range, level }  — само професор/админ
+// Инструментот НЕ доаѓа од телото на барањето — секогаш се презема од
+// сопствениот профил на professor-от (кого admin-от го "заклучил" на еден
+// инструмент при создавање на сметката). Ова спречува professor по пијано
+// случајно (или намерно) да создаде група за гитара.
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { name, capacity, instrument, age_range, level } = req.body;
+  const { name, capacity, age_range, level } = req.body;
   if (!name) return res.status(400).json({ error: 'Името на групата е задолжително.' });
   const cap = capacity || 6;
   if (cap < 1 || cap > 6) return res.status(400).json({ error: 'Капацитетот мора да биде помеѓу 1 и 6.' });
@@ -34,9 +38,15 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
     return res.status(400).json({ error: 'Невалидно ниво.' });
   }
 
+  const [[me]] = await pool.query('SELECT instrument FROM users WHERE id = ?', [req.user.id]);
+  const instrument = me && me.instrument ? me.instrument : req.body.instrument;
+  if (!instrument) {
+    return res.status(400).json({ error: 'Твojot профил нема доделен инструмент — контактирај admin.' });
+  }
+
   const [result] = await pool.query(
     'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, cap, req.user.id, instrument || 'piano', age_range || '7-10', level || 'pocetnik']
+    [name, cap, req.user.id, instrument, age_range || '7-10', level || 'pocetnik']
   );
   res.status(201).json({ id: result.insertId, name, capacity: cap, instrument, age_range, level });
 });
