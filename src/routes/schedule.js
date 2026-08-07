@@ -9,8 +9,8 @@ const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // формат "HH:MM"
 // GET /schedule — целиот неделен распоред со група + членови по термин
 router.get('/', requireAuth, async (req, res) => {
   const [slots] = await pool.query(
-    `SELECT s.id, s.day_of_week, s.start_time, s.note, g.id AS group_id, g.name AS group_name,
-            g.capacity, g.instrument, g.age_range, g.level
+    `SELECT s.id, s.day_of_week, s.start_time, s.note, s.professor_id,
+            g.id AS group_id, g.name AS group_name, g.capacity, g.instrument, g.age_range, g.level
      FROM schedule_slots s
      JOIN groups_table g ON g.id = s.group_id`
   );
@@ -29,7 +29,8 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // POST /schedule  { group_id, day_of_week, start_time, note }  — доделува термин на група
-// Секоја група обично добива ДВА термини неделно (пр. вто+чет), со по два повика.
+// Ограничувањето за "веќе зафатен термин" важи ПО ПРОФЕСОР — различни
+// професори слободно можат да имаат групи во исто време.
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const { group_id, day_of_week, start_time, note } = req.body;
 
@@ -37,15 +38,21 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
     return res.status(400).json({ error: 'Невалидни податоци за термин (ден или време HH:MM).' });
   }
 
+  const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
+  if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+  if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Оваа група не е твoja.' });
+  }
+
   try {
     const [result] = await pool.query(
-      'INSERT INTO schedule_slots (group_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?)',
-      [group_id, day_of_week, start_time, note || null]
+      'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?, ?)',
+      [group_id, group.professor_id, day_of_week, start_time, note || null]
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'Веќе постои термин во ова време.' });
+      return res.status(409).json({ error: 'Веќе имаш друга група во овој термин.' });
     }
     console.error(err);
     res.status(500).json({ error: 'Грешка на серверот.' });
