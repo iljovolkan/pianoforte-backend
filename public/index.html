@@ -315,6 +315,7 @@
     <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
       <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">Немаш профил? Регистрирај се →</a>
       <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;">Ja заборави лозинката?</a>
+      <a href="#" id="openTermsFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none; margin-top:6px;">Услови за користење и Политика на приватност</a>
     </div>
   </div>
 </div>
@@ -355,7 +356,71 @@
   </div>
 </div>
 
-<!-- ================= REGISTER ================= -->
+<!-- ================= TERMS / PRIVACY ================= -->
+<div id="termsScreen" style="display:none; min-height:100vh; padding:24px; background:var(--bg);">
+  <div style="max-width:720px; margin:0 auto;">
+    <button id="closeTermsBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;">← Назад</button>
+    <div class="login-card" style="max-width:100%; text-align:left;">
+      <h1 style="font-size:22px; margin-bottom:18px;">Услови за користење и Политика на приватност</h1>
+      <div style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+        <p style="margin-bottom:14px;">Добредојдовте на pianoforte.edu.mk. Со вашиот пристап на страничката/платформата, се согласувате со општите одредби објавени подолу. Ве молиме прочитајте ги внимателно.</p>
+        <p style="margin-bottom:14px;">pianoforte.edu.mk претставува интернет платформа за испорака на онлајн подучување за свирење на инструмент. Преносот на податоците се врши на серверот на pianoforte.edu.mk.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Електронска комуникација</h3>
+        <p style="margin-bottom:14px;">Со посета на страничката, регистрација или испраќање е-порака на info@pianoforte.edu.mk, воспоставувате електронска комуникација со нас. Нашиот одговор ќе следи преку е-порака и/или известувањата прикажани на страничката. Регистрираните членови се согласуваат да добиваат информативни и промотивни билтени — доколку не сакате, испратете барање за прекин на регистрацијата.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Корисничко име и лозинка</h3>
+        <p style="margin-bottom:14px;">Со најавување во системот, се согласувате на наш ограничен влез во вашиот сметач, за приватноста на вашето корисничко име и лозинка и сите активности поврзани со нив.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Пристап</h3>
+        <p style="margin-bottom:14px;">Малолетни лица под 18 годишна возраст немаат право на пристап без согласност или надзор од родител/старател овластен за плаќањето со неговата/нејзината дебитна или кредитна картичка.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на лични податоци</h3>
+        <p style="margin-bottom:14px;">Основна цел при прибирање на личните информации е да обезбедиме сигурно, лесно и ефикасно користење на страничката. Се согласувате дека може да ги користиме вашите лични податоци за: да ви ги овозможиме услугите и поддршката кои ќе ги побарате; решавање на ваши барања или проблеми; прилагодување, мерење и подобрување на нашите услуги и содржина.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Правила на приватност и заштита на личните податоци</h3>
+        <p style="margin-bottom:14px;">Прибирањето на личните податоци е усогласено со прописите за заштита на личните податоци. Личните податоци се прибираат, обработуваат и чуваат исклучиво за потребите на нашата страничка — име, презиме, адреса, телефонски број и електронска пошта, со цел непречено испорачување на услугата изучување музички инструмент. Податоците се чуваат не подолго од што е потребно за целите поради кои се собрани, по што се бришат и уништуваат.</p>
+        <p style="margin-bottom:14px;"><strong>Малолетните лица не смеат да даваат лични податоци без дозвола од родител или старател. Пијано Форте никогаш нема да проследи на трети лица лични податоци од малолетници.</strong> Им препорачуваме на сите родители и старатели да ги научат своите деца на безбедно и одговорно ракување со личните податоци на интернет.</p>
+        <p style="margin-bottom:14px;">За прашања или забелешки на овие правила, пишете на info@pianoforte.edu.mk. На ваше барање, во рок од 7 дена ќе бидете известени кои од вашите лични податоци се прибрани.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на вашата корисничка сметка</h3>
+        <p style="margin-bottom:14px;">Вашата лозинка е клучот од вашата корисничка сметка — никому не ja откривајте. Доколку изгубите контрола врз лозинката, можете да станете предмет на измами и злоупотреби направени во ваше име. Доколку лозинката ви е пробиена, веднаш променете ja и известете нè.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">„Колачиња" / Технологија на следење</h3>
+        <p style="margin-bottom:14px;">Нашата страничка може да употребува „колачиња" (cookies) и технологија на следење, корисни за подобрување на страната и прилагодување кон потребите на посетителите. Лични податоци не можат да се прибираат преку „колачиња".</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Давање на лични податоци на користење</h3>
+        <p style="margin-bottom:14px;">Единствено врз основа на закон, вашите лични податоци можат да бидат дадени на користење на државни органи или други институции (пр. дозвола побарана од овластена институција врз основа на закон, заштита од измама, истрага за веќе случена измама).</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Чување на личните податоци</h3>
+        <p style="margin-bottom:14px;">Личните податоци се безбедно сочувани од губење, уништување, фалсификување и неовластен пристап. Единствено овластени лица имаат пристап. Преносот е заштитен со соодветни методи, а се преземаат сите потребни технички и организациски мерки за заштита.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Опис на услугите и општи услови на работење</h3>
+        <p style="margin-bottom:14px;">Учебната година во Пијано Форте започнува на 1 септември и трае индивидуално за секој клиент во зависност од купениот фонд на часови. Пијано Форте нема да работи на признатите државни празници, но тоа нема да се одрази на испорачаниот фонд на часови — секој изгубен час поради државен празник ќе биде презакажан во друг термин. Однапред најавени отсуства (не повеќе од 4 часа по семестар) и отсуства поради болест ќе бидат одработени во други термини. Час кој не бил одржан поради ненајавено отсуство од клиентот нема да се одработува и ќе се смета за реализиран. Час кој не бил одржан поради откажување од Пијано Форте, ќе биде одработен.</p>
+        <p style="margin-bottom:14px;">Училиштето има право на организирање јавни настапи и право да ги избере учесниците. Училиштето започнува со испорака на наставата по завршена уплата на членарина. <strong>Пијано Форте не врши рефундација/поврат на веќе уплатените средства</strong> (уплатените средства можат да се пренасочат на друг краен корисник со претходна најава).</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Школарина</h3>
+        <p style="margin-bottom:14px;">Школарината на сајтот е изразена во денари.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Авторски права</h3>
+        <p style="margin-bottom:14px;">Сите содржини на овој веб портал/платформа се сопственост на Пијано Форте. Употреба на истите за иста или слична дејност не е дозволена и се смета за кршење на авторските и сопственичките права.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Ограничување од одговорност</h3>
+        <p style="margin-bottom:14px;">pianoforte.edu.mk презема сите расположливи мерки за највисока сигурност, но не може да гарантира безбедност од напад на хакери, компјутерски вируси и слично. Се согласувате да ja употребувате нашата платформа на сопствен ризик.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Законски одредби</h3>
+        <p style="margin-bottom:14px;">Со посетата на pianoforte.edu.mk се согласувате со овие општи одредби и со сите важечки закони во Македонија. pianoforte.edu.mk го задржува правото да ги менува изгледот, содржината и условите во кое било време.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Електронска фактура</h3>
+        <p style="margin-bottom:14px;">По секоја успешно извршена уплата, по електронска пошта ќе добиете електронска сметка. Доколку уплатувачот е правно лице, фактурата ќе ja добие во писмена форма по испратено барање на info@pianoforte.edu.mk.</p>
+
+        <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Адреса: Пијано Форте ДОО Скопје, ул. Виенска 1 Б/1-2, Карпош, 1000 Скопје, Македонија.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:480px;">
@@ -372,6 +437,11 @@
 
     <label class="field-label">Инструмент</label>
     <div class="type-toggle" id="regInstrumentToggle" style="flex-wrap:wrap; margin-bottom:18px;"></div>
+
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;">
+      <input type="checkbox" id="regTermsCheckbox" style="margin-top:2px;">
+      <span>Се согласувам со <a href="#" id="openTermsFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">Условите за користење и Политиката на приватност</a>, и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.</span>
+    </label>
 
     <button class="login-btn" id="registerBtn">Креирај профил</button>
     <div id="registerError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
@@ -872,6 +942,25 @@
     document.getElementById('registerScreen').style.display = 'flex';
   });
 
+  /* ===================== TERMS / PRIVACY ===================== */
+  let termsReturnScreenId = 'loginScreen';
+  function openTermsScreen(fromScreenId){
+    termsReturnScreenId = fromScreenId;
+    document.getElementById(fromScreenId).style.display = 'none';
+    document.getElementById('termsScreen').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+  document.getElementById('openTermsFromLoginLink').addEventListener('click', (e)=>{
+    e.preventDefault(); openTermsScreen('loginScreen');
+  });
+  document.getElementById('openTermsFromRegisterLink').addEventListener('click', (e)=>{
+    e.preventDefault(); openTermsScreen('registerScreen');
+  });
+  document.getElementById('closeTermsBtn').addEventListener('click', ()=>{
+    document.getElementById('termsScreen').style.display = 'none';
+    document.getElementById(termsReturnScreenId).style.display = 'flex';
+  });
+
   /* ===================== FORGOT / RESET PASSWORD ===================== */
   document.getElementById('goToForgotPasswordLink').addEventListener('click', (e)=>{
     e.preventDefault();
@@ -967,6 +1056,11 @@
 
     if(!name || !email || !password || !age || !regInstrument){
       errBox.textContent = 'Пополни ги сите полиња и избери инструмент.';
+      errBox.style.display = 'block';
+      return;
+    }
+    if(!document.getElementById('regTermsCheckbox').checked){
+      errBox.textContent = 'Мора да се согласиш со Условите за користење и Политиката на приватност.';
       errBox.style.display = 'block';
       return;
     }
