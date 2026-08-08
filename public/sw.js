@@ -1,11 +1,10 @@
 // PianoForte service worker — овозможува инсталирање како апликација (Add to
-// Home Screen) и минимален offline fallback за самата обвивка на страницата.
-// НЕ ги кешира API повиците (/auth, /groups итн.) — тие секогаш мора да се
-// свежи од серверот.
+// Home Screen). Стратегија: HTML/навигацијата секогаш прво оди на мрежата
+// (за корисникот веднаш да ги гледа најновите промени), статичните икони/
+// manifest се cache-first (не се менуваат често). НЕ ги кешира API повиците.
 
-const CACHE_NAME = 'pianoforte-shell-v1';
+const CACHE_NAME = 'pianoforte-shell-v2'; // зголемено — ja поништува старата верзија кај сите инсталирани корисници
 const SHELL_FILES = [
-  '/',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
@@ -32,13 +31,16 @@ self.addEventListener('fetch', (event) => {
 
   // никогаш не кешираj API повици — секогаш мора да одат до серверот
   const isApiCall = ['/auth', '/groups', '/schedule', '/materials', '/packages',
-    '/purchases', '/admin', '/subscriptions', '/installments', '/health']
+    '/purchases', '/admin', '/subscriptions', '/installments', '/individual-bookings', '/health']
     .some((p) => url.pathname.startsWith(p));
   if (isApiCall || event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
+  // Навигација / самата страница (index.html) — секогаш прво мрежа, кешот е
+  // само резервна опција ако интернетот е прекинат (offline fallback)
+  const isNavigation = event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html');
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
@@ -46,8 +48,22 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => cached);
-      return cached || network;
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Статични фајлови (икони, manifest) — cache-first, ретко се менуваат
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return res;
+      });
     })
   );
 });
