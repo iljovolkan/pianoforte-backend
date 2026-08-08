@@ -4,10 +4,11 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво
+// GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво, professor
 router.get('/', requireAuth, async (req, res) => {
   const [groups] = await pool.query(
-    'SELECT id, name, capacity, professor_id, instrument, age_range, level FROM groups_table'
+    `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, u.full_name AS professor_name
+     FROM groups_table g JOIN users u ON u.id = g.professor_id`
   );
 
   for (const g of groups) {
