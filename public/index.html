@@ -817,6 +817,103 @@
 
 <script>
 (function(){
+  /* ===================== ПРЕВОДИ (МК / EN) ===================== */
+  const translations = {
+    mk: {
+      login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
+      login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
+      login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење и Политика на приватност',
+      logout:'Одјави се', refresh_title:'Освежи',
+      nav_index:'Почетна', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
+      role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
+      eyebrow_index:'Почетна', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
+      schedule_title:'Календар по групи',
+      schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
+      profile_eyebrow:'Профил', profile_title:'Твojot профил', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
+      profile_info_title:'Лични податоци', profile_name_label:'Име и презиме', profile_email_label:'Email',
+      profile_email_hint:'Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.',
+      profile_save_btn:'Зачувај промени', profile_password_title:'Смени лозинка', profile_current_pw:'Тековна лозинка',
+      profile_new_pw:'Нова лозинка', profile_confirm_pw:'Потврди ja новата лозинка', profile_pw_btn:'Смени лозинка',
+      profile_saved:'✓ Зачувано.', profile_saved_verify:'✓ Зачувано — провери го новиот email за да го потврдиш.',
+      profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.',
+      profile_packages_title:'Твоите пакети', profile_no_packages:'Сè уште немаш активни пакети или закажувања.',
+      profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
+
+      reg_tagline:'Креирај профил за ученик', reg_name_label:'Име и презиме', reg_age_label:'Возраст на детето',
+      reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
+      reg_terms_pre:'Се согласувам со', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
+
+      index_title_student:'Твоите материјали', index_title_professor:'Материјали',
+      index_sub_student:'Материјалите се појавуваат откако ќе влезеш во училница.',
+      index_sub_professor:'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.',
+      view_week:'Недела', view_month:'Месец', view_year:'Година',
+      status_queued:'Во ред', status_delivered:'Ново', status_opened:'Отворено', status_done:'Завршено',
+      pay_paid:'Платено', pay_due_soon:'Наближува рок', pay_late:'Задоцнето', pay_released:'Термин ослободен', pay_none:'Нема пакет',
+      plan_full:'Целосно (1 уплата)', plan_two:'2 полугодишни рати', plan_eight:'8 месечни рати', plan_trial:'Пробен пакет (1 уплата)',
+      inst_pending:'Чека', inst_paid:'Платена', inst_released:'Откажана',
+      mat_note:'Ноти', mat_audio:'Аудио', mat_task:'Задача'
+    },
+    en: {
+      login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
+      login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
+      login_forgot:'Forgot your password?', login_terms_link:'Terms of Use and Privacy Policy',
+      logout:'Log out', refresh_title:'Refresh',
+      nav_index:'Home', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
+      role_student:'Student', role_professor:'Professor', role_admin:'Admin',
+      eyebrow_index:'Home', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
+      schedule_title:'Group Calendar',
+      schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
+      profile_eyebrow:'Profile', profile_title:'Your profile', profile_sub:'Update your personal details and password.',
+      profile_info_title:'Personal details', profile_name_label:'Full name', profile_email_label:'Email',
+      profile_email_hint:'If you change your email, you may need to verify it again.',
+      profile_save_btn:'Save changes', profile_password_title:'Change password', profile_current_pw:'Current password',
+      profile_new_pw:'New password', profile_confirm_pw:'Confirm new password', profile_pw_btn:'Change password',
+      profile_saved:'✓ Saved.', profile_saved_verify:'✓ Saved — check your new email to verify it.',
+      profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.',
+      profile_packages_title:'Your packages', profile_no_packages:"You don't have any active packages or bookings yet.",
+      profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
+
+      reg_tagline:'Create a student account', reg_name_label:'Full name', reg_age_label:"Child's age",
+      reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
+      reg_terms_pre:'I agree to the', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
+
+      index_title_student:'Your materials', index_title_professor:'Materials',
+      index_sub_student:'Materials appear once you enter the classroom.',
+      index_sub_professor:'Materials appear on the tablet once the student enters the classroom.',
+      view_week:'Week', view_month:'Month', view_year:'Year',
+      status_queued:'Queued', status_delivered:'New', status_opened:'Opened', status_done:'Done',
+      pay_paid:'Paid', pay_due_soon:'Due soon', pay_late:'Overdue', pay_released:'Slot released', pay_none:'No package',
+      plan_full:'Full (1 payment)', plan_two:'2 half-year installments', plan_eight:'8 monthly installments', plan_trial:'Trial package (1 payment)',
+      inst_pending:'Pending', inst_paid:'Paid', inst_released:'Cancelled',
+      mat_note:'Notes', mat_audio:'Audio', mat_task:'Task'
+    }
+  };
+  let currentLang = localStorage.getItem('pf_lang') || 'mk';
+  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || translations.mk[key] || key; }
+
+  function applyLanguage(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
+    document.documentElement.lang = currentLang;
+    renderRegTermsText();
+    if(session){
+      buildNav();
+      const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
+      document.getElementById('uRole').textContent = t(roleKey);
+      if(session.role==='admin'){ renderAdminPage(); }
+      else { renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage(); }
+    }
+  }
+
+  document.getElementById('langSwitch').addEventListener('click', e=>{
+    const btn = e.target.closest('.lang-btn'); if(!btn) return;
+    currentLang = btn.dataset.lang;
+    localStorage.setItem('pf_lang', currentLang);
+    applyLanguage();
+  });
+
 
   /* ===================== DATA ===================== */
   const INSTRUMENTS = [
@@ -1255,103 +1352,6 @@
   });
 
   /* ===================== APP SHELL / NAV ===================== */
-  /* ===================== ПРЕВОДИ (МК / EN) ===================== */
-  const translations = {
-    mk: {
-      login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
-      login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
-      login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење и Политика на приватност',
-      logout:'Одјави се', refresh_title:'Освежи',
-      nav_index:'Почетна', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
-      role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
-      eyebrow_index:'Почетна', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
-      schedule_title:'Календар по групи',
-      schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
-      profile_eyebrow:'Профил', profile_title:'Твojot профил', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
-      profile_info_title:'Лични податоци', profile_name_label:'Име и презиме', profile_email_label:'Email',
-      profile_email_hint:'Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.',
-      profile_save_btn:'Зачувај промени', profile_password_title:'Смени лозинка', profile_current_pw:'Тековна лозинка',
-      profile_new_pw:'Нова лозинка', profile_confirm_pw:'Потврди ja новата лозинка', profile_pw_btn:'Смени лозинка',
-      profile_saved:'✓ Зачувано.', profile_saved_verify:'✓ Зачувано — провери го новиот email за да го потврдиш.',
-      profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.',
-      profile_packages_title:'Твоите пакети', profile_no_packages:'Сè уште немаш активни пакети или закажувања.',
-      profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
-
-      reg_tagline:'Креирај профил за ученик', reg_name_label:'Име и презиме', reg_age_label:'Возраст на детето',
-      reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
-      reg_terms_pre:'Се согласувам со', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
-
-      index_title_student:'Твоите материјали', index_title_professor:'Материјали',
-      index_sub_student:'Материјалите се појавуваат откако ќе влезеш во училница.',
-      index_sub_professor:'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.',
-      view_week:'Недела', view_month:'Месец', view_year:'Година',
-      status_queued:'Во ред', status_delivered:'Ново', status_opened:'Отворено', status_done:'Завршено',
-      pay_paid:'Платено', pay_due_soon:'Наближува рок', pay_late:'Задоцнето', pay_released:'Термин ослободен', pay_none:'Нема пакет',
-      plan_full:'Целосно (1 уплата)', plan_two:'2 полугодишни рати', plan_eight:'8 месечни рати', plan_trial:'Пробен пакет (1 уплата)',
-      inst_pending:'Чека', inst_paid:'Платена', inst_released:'Откажана',
-      mat_note:'Ноти', mat_audio:'Аудио', mat_task:'Задача'
-    },
-    en: {
-      login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
-      login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
-      login_forgot:'Forgot your password?', login_terms_link:'Terms of Use and Privacy Policy',
-      logout:'Log out', refresh_title:'Refresh',
-      nav_index:'Home', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
-      role_student:'Student', role_professor:'Professor', role_admin:'Admin',
-      eyebrow_index:'Home', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
-      schedule_title:'Group Calendar',
-      schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
-      profile_eyebrow:'Profile', profile_title:'Your profile', profile_sub:'Update your personal details and password.',
-      profile_info_title:'Personal details', profile_name_label:'Full name', profile_email_label:'Email',
-      profile_email_hint:'If you change your email, you may need to verify it again.',
-      profile_save_btn:'Save changes', profile_password_title:'Change password', profile_current_pw:'Current password',
-      profile_new_pw:'New password', profile_confirm_pw:'Confirm new password', profile_pw_btn:'Change password',
-      profile_saved:'✓ Saved.', profile_saved_verify:'✓ Saved — check your new email to verify it.',
-      profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.',
-      profile_packages_title:'Your packages', profile_no_packages:"You don't have any active packages or bookings yet.",
-      profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
-
-      reg_tagline:'Create a student account', reg_name_label:'Full name', reg_age_label:"Child's age",
-      reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
-      reg_terms_pre:'I agree to the', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
-
-      index_title_student:'Your materials', index_title_professor:'Materials',
-      index_sub_student:'Materials appear once you enter the classroom.',
-      index_sub_professor:'Materials appear on the tablet once the student enters the classroom.',
-      view_week:'Week', view_month:'Month', view_year:'Year',
-      status_queued:'Queued', status_delivered:'New', status_opened:'Opened', status_done:'Done',
-      pay_paid:'Paid', pay_due_soon:'Due soon', pay_late:'Overdue', pay_released:'Slot released', pay_none:'No package',
-      plan_full:'Full (1 payment)', plan_two:'2 half-year installments', plan_eight:'8 monthly installments', plan_trial:'Trial package (1 payment)',
-      inst_pending:'Pending', inst_paid:'Paid', inst_released:'Cancelled',
-      mat_note:'Notes', mat_audio:'Audio', mat_task:'Task'
-    }
-  };
-  let currentLang = localStorage.getItem('pf_lang') || 'mk';
-  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || translations.mk[key] || key; }
-
-  function applyLanguage(){
-    document.querySelectorAll('[data-i18n]').forEach(el=>{
-      el.textContent = t(el.dataset.i18n);
-    });
-    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
-    document.documentElement.lang = currentLang;
-    renderRegTermsText();
-    if(session){
-      buildNav();
-      const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
-      document.getElementById('uRole').textContent = t(roleKey);
-      if(session.role==='admin'){ renderAdminPage(); }
-      else { renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage(); }
-    }
-  }
-
-  document.getElementById('langSwitch').addEventListener('click', e=>{
-    const btn = e.target.closest('.lang-btn'); if(!btn) return;
-    currentLang = btn.dataset.lang;
-    localStorage.setItem('pf_lang', currentLang);
-    applyLanguage();
-  });
-
   /* ===================== REFRESH ===================== */
   document.getElementById('refreshBtn').addEventListener('click', async ()=>{
     if(!session) return;
