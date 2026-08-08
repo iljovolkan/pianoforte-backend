@@ -73,6 +73,13 @@
   .u-name{font-size:13.5px; font-weight:600;}
   .u-role{font-size:11px; color:var(--mist);}
   .logout-btn{background:none; border:1px solid var(--line); border-radius:7px; padding:7px 12px; font-size:12.5px; color:var(--mist); cursor:pointer;}
+  .icon-btn{background:none; border:1px solid var(--line); border-radius:7px; width:32px; height:32px; font-size:15px; color:var(--mist); cursor:pointer; transition:.2s;}
+  .icon-btn:hover{background:var(--surface-2); color:var(--ink);}
+  .icon-btn.spinning{animation:spin .8s linear infinite;}
+  @keyframes spin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+  .lang-switch{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden;}
+  .lang-btn{background:none; border:none; padding:6px 9px; font-size:11px; color:var(--mist); cursor:pointer; font-weight:600;}
+  .lang-btn.active{background:var(--lilac-pale); color:var(--lilac-deep);}
   .logout-btn:hover{border-color:var(--wine); color:var(--wine);}
 
   main{max-width:1300px; margin:0 auto; padding:36px 28px 80px;}
@@ -333,19 +340,19 @@
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Најави се за да продолжиш</p></div>
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="login_tagline">Најави се за да продолжиш</p></div>
 
-    <label class="field-label" style="margin-top:20px; display:block;">Email</label>
+    <label class="field-label" style="margin-top:20px; display:block;" data-i18n="label_email">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
-    <label class="field-label">Лозинка</label>
+    <label class="field-label" data-i18n="label_password">Лозинка</label>
     <input class="login-input" id="loginPassword" type="password" placeholder="••••••••">
 
-    <button class="login-btn" id="loginBtn" disabled>Најави се</button>
+    <button class="login-btn" id="loginBtn" disabled data-i18n="login_btn">Најави се</button>
     <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
-      <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">Немаш профил? Регистрирај се →</a>
-      <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;">Ja заборави лозинката?</a>
-      <a href="#" id="openTermsFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none; margin-top:6px;">Услови за користење и Политика на приватност</a>
+      <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;" data-i18n="login_go_register">Немаш профил? Регистрирај се →</a>
+      <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;" data-i18n="login_forgot">Ja заборави лозинката?</a>
+      <a href="#" id="openTermsFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none; margin-top:6px;" data-i18n="login_terms_link">Услови за користење и Политика на приватност</a>
     </div>
   </div>
 </div>
@@ -506,9 +513,14 @@
     <div class="brand">Piano<span>Forte</span></div>
     <div class="topnav" id="topnav"></div>
     <div class="user-chip">
-      <div class="avatar" id="avatar"></div>
-      <div><div class="u-name" id="uName"></div><div class="u-role" id="uRole"></div></div>
-      <button class="logout-btn" id="logoutBtn">Одјави се</button>
+      <div class="lang-switch" id="langSwitch">
+        <button class="lang-btn active" data-lang="mk">МК</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+      <button class="icon-btn" id="refreshBtn" title="Освежи">↻</button>
+      <div class="avatar" id="avatar" style="cursor:pointer;" title="Профил"></div>
+      <div style="cursor:pointer;" id="userNameRoleBox"><div class="u-name" id="uName"></div><div class="u-role" id="uRole"></div></div>
+      <button class="logout-btn" id="logoutBtn" data-i18n="logout">Одјави се</button>
     </div>
   </header>
 
@@ -517,7 +529,7 @@
     <!-- ---- INDEX PAGE ---- -->
     <section class="page" id="page-index">
       <div class="page-head">
-        <span class="eyebrow">Дигитален индекс</span>
+        <span class="eyebrow" data-i18n="eyebrow_index">Дигитален индекс</span>
         <h2 id="indexTitle">Материјали</h2>
         <p id="indexSub">Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.</p>
       </div>
@@ -566,9 +578,9 @@
     <!-- ---- SCHEDULE PAGE ---- -->
     <section class="page" id="page-schedule">
       <div class="page-head">
-        <span class="eyebrow">Распоред</span>
-        <h2>Календар по групи</h2>
-        <p>Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.</p>
+        <span class="eyebrow" data-i18n="eyebrow_schedule">Распоред</span>
+        <h2 data-i18n="schedule_title">Календар по групи</h2>
+        <p data-i18n="schedule_sub">Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.</p>
       </div>
 
       <div class="groups-overview" id="groupsOverview"></div>
@@ -597,7 +609,52 @@
       </div>
     </section>
 
-    <!-- ---- ADMIN PAGE ---- -->
+    <!-- ---- PROFILE PAGE ---- -->
+    <section class="page" id="page-profile">
+      <div class="page-head">
+        <span class="eyebrow" data-i18n="profile_eyebrow">Профил</span>
+        <h2 data-i18n="profile_title">Твojot профил</h2>
+        <p data-i18n="profile_sub">Ажурирај ги твоите лични податоци и лозинката.</p>
+      </div>
+
+      <div class="card" style="max-width:480px;">
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_info_title">Лични податоци</h3>
+        <div class="form-row">
+          <label data-i18n="profile_name_label">Име и презиме</label>
+          <input type="text" id="profileName" class="login-input" style="margin-bottom:0;">
+        </div>
+        <div style="height:14px;"></div>
+        <div class="form-row">
+          <label data-i18n="profile_email_label">Email</label>
+          <input type="email" id="profileEmail" class="login-input" style="margin-bottom:0;">
+          <div style="font-size:11px; color:var(--mist); margin-top:5px;" data-i18n="profile_email_hint">Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.</div>
+        </div>
+        <button class="send-btn" id="profileSaveBtn" style="margin-top:16px;" data-i18n="profile_save_btn">Зачувај промени</button>
+        <div id="profileInfoMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
+      </div>
+
+      <div class="card" style="max-width:480px; margin-top:20px;">
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_password_title">Смени лозинка</h3>
+        <div class="form-row">
+          <label data-i18n="profile_current_pw">Тековна лозинка</label>
+          <input type="password" id="profileCurrentPw" class="login-input" style="margin-bottom:0;">
+        </div>
+        <div style="height:14px;"></div>
+        <div class="form-row">
+          <label data-i18n="profile_new_pw">Нова лозинка</label>
+          <input type="password" id="profileNewPw" class="login-input" style="margin-bottom:0;">
+        </div>
+        <div style="height:14px;"></div>
+        <div class="form-row">
+          <label data-i18n="profile_confirm_pw">Потврди ja новата лозинка</label>
+          <input type="password" id="profileConfirmPw" class="login-input" style="margin-bottom:0;">
+        </div>
+        <button class="send-btn" id="profilePwBtn" style="margin-top:16px;" data-i18n="profile_pw_btn">Смени лозинка</button>
+        <div id="profilePwMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
+      </div>
+    </section>
+
+
     <section class="page" id="page-admin">
       <div class="page-head">
         <span class="eyebrow">Администрација</span>
@@ -647,7 +704,7 @@
     <!-- ---- BILLING PAGE ---- -->
     <section class="page" id="page-billing">
       <div class="page-head">
-        <span class="eyebrow">Наплата</span>
+        <span class="eyebrow" data-i18n="eyebrow_billing">Наплата</span>
         <h2 id="billingTitle">Статус на плаќање</h2>
         <p id="billingSub">Следи ги месечните рати и рокови за плаќање.</p>
       </div>
@@ -661,7 +718,7 @@
     <!-- ---- PACKAGES PAGE ---- -->
     <section class="page" id="page-packages">
       <div class="page-head">
-        <span class="eyebrow">Пакети</span>
+        <span class="eyebrow" data-i18n="eyebrow_packages">Пакети</span>
         <h2>Избери пакет на часови</h2>
         <p>Прво избери инструмент, потоа тип на пакет.</p>
       </div>
@@ -980,11 +1037,11 @@
       });
 
       if(user.role === 'student'){
-        session = {role:'student', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
+        session = {role:'student', name:user.full_name, email:user.email, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else if(user.role === 'admin'){
-        session = {role:'admin', name:user.full_name, realUserId:user.id, token, refreshToken, isRealAccount:true};
+        session = {role:'admin', name:user.full_name, email:user.email, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else {
-        session = {role:'professor', name:user.full_name, realUserId:user.id, instrument:user.instrument, token, refreshToken, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, token, refreshToken, isRealAccount:true};
       }
       saveSessionToStorage();
       await startApp();
@@ -1183,6 +1240,162 @@
   });
 
   /* ===================== APP SHELL / NAV ===================== */
+  /* ===================== ПРЕВОДИ (МК / EN) ===================== */
+  const translations = {
+    mk: {
+      login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
+      login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
+      login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење и Политика на приватност',
+      logout:'Одјави се', refresh_title:'Освежи',
+      nav_index:'Индекс', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
+      role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
+      eyebrow_index:'Дигитален индекс', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
+      schedule_title:'Календар по групи',
+      schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
+      profile_eyebrow:'Профил', profile_title:'Твojot профил', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
+      profile_info_title:'Лични податоци', profile_name_label:'Име и презиме', profile_email_label:'Email',
+      profile_email_hint:'Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.',
+      profile_save_btn:'Зачувај промени', profile_password_title:'Смени лозинка', profile_current_pw:'Тековна лозинка',
+      profile_new_pw:'Нова лозинка', profile_confirm_pw:'Потврди ja новата лозинка', profile_pw_btn:'Смени лозинка',
+      profile_saved:'✓ Зачувано.', profile_saved_verify:'✓ Зачувано — провери го новиот email за да го потврдиш.',
+      profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.'
+    },
+    en: {
+      login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
+      login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
+      login_forgot:'Forgot your password?', login_terms_link:'Terms of Use and Privacy Policy',
+      logout:'Log out', refresh_title:'Refresh',
+      nav_index:'Index', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
+      role_student:'Student', role_professor:'Professor', role_admin:'Admin',
+      eyebrow_index:'Digital Index', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
+      schedule_title:'Group Calendar',
+      schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
+      profile_eyebrow:'Profile', profile_title:'Your profile', profile_sub:'Update your personal details and password.',
+      profile_info_title:'Personal details', profile_name_label:'Full name', profile_email_label:'Email',
+      profile_email_hint:'If you change your email, you may need to verify it again.',
+      profile_save_btn:'Save changes', profile_password_title:'Change password', profile_current_pw:'Current password',
+      profile_new_pw:'New password', profile_confirm_pw:'Confirm new password', profile_pw_btn:'Change password',
+      profile_saved:'✓ Saved.', profile_saved_verify:'✓ Saved — check your new email to verify it.',
+      profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.'
+    }
+  };
+  let currentLang = localStorage.getItem('pf_lang') || 'mk';
+  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || translations.mk[key] || key; }
+
+  function applyLanguage(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
+    document.documentElement.lang = currentLang;
+    if(session){
+      buildNav();
+      const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
+      document.getElementById('uRole').textContent = t(roleKey);
+    }
+  }
+
+  document.getElementById('langSwitch').addEventListener('click', e=>{
+    const btn = e.target.closest('.lang-btn'); if(!btn) return;
+    currentLang = btn.dataset.lang;
+    localStorage.setItem('pf_lang', currentLang);
+    applyLanguage();
+  });
+
+  /* ===================== REFRESH ===================== */
+  document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+    if(!session) return;
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning'); btn.disabled = true;
+    try{
+      if(session.role==='admin'){
+        await renderAdminPage();
+      } else {
+        await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings()]);
+        if(session.role!=='student'){ buildStudentSelect(); }
+        if(activeStudentForIndex) await loadMaterialsFor(activeStudentForIndex);
+        renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
+      }
+    } catch(err){
+      console.error('refresh failed', err);
+    } finally {
+      btn.classList.remove('spinning'); btn.disabled = false;
+    }
+  });
+
+  /* ===================== PROFILE PAGE ===================== */
+  document.getElementById('userNameRoleBox').addEventListener('click', openProfilePage);
+  document.getElementById('avatar').addEventListener('click', openProfilePage);
+  function openProfilePage(){
+    document.getElementById('profileName').value = session.name;
+    document.getElementById('profileEmail').value = session.email || '';
+    document.getElementById('profileInfoMsg').style.display = 'none';
+    document.getElementById('profilePwMsg').style.display = 'none';
+    document.getElementById('profileCurrentPw').value = '';
+    document.getElementById('profileNewPw').value = '';
+    document.getElementById('profileConfirmPw').value = '';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-profile').classList.add('active');
+    document.querySelectorAll('#topnav button').forEach(b=>b.classList.remove('active'));
+  }
+
+  document.getElementById('profileSaveBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('profileName').value.trim();
+    const email = document.getElementById('profileEmail').value.trim();
+    const msgBox = document.getElementById('profileInfoMsg');
+    msgBox.style.display = 'none';
+    if(!name){ return; }
+    const btn = document.getElementById('profileSaveBtn');
+    btn.disabled = true;
+    try{
+      const result = await authApiCall('/auth/profile', {
+        method:'PUT', body: JSON.stringify({ full_name: name, email })
+      });
+      session.name = name;
+      if(!result.requires_verification) session.email = email;
+      saveSessionToStorage();
+      document.getElementById('uName').textContent = name;
+      const avatar = document.getElementById('avatar');
+      avatar.textContent = name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      msgBox.style.color = 'var(--leaf)';
+      msgBox.textContent = result.requires_verification ? t('profile_saved_verify') : t('profile_saved');
+      msgBox.style.display = 'block';
+    } catch(err){
+      msgBox.style.color = 'var(--wine)';
+      msgBox.textContent = err.message;
+      msgBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('profilePwBtn').addEventListener('click', async ()=>{
+    const current = document.getElementById('profileCurrentPw').value;
+    const next = document.getElementById('profileNewPw').value;
+    const confirm = document.getElementById('profileConfirmPw').value;
+    const msgBox = document.getElementById('profilePwMsg');
+    msgBox.style.display = 'none';
+    if(next !== confirm){
+      msgBox.style.color = 'var(--wine)'; msgBox.textContent = t('profile_pw_mismatch'); msgBox.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('profilePwBtn');
+    btn.disabled = true;
+    try{
+      await authApiCall('/auth/change-password', {
+        method:'POST', body: JSON.stringify({ current_password: current, new_password: next })
+      });
+      msgBox.style.color = 'var(--leaf)'; msgBox.textContent = t('profile_pw_changed'); msgBox.style.display = 'block';
+      document.getElementById('profileCurrentPw').value = '';
+      document.getElementById('profileNewPw').value = '';
+      document.getElementById('profileConfirmPw').value = '';
+    } catch(err){
+      msgBox.style.color = 'var(--wine)'; msgBox.textContent = err.message; msgBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   async function startApp(){
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'block';
@@ -1190,8 +1403,8 @@
     avatar.textContent = session.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     avatar.className = 'avatar ' + session.role;
     document.getElementById('uName').textContent = session.name;
-    const roleLabel = session.role==='professor' ? 'Професор' : session.role==='admin' ? 'Админ' : 'Ученик';
-    document.getElementById('uRole').textContent = roleLabel;
+    const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
+    document.getElementById('uRole').textContent = t(roleKey);
     buildNav();
     if(session.role==='admin'){
       renderAdminPage();
@@ -1213,18 +1426,18 @@
   function buildNav(){
     const nav = document.getElementById('topnav'); nav.innerHTML = '';
     const tabs = [];
-    if(session.role==='admin') tabs.push({id:'admin', label:'Админ'});
-    tabs.push({id:'index', label:'Индекс'});
-    if(session.role==='professor') tabs.push({id:'schedule', label:'Распоред'});
-    tabs.push({id:'billing', label:'Наплата'});
-    tabs.push({id:'packages', label:'Пакети'});
-    tabs.forEach(t=>{
-      const btn = document.createElement('button'); btn.textContent = t.label; btn.dataset.page = t.id;
+    if(session.role==='admin') tabs.push({id:'admin', label:t('nav_admin')});
+    tabs.push({id:'index', label:t('nav_index')});
+    if(session.role==='professor') tabs.push({id:'schedule', label:t('nav_schedule')});
+    tabs.push({id:'billing', label:t('nav_billing')});
+    tabs.push({id:'packages', label:t('nav_packages')});
+    tabs.forEach(tab=>{
+      const btn = document.createElement('button'); btn.textContent = tab.label; btn.dataset.page = tab.id;
       btn.addEventListener('click', ()=>{
-        showPage(t.id);
-        if(t.id==='billing') renderBillingPage();
-        if(t.id==='schedule') renderSchedulePage();
-        if(t.id==='admin') renderAdminPage();
+        showPage(tab.id);
+        if(tab.id==='billing') renderBillingPage();
+        if(tab.id==='schedule') renderSchedulePage();
+        if(tab.id==='admin') renderAdminPage();
       });
       nav.appendChild(btn);
     });
@@ -2381,6 +2594,9 @@
       payBtn.disabled = false; payBtn.textContent = 'Плати ja првата рата';
     }
   });
+
+  /* ---- примени го зачуваниот јазик уште на почетниот приказ (login екран) ---- */
+  applyLanguage();
 
   /* ---- обиди се да ja обновиш сесијата ако веќе постои (по рефреш на страницата) ---- */
   (async function restoreSession(){
