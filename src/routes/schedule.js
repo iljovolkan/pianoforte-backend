@@ -31,6 +31,49 @@ router.get('/', requireAuth, async (req, res) => {
 // POST /schedule  { group_id, day_of_week, start_time, note }  — доделува термин на група
 // Ограничувањето за "веќе зафатен термин" важи ПО ПРОФЕСОР — различни
 // професори слободно можат да имаат групи во исто време.
+// POST /schedule/pair  { group_id, day1, day2, start_time, note }
+// Доделува ДВА термина неделно одеднаш за иста група (сите пакети се 2 часа
+// неделно, па логично е групата секогаш да добива двата дена заедно, во ист
+// час). Ако едниот од двата термина е веќе зафатен, двете се откажуваат
+// (трансакција — сè или ништо).
+router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  const { group_id, day1, day2, start_time, note } = req.body;
+
+  if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2) || day1 === day2 || !TIME_RE.test(start_time || '')) {
+    return res.status(400).json({ error: 'Избери два различни дена и валиден термин (HH:MM).' });
+  }
+
+  const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
+  if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+  if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Оваа група не е твoja.' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const ids = [];
+    for (const day of [day1, day2]) {
+      const [result] = await conn.query(
+        'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?, ?)',
+        [group_id, group.professor_id, day, start_time, note || null]
+      );
+      ids.push(result.insertId);
+    }
+    await conn.commit();
+    res.status(201).json({ ids });
+  } catch (err) {
+    await conn.rollback();
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Веќе имаш друга група во еден од овие два термина.' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Грешка на серверот.' });
+  } finally {
+    conn.release();
+  }
+});
+
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const { group_id, day_of_week, start_time, note } = req.body;
 
