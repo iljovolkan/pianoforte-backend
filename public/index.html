@@ -1516,10 +1516,12 @@
     });
 
     myGroups.forEach(g=>{
+      const slots = findGroupSlots(g.id);
       const slotLabel = slotsLabel(g.id);
       const memberCount = g.members ? g.members.length : 0;
       const full = memberCount >= g.capacity;
       const card = document.createElement('div'); card.className='group-ov-card';
+      const needsSlots = slots.length < 2;
       card.innerHTML = `
         <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span></div>
         <div class="tag-row">
@@ -1529,8 +1531,48 @@
         </div>
         <div class="group-ov-slot">🕐 ${slotLabel}</div>
         <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        ${needsSlots ? `
+        <div class="assign-slot-box" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+          <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Секој пакет е 2 часа неделно — избери ги двата дена одеднаш:</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <select class="login-select pair-day1" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+            <select class="login-select pair-day2" style="margin-bottom:0; flex:1;">${days.map((d,i)=>`<option value="${d}" ${i===1?'selected':''}>${d}</option>`).join('')}</select>
+          </div>
+          <select class="login-select pair-time" style="margin-bottom:8px;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
+          <button class="send-btn pair-save-btn" data-group="${g.id}" style="padding:9px;">Додели ги двата термина</button>
+          <div class="pair-error" style="display:none; color:var(--wine); font-size:11.5px; margin-top:6px;"></div>
+        </div>` : ''}
       `;
       wrap.appendChild(card);
+
+      if(needsSlots){
+        const saveBtn = card.querySelector('.pair-save-btn');
+        saveBtn.addEventListener('click', async ()=>{
+          const day1 = card.querySelector('.pair-day1').value;
+          const day2 = card.querySelector('.pair-day2').value;
+          const start_time = card.querySelector('.pair-time').value;
+          const errBox = card.querySelector('.pair-error');
+          errBox.style.display = 'none';
+          if(day1 === day2){
+            errBox.textContent = 'Избери два различни дена.';
+            errBox.style.display = 'block';
+            return;
+          }
+          saveBtn.disabled = true; saveBtn.textContent = 'Се зачувува...';
+          try{
+            await authApiCall('/schedule/pair', {
+              method:'POST',
+              body: JSON.stringify({ group_id: g.id, day1: MK_TO_EN_DAY[day1], day2: MK_TO_EN_DAY[day2], start_time })
+            });
+            await loadSchedule();
+            renderSchedulePage();
+          } catch(err){
+            errBox.textContent = err.message;
+            errBox.style.display = 'block';
+            saveBtn.disabled = false; saveBtn.textContent = 'Додели ги двата термина';
+          }
+        });
+      }
     });
   }
 
