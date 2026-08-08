@@ -226,6 +226,13 @@
   .pkg-feats li::before{content:'✓'; position:absolute; left:0; color:var(--leaf); font-weight:700;}
   .pkg-select-btn{background:var(--surface-2); border:1.5px solid var(--line); color:var(--ink); padding:12px; border-radius:8px; font-weight:600; font-size:14px; cursor:pointer; transition:.2s;}
   .pkg-card.featured .pkg-select-btn{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
+  .pkg-info-btn{background:none; border:none; color:var(--lilac-deep); font-size:12px; font-weight:600; cursor:pointer; padding:0; margin-bottom:10px; text-align:left;}
+  .pkg-detail-panel{background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:14px;}
+  .pkg-detail-row{display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; padding:6px 0; border-bottom:1px solid var(--line);}
+  .pkg-detail-row:last-of-type{border-bottom:none;}
+  .pkg-detail-row strong{color:var(--ink); font-size:12.5px; flex-shrink:0;}
+  .pkg-detail-row span{color:var(--mist); text-align:right;}
+  .pkg-detail-note{font-size:10.5px; color:var(--mist); margin-top:8px; font-style:italic;}
   .pkg-select-btn:hover{transform:translateY(-1px);}
   .pkg-card.chosen{border-color:var(--leaf); background:var(--leaf-pale);}
 
@@ -2444,19 +2451,54 @@
 
     const cards = [];
     if(trial) cards.push({p:trial, featured:false, feats:['4 часа (2 недели, 2x неделно)','Иста група како целогодишната програма'], priceLabel:`${Number(trial.price_mkd).toLocaleString('mk-MK')} <small>ден. еднократно</small>`});
-    if(annual) cards.push({p:annual, featured:true, feats:[`Вкупно <strong>${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. годишно</strong> (72 часа)`,'8 рати без попуст, или 2/целосно со попуст','2 термина неделно, целата учебна година'], priceLabel:`${Number(annual.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small><div style="font-size:12px; color:var(--mist); font-weight:500; margin-top:4px;">${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. вкупно за цела учебна година</div>`});
+    if(annual) {
+      const isViolin = annual.instrument === 'violina';
+      cards.push({p:annual, featured:true, feats:[
+        `Вкупно <strong>${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. годишно</strong> (72 часа)`,
+        isViolin ? 'Секој час е комбиниран — 45 мин групно + 45 мин индивидуално' : '2 часа неделно во групна настава (45 мин по час)',
+        'При полугодишен/целогодишен пакет: БОНУС часови солфеж вклучени',
+        '8 рати без попуст, или 2/целосно со попуст'
+      ], priceLabel:`${Number(annual.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small><div style="font-size:12px; color:var(--mist); font-weight:500; margin-top:4px;">${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. вкупно за цела учебна година</div>`});
+    }
     if(individual) cards.push({p:individual, featured:false, feats:['1-на-1 настава, 45 мин','Избираш професор, датум и термин'], priceLabel:`${Number(individual.price_mkd).toLocaleString('mk-MK')} <small>ден. по час</small>`});
 
     cards.forEach(c=>{
       const card = document.createElement('div');
       card.className = 'pkg-card' + (c.featured?' featured':'') + (chosenPackage===c.p.id?' chosen':'');
+
+      let detailsHtml = '';
+      if(c.p.package_type === 'annual'){
+        const monthly = Number(c.p.price_mkd);
+        const annualTotal = monthly * 8;
+        const halfPrice = Math.round((annualTotal/2) * (1 - HALF_PLAN_DISCOUNT));
+        const fullPrice = Math.round(annualTotal * (1 - FULL_PLAN_DISCOUNT));
+        detailsHtml = `
+          <button class="pkg-info-btn" data-pkg="${c.p.id}">ℹ️ Детали за сите планови на плаќање</button>
+          <div class="pkg-detail-panel" id="pkgDetail-${c.p.id}" style="display:none;">
+            <div class="pkg-detail-row"><strong>Рата (1/8)</strong><span>${monthly.toLocaleString('mk-MK')} ден. · 9 часа · без бонус</span></div>
+            <div class="pkg-detail-row"><strong>Полугодишен (36ч)</strong><span>${halfPrice.toLocaleString('mk-MK')} ден. (−3%) · БОНУС 18ч солфеж</span></div>
+            <div class="pkg-detail-row"><strong>Целогодишен (72ч)</strong><span>${fullPrice.toLocaleString('mk-MK')} ден. (−5%) · БОНУС 36ч солфеж</span></div>
+            <div class="pkg-detail-note">Солфеж часовите се комбинирано (online или во живо), 45 мин неделно.</div>
+          </div>`;
+      }
+
       card.innerHTML = `
         ${c.featured?'<span class="pkg-badge">ЦЕЛОГОДИШНА ПРОГРАМА</span>':'<span class="pkg-badge" style="visibility:hidden;">.</span>'}
         <h3>${escapeHtml(c.p.name)}</h3><div class="pkg-desc">${escapeHtml(c.p.description||'')}</div>
         <div class="pkg-price">${c.priceLabel}</div>
         <ul class="pkg-feats">${c.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+        ${detailsHtml}
         <button class="pkg-select-btn" data-pkg="${c.p.id}" data-type="${c.p.package_type}">${chosenPackage===c.p.id?'✓ Избран пакет':'Избери пакет'}</button>`;
       grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('.pkg-info-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const panel = document.getElementById('pkgDetail-'+btn.dataset.pkg);
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? 'ℹ️ Детали за сите планови на плаќање' : '▲ Скриј детали';
+      });
     });
 
     grid.querySelectorAll('.pkg-select-btn').forEach(btn=>{
@@ -2633,13 +2675,13 @@
     const annual = monthlyPrice * SCHOOL_YEAR_MONTHS;
     if(plan === 'full'){
       const amount = Math.round(annual * (1 - FULL_PLAN_DISCOUNT));
-      return `1 уплата од ${amount.toLocaleString('mk-MK')} ден. (наместо ${annual.toLocaleString('mk-MK')} ден. — заштеда 5%)`;
+      return `1 уплата од ${amount.toLocaleString('mk-MK')} ден. (наместо ${annual.toLocaleString('mk-MK')} ден. — заштеда 5%) · 72 часа + БОНУС 36 часа солфеж`;
     }
     if(plan === 'two'){
       const half = Math.round((annual/2) * (1 - HALF_PLAN_DISCOUNT));
-      return `2 полугодишни уплати од по ${half.toLocaleString('mk-MK')} ден. (−3% од секое полугодие)`;
+      return `2 полугодишни уплати од по ${half.toLocaleString('mk-MK')} ден. (−3% од секое полугодие) · по 36 часа + БОНУС 18 часа солфеж секое полугодие`;
     }
-    return `8 месечни уплати од по ${monthlyPrice.toLocaleString('mk-MK')} ден.`;
+    return `8 месечни уплати од по ${monthlyPrice.toLocaleString('mk-MK')} ден. · 9 часа месечно, без бонус солфеж`;
   }
 
   const overlay = document.getElementById('paymentOverlay');
