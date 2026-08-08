@@ -633,6 +633,11 @@
         <div id="profileInfoMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
       </div>
 
+      <div class="card" style="max-width:480px; margin-top:20px; display:none;" id="profilePackagesCard">
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_packages_title">Твоите пакети</h3>
+        <div id="profilePackagesList"></div>
+      </div>
+
       <div class="card" style="max-width:480px; margin-top:20px;">
         <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_password_title">Смени лозинка</h3>
         <div class="form-row">
@@ -1258,7 +1263,9 @@
       profile_save_btn:'Зачувај промени', profile_password_title:'Смени лозинка', profile_current_pw:'Тековна лозинка',
       profile_new_pw:'Нова лозинка', profile_confirm_pw:'Потврди ja новата лозинка', profile_pw_btn:'Смени лозинка',
       profile_saved:'✓ Зачувано.', profile_saved_verify:'✓ Зачувано — провери го новиот email за да го потврдиш.',
-      profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.'
+      profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.',
+      profile_packages_title:'Твоите пакети', profile_no_packages:'Сè уште немаш активни пакети или закажувања.',
+      profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан'
     },
     en: {
       login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
@@ -1276,7 +1283,9 @@
       profile_save_btn:'Save changes', profile_password_title:'Change password', profile_current_pw:'Current password',
       profile_new_pw:'New password', profile_confirm_pw:'Confirm new password', profile_pw_btn:'Change password',
       profile_saved:'✓ Saved.', profile_saved_verify:'✓ Saved — check your new email to verify it.',
-      profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.'
+      profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.',
+      profile_packages_title:'Your packages', profile_no_packages:"You don't have any active packages or bookings yet.",
+      profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked'
     }
   };
   let currentLang = localStorage.getItem('pf_lang') || 'mk';
@@ -1337,6 +1346,58 @@
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('page-profile').classList.add('active');
     document.querySelectorAll('#topnav button').forEach(b=>b.classList.remove('active'));
+    renderProfilePackages();
+  }
+
+  function renderProfilePackages(){
+    const card = document.getElementById('profilePackagesCard');
+    const list = document.getElementById('profilePackagesList');
+    if(session.role !== 'student'){ card.style.display = 'none'; return; }
+
+    const activeSubs = subscriptions.filter(s=>!s.released);
+    const releasedSubs = subscriptions.filter(s=>s.released);
+    const hasIndiv = individualBookings.filter(b=>b.status!=='cancelled');
+
+    if(activeSubs.length===0 && releasedSubs.length===0 && hasIndiv.length===0){
+      card.style.display = 'block';
+      list.innerHTML = `<div class="empty-state">${t('profile_no_packages')}</div>`;
+      return;
+    }
+    card.style.display = 'block';
+    let html = '';
+    activeSubs.forEach(sub=>{
+      const ps = paymentStateFromSub(sub);
+      html += `<div class="sent-item">
+        <div class="sent-icon">${instrumentInfo(sub.instrument).icon}</div>
+        <div class="sent-meta">
+          <div class="t">${escapeHtml(sub.package_name)}</div>
+          <div class="sub">${escapeHtml(sub.group_name)} · ${planFullLabel[sub.payment_plan]||''}</div>
+        </div>
+        <span class="status-pill ${paymentStateClass[ps.state]}">${paymentStateLabel[ps.state]}</span>
+      </div>`;
+    });
+    releasedSubs.forEach(sub=>{
+      html += `<div class="sent-item">
+        <div class="sent-icon">${instrumentInfo(sub.instrument).icon}</div>
+        <div class="sent-meta">
+          <div class="t">${escapeHtml(sub.package_name)}</div>
+          <div class="sub">${escapeHtml(sub.group_name)} · ${t('profile_released')}</div>
+        </div>
+        <span class="status-pill status-queued">${t('profile_released')}</span>
+      </div>`;
+    });
+    hasIndiv.forEach(b=>{
+      const dateLabel = new Date(b.booking_date).toLocaleDateString('mk-MK', {day:'2-digit', month:'2-digit'});
+      html += `<div class="sent-item">
+        <div class="sent-icon">${instrumentInfo(b.instrument).icon}</div>
+        <div class="sent-meta">
+          <div class="t">${t('profile_individual_lesson')} — ${instrumentLabel(b.instrument)}</div>
+          <div class="sub">${dateLabel} · ${b.start_time}</div>
+        </div>
+        <span class="status-pill status-done">${t('profile_confirmed')}</span>
+      </div>`;
+    });
+    list.innerHTML = html;
   }
 
   document.getElementById('profileSaveBtn').addEventListener('click', async ()=>{
@@ -2082,81 +2143,88 @@
     document.getElementById('billingTitle').textContent = 'Твojot план на плаќање';
     document.getElementById('billingSub').textContent = 'Овде гледаш ja целата распоредба на рати и дали е сè во ред со твоето место.';
 
-    const sub = subscriptions[0]; // GET /subscriptions за ученик враќа само своја (најнова)
-    const ps = paymentStateFromSub(sub);
-
-    if(ps.state === 'none'){
+    if(subscriptions.length === 0){
       wrap.innerHTML = `<div class="empty-state">Сè уште немаш активен пакет. Оди на „Пакети" за да избереш.</div>`;
       return;
     }
 
-    const group = groups.find(g=>g.id===sub.group_id);
-    const myInstallments = installments.filter(i=>i.subscription_id===sub.id);
+    subscriptions.forEach((sub, idx)=>{
+      const ps = paymentStateFromSub(sub);
+      const group = groups.find(g=>g.id===sub.group_id);
+      const myInstallments = installments.filter(i=>i.subscription_id===sub.id);
 
-    let banner = '';
-    if(ps.state === 'released'){
-      banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
-        <div class="n-title">Терминот ти е ослободен поради задоцнета уплата</div>
-        <div class="n-body">Местото во ${sub.group_name||'групата'} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети" — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.</div>
-        </div></div>`;
-    } else if(ps.state === 'late'){
-      banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
-        <div class="n-title">Задоцнета рата — ${Math.abs(ps.diffDays)} дена</div>
-        <div class="n-body">Ако не платиш наскоро, терминот ти се ослободува. При следна уплата постои ризик да бидеш префрлен кај друг професор.</div>
-        </div></div>`;
-    } else if(ps.state === 'due_soon'){
-      banner = `<div class="notif-banner warn"><div class="n-ic">⏳</div><div>
-        <div class="n-title">Твojata следна рата доспева наскоро</div>
-        <div class="n-body">Рок за плаќање: <strong>${fmtDate(sub.next_due_date)}</strong> (за ${ps.diffDays} ${ps.diffDays===1?'ден':'дена'}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</div>
-        </div></div>`;
-    } else if(ps.state === 'paid'){
-      const hasPending = myInstallments.some(i=>i.status==='pending');
-      banner = hasPending
-        ? `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
-            <div class="n-title">Сè е во ред</div>
-            <div class="n-body">Следната рата доспева на ${fmtDate(sub.next_due_date)}. Местото ти е сигурно резервирано до тогаш.</div>
-            </div></div>`
-        : `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
-            <div class="n-title">Целиот пакет е платен</div>
-            <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
-            </div></div>`;
-    } else {
-      banner = `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
-        <div class="n-title">Целиот пакет е платен</div>
-        <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
-        </div></div>`;
-    }
-    wrap.innerHTML = banner;
+      const section = document.createElement('div');
+      section.style.marginBottom = '28px';
+      if(idx>0){ section.style.paddingTop='24px'; section.style.borderTop='1px solid var(--line)'; }
 
-    const card = document.createElement('div'); card.className = 'billing-summary-card';
-    card.innerHTML = `
-      <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${escapeHtml(sub.package_name||'—')}</span></div>
-      <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${escapeHtml(sub.group_name||'—')}</span></div>
-      <div class="bs-row"><span class="bs-label">План на плаќање</span><span class="bs-value">${planFullLabel[sub.payment_plan]||'—'}</span></div>
-      <div class="bs-row"><span class="bs-label">Термин</span><span class="bs-value">${group && ps.state!=='released' ? slotsLabel(group.id) : '—'}</span></div>
-    `;
-    wrap.appendChild(card);
+      let banner = '';
+      if(ps.state === 'released'){
+        banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
+          <div class="n-title">Терминот ти е ослободен поради задоцнета уплата</div>
+          <div class="n-body">Местото во ${sub.group_name||'групата'} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети" — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.</div>
+          </div></div>`;
+      } else if(ps.state === 'late'){
+        banner = `<div class="notif-banner danger"><div class="n-ic">⚠</div><div>
+          <div class="n-title">Задоцнета рата — ${Math.abs(ps.diffDays)} дена</div>
+          <div class="n-body">Ако не платиш наскоро, терминот ти се ослободува. При следна уплата постои ризик да бидеш префрлен кај друг професор.</div>
+          </div></div>`;
+      } else if(ps.state === 'due_soon'){
+        banner = `<div class="notif-banner warn"><div class="n-ic">⏳</div><div>
+          <div class="n-title">Твojata следна рата доспева наскоро</div>
+          <div class="n-body">Рок за плаќање: <strong>${fmtDate(sub.next_due_date)}</strong> (за ${ps.diffDays} ${ps.diffDays===1?'ден':'дена'}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</div>
+          </div></div>`;
+      } else if(ps.state === 'paid'){
+        const hasPending = myInstallments.some(i=>i.status==='pending');
+        banner = hasPending
+          ? `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
+              <div class="n-title">Сè е во ред</div>
+              <div class="n-body">Следната рата доспева на ${fmtDate(sub.next_due_date)}. Местото ти е сигурно резервирано до тогаш.</div>
+              </div></div>`
+          : `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
+              <div class="n-title">Целиот пакет е платен</div>
+              <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
+              </div></div>`;
+      } else {
+        banner = `<div class="notif-banner ok"><div class="n-ic">✓</div><div>
+          <div class="n-title">Целиот пакет е платен</div>
+          <div class="n-body">Немаш преостанати рати за оваа учебна година.</div>
+          </div></div>`;
+      }
+      section.innerHTML = banner;
 
-    if(myInstallments.length > 0){
-      const instTable = document.createElement('div');
-      instTable.className = 'billing-table';
-      instTable.style.marginTop = '16px';
-      instTable.innerHTML = `<div class="billing-row head" style="grid-template-columns:1fr 1fr 1fr 1fr;"><div>Рата</div><div>Износ</div><div>Рок</div><div>Статус</div></div>`;
-      myInstallments.forEach(inst=>{
-        const isPending = inst.status === 'pending';
-        instTable.innerHTML += `<div class="billing-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
-          <div class="bname">${inst.installment_number}/${inst.total_installments}</div>
-          <div class="bsub">${Number(inst.amount).toLocaleString('mk-MK')} ден.</div>
-          <div class="bsub">${fmtDate(inst.due_date)}</div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="status-pill ${installmentStatusClass[inst.status]}">${installmentStatusLabel[inst.status]}</span>
-            ${isPending ? `<button class="mc-btn" style="flex:none;" onclick="payInstallment(${inst.id})">Плати</button>` : ''}
-          </div>
-        </div>`;
-      });
-      wrap.appendChild(instTable);
-    }
+      const card = document.createElement('div'); card.className = 'billing-summary-card';
+      card.innerHTML = `
+        <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${escapeHtml(sub.package_name||'—')}</span></div>
+        <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${escapeHtml(sub.group_name||'—')}</span></div>
+        <div class="bs-row"><span class="bs-label">План на плаќање</span><span class="bs-value">${planFullLabel[sub.payment_plan]||'—'}</span></div>
+        <div class="bs-row"><span class="bs-label">Термин</span><span class="bs-value">${group && ps.state!=='released' ? slotsLabel(group.id) : '—'}</span></div>
+      `;
+      section.appendChild(card);
+
+      if(myInstallments.length > 0){
+        const instTable = document.createElement('div');
+        instTable.className = 'billing-table';
+        instTable.style.marginTop = '16px';
+        instTable.innerHTML = `<div class="billing-row head" style="grid-template-columns:1fr 1fr 1fr 1fr;"><div>Рата</div><div>Износ</div><div>Рок</div><div>Статус</div></div>`;
+        myInstallments.forEach(inst=>{
+          const isPending = inst.status === 'pending';
+          instTable.innerHTML += `<div class="billing-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+            <div class="bname">${inst.installment_number}/${inst.total_installments}</div>
+            <div class="bsub">${Number(inst.amount).toLocaleString('mk-MK')} ден.</div>
+            <div class="bsub">${fmtDate(inst.due_date)}</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="status-pill ${installmentStatusClass[inst.status]}">${installmentStatusLabel[inst.status]}</span>
+              ${isPending ? `<button class="mc-btn" style="flex:none;" onclick="payInstallment(${inst.id})">Плати</button>` : ''}
+            </div>
+          </div>`;
+        });
+        section.appendChild(instTable);
+      }
+
+      wrap.appendChild(section);
+    });
   }
+
 
   window.payInstallment = async function(installmentId){
     try{
