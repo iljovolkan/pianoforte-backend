@@ -649,18 +649,22 @@
       <div class="page-head">
         <span class="eyebrow">Пакети</span>
         <h2>Избери пакет на часови</h2>
-        <p>По изборот на пакет, избираш слободна група/термин и плаќаш со картичка. Резервацијата веднаш се внесува во распоредот на професорот.</p>
+        <p>Прво избери инструмент, потоа тип на пакет.</p>
       </div>
+
+      <div class="filter-bar" style="margin-bottom:24px;">
+        <div class="filter-group">
+          <span class="fg-label">Инструмент</span>
+          <div class="filter-chips" id="pkgInstrumentChips"></div>
+        </div>
+      </div>
+
       <div class="pkg-grid" id="pkgGrid"></div>
 
       <div class="booking-step" id="bookingStep" style="display:none;">
         <h3>Избери термин за групни часови</h3>
-        <p class="sub">Филтрирај по возраст и претходно искуство за да ја најдеш вистинската група.</p>
+        <p class="sub">Филтрирај по возраст и претходно искуство за да ja најдеш вистинската група.</p>
         <div class="filter-bar">
-          <div class="filter-group">
-            <span class="fg-label">Инструмент</span>
-            <div class="filter-chips" id="instrumentFilterChips"></div>
-          </div>
           <div class="filter-group">
             <span class="fg-label">Возраст на детето</span>
             <div class="filter-chips" id="ageFilterChips"></div>
@@ -671,6 +675,29 @@
           </div>
         </div>
         <div class="slot-pick-grid" id="slotPickGrid"></div>
+      </div>
+
+      <div class="booking-step" id="individualBookingStep" style="display:none;">
+        <h3>Закажи индивидуален час</h3>
+        <p class="sub">1-на-1 настава, 45 минути, еднократна уплата.</p>
+        <div class="card">
+          <div class="form-row">
+            <label>Професор</label>
+            <select id="indivProfessorSelect" class="login-select" style="margin-bottom:0;"></select>
+          </div>
+          <div style="height:14px;"></div>
+          <div class="form-row">
+            <label>Датум</label>
+            <input type="date" id="indivDate" class="login-input" style="margin-bottom:0;">
+          </div>
+          <div style="height:14px;"></div>
+          <div class="form-row">
+            <label>Термин</label>
+            <div class="type-toggle" id="indivTimeToggle" style="flex-wrap:wrap;"></div>
+          </div>
+          <button class="send-btn" id="indivBookBtn" style="margin-top:10px;">Продолжи кон плаќање</button>
+          <div id="indivBookError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
+        </div>
       </div>
 
       <div class="pkg-confirm" id="pkgConfirm">
@@ -689,11 +716,11 @@
     <h3>Плаќање со картичка</h3>
     <p class="psub" id="paymentSub">Пакет · термин</p>
 
-    <div class="form-row">
+    <div class="form-row" id="planSelectorRow">
       <label>План на плаќање</label>
       <div class="type-toggle" id="planToggle" style="margin-bottom:0;">
         <div class="type-btn active" data-plan="eight">8 рати</div>
-        <div class="type-btn" data-plan="two">2 рати</div>
+        <div class="type-btn" data-plan="two">2 рати −3%</div>
         <div class="type-btn" data-plan="full">Целосно −5%</div>
       </div>
     </div>
@@ -799,7 +826,8 @@
   let activeStudentForIndex = null;
   let selectedSlotKey = null;
   let chosenPackage = null;
-  let pendingBooking = null; // {groupId, slotKey}
+  let pendingBooking = null; // {groupId}
+  let pendingIndividualBooking = null; // {professor_id, instrument, booking_date, start_time}
 
   const typeIcon = {note:'🎼', audio:'🎧', task:'✎'};
   const typeLabelMk = {note:'Ноти', audio:'Аудио', task:'Задача'};
@@ -1913,46 +1941,81 @@
     }
   });
 
+  function levelLabel(level){ return level==='pocetnik' ? 'Почетник' : 'Со предзнаење'; }
+  function ageLabel(range){ const a = AGE_RANGES.find(x=>x.id===range); return a ? a.label : range; }
+
+  let selectedPkgInstrument = null;
+
   function renderPackagesPage(){
+    const chipsWrap = document.getElementById('pkgInstrumentChips');
+    chipsWrap.innerHTML = INSTRUMENTS.map(inst => `
+      <button class="filter-chip${selectedPkgInstrument===inst.id ? ' active' : ''}" data-inst="${inst.id}">${inst.icon} ${inst.label}</button>
+    `).join('');
+    chipsWrap.querySelectorAll('.filter-chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        selectedPkgInstrument = btn.dataset.inst;
+        chosenPackage = null;
+        document.getElementById('bookingStep').style.display = 'none';
+        document.getElementById('individualBookingStep').style.display = 'none';
+        document.getElementById('pkgConfirm').classList.remove('show');
+        renderPackagesPage();
+      });
+    });
+
     const grid = document.getElementById('pkgGrid'); grid.innerHTML='';
-    packages.forEach((p,idx)=>{
-      const featured = idx === 1; // средниот пакет се истакнува, ако постои
+    if(!selectedPkgInstrument){
+      grid.innerHTML = '<div class="no-match">Прво избери инструмент погоре.</div>';
+      return;
+    }
+
+    const forInstrument = packages.filter(p=>p.instrument===selectedPkgInstrument);
+    const trial = forInstrument.find(p=>p.package_type==='trial');
+    const annual = forInstrument.find(p=>p.package_type==='annual');
+    const individual = forInstrument.find(p=>p.package_type==='individual');
+
+    const cards = [];
+    if(trial) cards.push({p:trial, featured:false, feats:['4 часа (2 недели, 2x неделно)','Иста група како целогодишната програма'], priceLabel:`${Number(trial.price_mkd).toLocaleString('mk-MK')} <small>ден. еднократно</small>`});
+    if(annual) cards.push({p:annual, featured:true, feats:['72 часа годишно (8 месеци)','8 рати без попуст, или 2/целосно со попуст','2 термина неделно, целата учебна година'], priceLabel:`${Number(annual.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small>`});
+    if(individual) cards.push({p:individual, featured:false, feats:['1-на-1 настава, 45 мин','Избираш професор, датум и термин'], priceLabel:`${Number(individual.price_mkd).toLocaleString('mk-MK')} <small>ден. по час</small>`});
+
+    cards.forEach(c=>{
       const card = document.createElement('div');
-      card.className = 'pkg-card' + (featured?' featured':'') + (chosenPackage===p.id?' chosen':'');
-      const feats = [`${p.lessons_per_month>=999 ? 'Неограничени' : p.lessons_per_month} групни часа месечно`];
+      card.className = 'pkg-card' + (c.featured?' featured':'') + (chosenPackage===c.p.id?' chosen':'');
       card.innerHTML = `
-        ${featured?'<span class="pkg-badge">НАЈИЗБРАН</span>':'<span class="pkg-badge" style="visibility:hidden;">.</span>'}
-        <h3>${escapeHtml(p.name)}</h3><div class="pkg-desc">${escapeHtml(p.description||'')}</div>
-        <div class="pkg-price">${Number(p.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small></div>
-        <ul class="pkg-feats">${feats.map(f=>`<li>${f}</li>`).join('')}</ul>
-        <button class="pkg-select-btn" data-pkg="${p.id}">${chosenPackage===p.id?'✓ Избран пакет':'Избери пакет'}</button>`;
+        ${c.featured?'<span class="pkg-badge">ЦЕЛОГОДИШНА ПРОГРАМА</span>':'<span class="pkg-badge" style="visibility:hidden;">.</span>'}
+        <h3>${escapeHtml(c.p.name)}</h3><div class="pkg-desc">${escapeHtml(c.p.description||'')}</div>
+        <div class="pkg-price">${c.priceLabel}</div>
+        <ul class="pkg-feats">${c.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+        <button class="pkg-select-btn" data-pkg="${c.p.id}" data-type="${c.p.package_type}">${chosenPackage===c.p.id?'✓ Избран пакет':'Избери пакет'}</button>`;
       grid.appendChild(card);
     });
+
     grid.querySelectorAll('.pkg-select-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         chosenPackage = Number(btn.dataset.pkg);
+        const type = btn.dataset.type;
         renderPackagesPage();
-        if(session.role === 'student'){
-          renderBookingStep();
+        if(session.role !== 'student') return;
+
+        document.getElementById('pkgConfirm').classList.remove('show');
+        if(type === 'individual'){
+          document.getElementById('bookingStep').style.display = 'none';
+          document.getElementById('individualBookingStep').style.display = 'block';
+          renderIndividualBookingStep();
+          document.getElementById('individualBookingStep').scrollIntoView({behavior:'smooth', block:'start'});
+        } else {
+          document.getElementById('individualBookingStep').style.display = 'none';
           document.getElementById('bookingStep').style.display = 'block';
+          filterInstrument = selectedPkgInstrument;
+          filterAge = 'all'; filterLevel = 'all';
+          renderBookingStep();
           document.getElementById('bookingStep').scrollIntoView({behavior:'smooth', block:'start'});
         }
       });
     });
   }
 
-  function levelLabel(level){ return level==='pocetnik' ? 'Почетник' : 'Со предзнаење'; }
-  function ageLabel(range){ const a = AGE_RANGES.find(x=>x.id===range); return a ? a.label : range; }
-
   function renderFilterChips(){
-    const instWrap = document.getElementById('instrumentFilterChips'); instWrap.innerHTML='';
-    [{id:'all', label:'Сите инструменти', icon:'🎵'}, ...INSTRUMENTS].forEach(inst=>{
-      const chip = document.createElement('button');
-      chip.className = 'filter-chip' + (filterInstrument===inst.id ? ' active':'');
-      chip.textContent = inst.icon ? `${inst.icon} ${inst.label}` : inst.label;
-      chip.addEventListener('click', ()=>{ filterInstrument = inst.id; renderBookingStep(); });
-      instWrap.appendChild(chip);
-    });
     const ageWrap = document.getElementById('ageFilterChips'); ageWrap.innerHTML='';
     AGE_RANGES.forEach(a=>{
       const chip = document.createElement('button');
@@ -1983,7 +2046,7 @@
     });
 
     if(filtered.length===0){
-      wrap.innerHTML = '<div class="no-match">Нема групи што одговараат на избраните филтри. Пробај да ги промениш инструментот, возраста или нивото.</div>';
+      wrap.innerHTML = '<div class="no-match">Нема групи што одговараат на избраните филтри. Пробај да ги промениш возраста или нивото.</div>';
       return;
     }
 
@@ -2011,14 +2074,66 @@
       btn.addEventListener('click', ()=>{
         const gid = Number(btn.dataset.group);
         pendingBooking = {groupId: gid};
+        pendingIndividualBooking = null;
         openPaymentModal();
       });
     });
   }
 
+  /* ---- индивидуален час — избор на професор/датум/термин ---- */
+  const INDIV_TIMES = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
+  let selectedIndivTime = null;
+
+  async function renderIndividualBookingStep(){
+    const profSelect = document.getElementById('indivProfessorSelect');
+    profSelect.innerHTML = '<option>Се вчитува...</option>';
+    try{
+      const profs = await authApiCall('/individual-bookings/professors?instrument=' + selectedPkgInstrument);
+      if(profs.length === 0){
+        profSelect.innerHTML = '<option value="">Нема достапен професор за овоj инструмент</option>';
+      } else {
+        profSelect.innerHTML = profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
+      }
+    } catch(err){
+      profSelect.innerHTML = '<option value="">Грешка при вчитување</option>';
+    }
+
+    const dateInput = document.getElementById('indivDate');
+    const minDate = new Date(); minDate.setDate(minDate.getDate()+1);
+    dateInput.min = minDate.toISOString().slice(0,10);
+    dateInput.value = '';
+
+    selectedIndivTime = INDIV_TIMES[0];
+    const timeWrap = document.getElementById('indivTimeToggle');
+    timeWrap.innerHTML = INDIV_TIMES.map((t,i)=>`<div class="type-btn${i===0?' active':''}" data-time="${t}">${t}</div>`).join('');
+    timeWrap.querySelectorAll('.type-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        timeWrap.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedIndivTime = btn.dataset.time;
+      });
+    });
+  }
+
+  document.getElementById('indivBookBtn').addEventListener('click', ()=>{
+    const errBox = document.getElementById('indivBookError');
+    errBox.style.display = 'none';
+    const professor_id = Number(document.getElementById('indivProfessorSelect').value);
+    const booking_date = document.getElementById('indivDate').value;
+    if(!professor_id){ errBox.textContent = 'Избери професор.'; errBox.style.display='block'; return; }
+    if(!booking_date){ errBox.textContent = 'Избери датум.'; errBox.style.display='block'; return; }
+    const dow = new Date(booking_date+'T00:00:00').getDay();
+    if(dow===0 || dow===6){ errBox.textContent = 'Избери работен ден (не сабота/недела).'; errBox.style.display='block'; return; }
+
+    pendingIndividualBooking = { professor_id, instrument: selectedPkgInstrument, booking_date, start_time: selectedIndivTime };
+    pendingBooking = null;
+    openPaymentModal();
+  });
+
   /* ---- payment modal ---- */
   const SCHOOL_YEAR_MONTHS = 8;
   const FULL_PLAN_DISCOUNT = 0.05;
+  const HALF_PLAN_DISCOUNT = 0.03;
   let selectedPlan = 'eight';
 
   function planSummaryText(plan, monthlyPrice){
@@ -2028,22 +2143,36 @@
       return `1 уплата од ${amount.toLocaleString('mk-MK')} ден. (наместо ${annual.toLocaleString('mk-MK')} ден. — заштеда 5%)`;
     }
     if(plan === 'two'){
-      const first = Math.round(annual/2);
-      return `2 уплати: ${first.toLocaleString('mk-MK')} ден. сега, ${(annual-first).toLocaleString('mk-MK')} ден. за ~5 месеци`;
+      const half = Math.round((annual/2) * (1 - HALF_PLAN_DISCOUNT));
+      return `2 полугодишни уплати од по ${half.toLocaleString('mk-MK')} ден. (−3% од секое полугодие)`;
     }
     return `8 месечни уплати од по ${monthlyPrice.toLocaleString('mk-MK')} ден.`;
   }
 
   const overlay = document.getElementById('paymentOverlay');
   function openPaymentModal(){
-    const g = groups.find(x=>x.id===pendingBooking.groupId);
-    const p = packages.find(x=>x.id===chosenPackage);
-    selectedPlan = 'eight';
-    document.querySelectorAll('#planToggle .type-btn').forEach(b=>b.classList.toggle('active', b.dataset.plan==='eight'));
-    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)}`;
-    document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
     document.getElementById('cardName').value=''; document.getElementById('cardNumber').value='';
     document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
+
+    if(pendingIndividualBooking){
+      const p = packages.find(x=>x.id===chosenPackage);
+      document.getElementById('planSelectorRow').style.display = 'none';
+      document.getElementById('planSummary').textContent = '';
+      document.getElementById('paymentSub').textContent = `${p.name} · ${pendingIndividualBooking.booking_date} · ${pendingIndividualBooking.start_time} · ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.`;
+      overlay.classList.add('show');
+      return;
+    }
+
+    const g = groups.find(x=>x.id===pendingBooking.groupId);
+    const p = packages.find(x=>x.id===chosenPackage);
+    const isTrial = p.package_type === 'trial';
+    selectedPlan = isTrial ? 'trial' : 'eight';
+    document.getElementById('planSelectorRow').style.display = isTrial ? 'none' : 'block';
+    document.querySelectorAll('#planToggle .type-btn').forEach(b=>b.classList.toggle('active', b.dataset.plan==='eight'));
+    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)}`;
+    document.getElementById('planSummary').textContent = isTrial
+      ? `1 еднократна уплата од ${Number(p.price_mkd).toLocaleString('mk-MK')} ден. (${p.lessons_per_month} часа)`
+      : planSummaryText(selectedPlan, Number(p.price_mkd));
     overlay.classList.add('show');
   }
 
@@ -2056,7 +2185,9 @@
     document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
   });
 
-  document.getElementById('payCancelBtn').addEventListener('click', ()=>{ overlay.classList.remove('show'); pendingBooking=null; });
+  document.getElementById('payCancelBtn').addEventListener('click', ()=>{
+    overlay.classList.remove('show'); pendingBooking=null; pendingIndividualBooking=null;
+  });
 
   document.getElementById('payConfirmBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('cardName').value.trim();
@@ -2072,6 +2203,29 @@
     payBtn.disabled = true; payBtn.textContent = 'Се обработува...';
 
     try{
+      if(pendingIndividualBooking){
+        const p = packages.find(x=>x.id===chosenPackage);
+        await authApiCall('/individual-bookings', {
+          method:'POST',
+          body: JSON.stringify({
+            package_id: chosenPackage,
+            professor_id: pendingIndividualBooking.professor_id,
+            instrument: pendingIndividualBooking.instrument,
+            booking_date: pendingIndividualBooking.booking_date,
+            start_time: pendingIndividualBooking.start_time,
+            payment_method_id: 'SIMULATED-' + Date.now()
+          })
+        });
+
+        overlay.classList.remove('show');
+        document.getElementById('pkgConfirmTitle').textContent = `Часот е закажан — ${p.name}`;
+        document.getElementById('pkgConfirmSub').innerHTML = `Датум: <strong>${pendingIndividualBooking.booking_date}</strong> во <strong>${pendingIndividualBooking.start_time}</strong>.<br><br>📧 Испративме потврда на твojot email.`;
+        document.getElementById('pkgConfirm').classList.add('show');
+        document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
+        pendingIndividualBooking = null;
+        return;
+      }
+
       // "payment_method_id" тука е само симулирана референца — вистинскиот Stripe/CPay
       // token ќе дојде од нивна JS библиотека кога ќе се интегрира платежниот процесор.
       const result = await authApiCall('/purchases', {
@@ -2090,7 +2244,7 @@
 
       const g = groups.find(x=>x.id===pendingBooking.groupId);
       const p = packages.find(x=>x.id===chosenPackage);
-      const planLabel = {full:'целосно, во 1 уплата', two:'на 2 рати', eight:'на 8 месечни рати'}[selectedPlan];
+      const planLabel = {full:'целосно, во 1 уплата', two:'на 2 полугодишни рати', eight:'на 8 месечни рати', trial:'еднократно (пробен пакет)'}[selectedPlan];
 
       overlay.classList.remove('show');
       document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
