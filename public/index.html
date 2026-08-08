@@ -573,6 +573,11 @@
 
       <div class="groups-overview" id="groupsOverview"></div>
 
+      <div class="card" id="indivBookingsCard" style="margin-bottom:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Закажани индивидуални часови</h3>
+        <div id="indivBookingsList"></div>
+      </div>
+
       <div class="view-toggle-row">
         <button class="view-toggle-btn" data-view="week">Недела</button>
         <button class="view-toggle-btn" data-view="month">Месец</button>
@@ -632,6 +637,11 @@
         <h3 style="font-size:15px; margin-bottom:14px;">Регистрирани ученици</h3>
         <div id="adminStudentList"></div>
       </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Сите закажани индивидуални часови</h3>
+        <div id="adminIndivBookingsList"></div>
+      </div>
     </section>
 
     <!-- ---- BILLING PAGE ---- -->
@@ -642,6 +652,10 @@
         <p id="billingSub">Следи ги месечните рати и рокови за плаќање.</p>
       </div>
       <div id="billingContent"></div>
+      <div class="card" id="billingIndivBookingsCard" style="margin-top:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:14px;" id="billingIndivBookingsTitle">Закажани индивидуални часови</h3>
+        <div id="billingIndivBookingsList"></div>
+      </div>
     </section>
 
     <!-- ---- PACKAGES PAGE ---- -->
@@ -766,6 +780,7 @@
   let packages = [];     // GET /packages
   let subscriptions = []; // GET /subscriptions (сурови редови)
   let installments = []; // GET /installments
+  let individualBookings = []; // GET /individual-bookings
 
   const AGE_RANGES = [
     {id:'all', label:'Сите возрасти'},
@@ -936,6 +951,9 @@
   }
   async function loadInstallments(){
     try{ installments = await authApiCall('/installments'); } catch(err){ installments = []; }
+  }
+  async function loadIndividualBookings(){
+    try{ individualBookings = await authApiCall('/individual-bookings'); } catch(err){ individualBookings = []; }
   }
 
   function validateLoginForm(){
@@ -1180,7 +1198,7 @@
     } else {
       showPage('index');
       document.getElementById('tabletFeed').innerHTML = '<div class="empty-state">Се вчитува...</div>';
-      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments()]);
+      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings()]);
       if(session.role==='student'){
         activeStudentForIndex = session.realUserId;
         await loadMaterialsFor(activeStudentForIndex);
@@ -1403,6 +1421,62 @@
     document.getElementById('statDone').textContent = mats.filter(m=>m.status==='done').length;
   }
 
+  /* ===================== ИНДИВИДУАЛНИ ЧАСОВИ ===================== */
+  window.cancelIndividualBooking = async function(id){
+    if(!confirm('Дали сигурно сакаш да го откажеш овоj час?')) return;
+    try{
+      await authApiCall('/individual-bookings/'+id, { method:'DELETE' });
+      await loadIndividualBookings();
+      renderProfessorIndivBookings();
+      renderBillingPage();
+      if(session.role==='admin') renderAdminIndivBookings();
+    } catch(err){ alert('Грешка: ' + err.message); }
+  };
+
+  function indivBookingRow(b, nameLabel){
+    const dateLabel = new Date(b.booking_date).toLocaleDateString('mk-MK', {weekday:'short', day:'2-digit', month:'2-digit'});
+    return `<div class="sent-item">
+      <div class="sent-icon">${instrumentInfo(b.instrument).icon}</div>
+      <div class="sent-meta">
+        <div class="t">${escapeHtml(nameLabel)}</div>
+        <div class="sub">${dateLabel} · ${b.start_time} · ${instrumentLabel(b.instrument)}</div>
+      </div>
+      <span class="status-pill ${b.status==='cancelled' ? 'status-queued' : 'status-done'}">${b.status==='cancelled' ? 'Откажан' : 'Закажан'}</span>
+      ${b.status!=='cancelled' ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="cancelIndividualBooking(${b.id})">Откажи</button>` : ''}
+    </div>`;
+  }
+
+  function renderProfessorIndivBookings(){
+    if(session.role !== 'professor') return;
+    const card = document.getElementById('indivBookingsCard');
+    const list = document.getElementById('indivBookingsList');
+    const upcoming = individualBookings.filter(b=>b.status!=='cancelled');
+    if(upcoming.length===0){ card.style.display='none'; return; }
+    card.style.display = 'block';
+    list.innerHTML = upcoming.map(b=>indivBookingRow(b, b.student_name)).join('');
+  }
+
+  function renderStudentIndivBookings(){
+    const card = document.getElementById('billingIndivBookingsCard');
+    const list = document.getElementById('billingIndivBookingsList');
+    if(individualBookings.length===0){ card.style.display='none'; return; }
+    card.style.display = 'block';
+    list.innerHTML = individualBookings.map(b=>indivBookingRow(b, 'кај ' + b.professor_name)).join('');
+  }
+
+  async function renderAdminIndivBookings(){
+    const list = document.getElementById('adminIndivBookingsList');
+    if(!list) return;
+    list.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    try{
+      const rows = await authApiCall('/individual-bookings');
+      if(rows.length===0){ list.innerHTML = '<div class="empty-state">Нема закажани индивидуални часови.</div>'; return; }
+      list.innerHTML = rows.map(b=>indivBookingRow(b, `${b.student_name} · проф. ${b.professor_name}`)).join('');
+    } catch(err){
+      list.innerHTML = `<div class="empty-state">Грешка: ${err.message}</div>`;
+    }
+  }
+
   /* ===================== SCHEDULE PAGE ===================== */
   function renderGroupsOverview(){
     const wrap = document.getElementById('groupsOverview'); wrap.innerHTML='';
@@ -1486,6 +1560,7 @@
 
   function renderSchedulePage(){
     renderGroupsOverview();
+    renderProfessorIndivBookings();
 
     document.querySelectorAll('.view-toggle-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===calendarView));
     document.getElementById('weekViewWrap').style.display = calendarView==='week' ? 'block' : 'none';
@@ -1716,6 +1791,8 @@
   function renderBillingPage(){
     const wrap = document.getElementById('billingContent');
     wrap.innerHTML = '';
+    if(session.role === 'student') renderStudentIndivBookings();
+    else document.getElementById('billingIndivBookingsCard').style.display = 'none';
 
     if(session.role === 'professor'){
       document.getElementById('billingTitle').textContent = 'Статус на плаќање — твоите ученици';
@@ -1854,6 +1931,7 @@
   window.deleteUser = deleteUser;
 
   async function renderAdminPage(){
+    renderAdminIndivBookings();
     const listBox = document.getElementById('adminProfList');
     listBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
     try{
@@ -2289,3 +2367,4 @@ if('serviceWorker' in navigator){
 
 </body>
 </html>
+
