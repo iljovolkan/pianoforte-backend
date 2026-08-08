@@ -260,4 +260,75 @@ router.post('/reset-password', async (req, res) => {
   res.json({ ok: true, message: 'Лозинката е успешно променета. Најави се со новата лозинка.' });
 });
 
+// PUT /auth/profile  { full_name, email }
+// Ако email-от се смени за ученик, се бара повторна потврда (email_verified
+// се враќа на FALSE и се испраќа нов линк) — за professor/admin не е потребно.
+router.put('/profile', requireAuth, async (req, res) => {
+  const { full_name, email } = req.body;
+  if (!full_name || !full_name.trim()) {
+    return res.status(400).json({ error: 'Името е задолжително.' });
+  }
+
+  const [[me]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+  if (!me) return res.status(404).json({ error: 'Корисникот не постои.' });
+
+  let emailChanged = false;
+  if (email && email !== me.email) {
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.id]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Веќе постои друг корисник со овoj email.' });
+    }
+    emailChanged = true;
+  }
+
+  if (emailChanged && me.role === 'student') {
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    await pool.query(
+      'UPDATE users SET full_name = ?, email = ?, email_verified = FALSE, verify_token = ? WHERE id = ?',
+      [full_name.trim(), email, verifyToken, req.user.id]
+    );
+    const verifyLink = `${APP_URL}/auth/verify?token=${verifyToken}`;
+    await sendMail({
+      to: email,
+      subject: 'Потврди го новиот email — PianoForte',
+      html: `
+        <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+          <h2>Потврди го новиот email</h2>
+          <p>Здраво, ${full_name}! Го смени email-от на твojot профил — кликни подолу за да го потврдиш.</p>
+          <p style="margin:24px 0;">
+            <a href="${verifyLink}" style="background:#A97E33; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">Потврди го email-от</a>
+          </p>
+        </div>
+      `
+    });
+    return res.json({ ok: true, email_changed: true, requires_verification: true });
+  }
+
+  await pool.query('UPDATE users SET full_name = ?, email = ? WHERE id = ?',
+    [full_name.trim(), email || me.email, req.user.id]);
+  res.json({ ok: true, email_changed: emailChanged, requires_verification: false });
+});
+
+// POST /auth/change-password  { current_password, new_password }
+router.post('/change-password', requireAuth, async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) {
+    return res.status(400).json({ error: 'Тековната и новата лозинка се задолжителни.' });
+  }
+  if (new_password.length < 8) {
+    return res.status(400).json({ error: 'Новата лозинка мора да има барем 8 карактери.' });
+  }
+
+  const [[me]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+  const match = await bcrypt.compare(current_password, me.password_hash);
+  if (!match) return res.status(401).json({ error: 'Тековната лозинка не е точна.' });
+
+  const passwordHash = await bcrypt.hash(new_password, SALT_ROUNDS);
+  await pool.query(
+    'UPDATE users SET password_hash = ?, refresh_token = NULL, refresh_token_expires = NULL WHERE id = ?',
+    [passwordHash, req.user.id]
+  );
+  res.json({ ok: true });
+});
+
 module.exports = router;
