@@ -242,6 +242,9 @@
   .no-match{color:var(--mist); font-size:13.5px; padding:26px; text-align:center; border:1px dashed var(--line); border-radius:10px; grid-column:1/-1;}
   .slot-pick-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
   .slot-pick-card{background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:18px;}
+  .slot-day-header{grid-column:1/-1; font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:var(--lilac-deep); margin:18px 0 4px; padding-bottom:6px; border-bottom:2px solid var(--lilac-pale);}
+  .slot-day-header:first-child{margin-top:0;}
+  .prof-line{font-size:12.5px; color:var(--sand-deep); font-weight:600; margin:2px 0 8px;}
   .slot-pick-card h4{font-size:15px; margin-bottom:4px;}
   .slot-pick-card .when{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--sand-deep); margin-bottom:8px;}
   .slot-pick-card .fill{font-size:12px; color:var(--mist); margin-bottom:14px;}
@@ -281,6 +284,10 @@
   .notif-banner .n-title{font-weight:600; font-size:14.5px; margin-bottom:4px;}
   .notif-banner .n-body{font-size:13px; color:var(--ink); opacity:.85; line-height:1.55;}
   .billing-summary-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:22px;}
+  .billing-pkg-selector{display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; padding-bottom:16px; border-bottom:1px solid var(--line);}
+  .billing-pkg-tab{background:#fff; border:1.5px solid var(--line); border-radius:10px; padding:9px 16px; font-size:13px; font-weight:600; color:var(--mist); cursor:pointer; transition:.2s;}
+  .billing-pkg-tab:hover{border-color:var(--lilac-pale);}
+  .billing-pkg-tab.active{background:var(--lilac-pale); border-color:var(--lilac-deep); color:var(--lilac-deep);}
   .billing-summary-card .bs-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px;}
   .billing-summary-card .bs-row:last-child{border-bottom:none;}
   .billing-summary-card .bs-label{color:var(--mist);}
@@ -1000,6 +1007,7 @@
   let activeStudentForIndex = null;
   let selectedSlotKey = null;
   let chosenPackage = null;
+  let selectedBillingSubId = null; // кој пакет е избран за приказ во Наплата (кога има повеќе од еден)
   let pendingBooking = null; // {groupId}
   let pendingIndividualBooking = null; // {professor_id, instrument, booking_date, start_time}
 
@@ -2189,14 +2197,33 @@
       return;
     }
 
-    subscriptions.forEach((sub, idx)=>{
+    // избирач на пакет (ако ученикот е запишан на повеќе пакети истовремено —
+    // пр. пијано И виолина — не смеат да се мешаат едни со други)
+    if(!subscriptions.find(s=>s.id===selectedBillingSubId)) selectedBillingSubId = subscriptions[0].id;
+
+    if(subscriptions.length > 1){
+      const selector = document.createElement('div');
+      selector.className = 'billing-pkg-selector';
+      selector.innerHTML = subscriptions.map(s=>{
+        const active = s.id===selectedBillingSubId;
+        return `<button class="billing-pkg-tab${active?' active':''}" data-sub="${s.id}">${instrumentInfo(s.instrument).icon} ${escapeHtml(s.package_name)}</button>`;
+      }).join('');
+      wrap.appendChild(selector);
+      selector.querySelectorAll('.billing-pkg-tab').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          selectedBillingSubId = Number(btn.dataset.sub);
+          renderBillingPage();
+        });
+      });
+    }
+
+    const sub = subscriptions.find(s=>s.id===selectedBillingSubId);
+    {
       const ps = paymentStateFromSub(sub);
       const group = groups.find(g=>g.id===sub.group_id);
       const myInstallments = installments.filter(i=>i.subscription_id===sub.id);
 
       const section = document.createElement('div');
-      section.style.marginBottom = '28px';
-      if(idx>0){ section.style.paddingTop='24px'; section.style.borderTop='1px solid var(--line)'; }
 
       let banner = '';
       if(ps.state === 'released'){
@@ -2263,7 +2290,7 @@
       }
 
       wrap.appendChild(section);
-    });
+    }
   }
 
 
@@ -2417,7 +2444,7 @@
 
     const cards = [];
     if(trial) cards.push({p:trial, featured:false, feats:['4 часа (2 недели, 2x неделно)','Иста група како целогодишната програма'], priceLabel:`${Number(trial.price_mkd).toLocaleString('mk-MK')} <small>ден. еднократно</small>`});
-    if(annual) cards.push({p:annual, featured:true, feats:['72 часа годишно (8 месеци)','8 рати без попуст, или 2/целосно со попуст','2 термина неделно, целата учебна година'], priceLabel:`${Number(annual.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small>`});
+    if(annual) cards.push({p:annual, featured:true, feats:[`Вкупно <strong>${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. годишно</strong> (72 часа)`,'8 рати без попуст, или 2/целосно со попуст','2 термина неделно, целата учебна година'], priceLabel:`${Number(annual.price_mkd).toLocaleString('mk-MK')} <small>ден. / месечно</small><div style="font-size:12px; color:var(--mist); font-weight:500; margin-top:4px;">${(Number(annual.price_mkd)*8).toLocaleString('mk-MK')} ден. вкупно за цела учебна година</div>`});
     if(individual) cards.push({p:individual, featured:false, feats:['1-на-1 настава, 45 мин','Избираш професор, датум и термин'], priceLabel:`${Number(individual.price_mkd).toLocaleString('mk-MK')} <small>ден. по час</small>`});
 
     cards.forEach(c=>{
@@ -2476,6 +2503,14 @@
     });
   }
 
+  const DAY_ORDER = {'Пон':0,'Вто':1,'Сре':2,'Чет':3,'Пет':4};
+  function groupSortKey(groupId){
+    const entries = findGroupSlots(groupId);
+    if(entries.length===0) return [99, '99:99'];
+    const sorted = entries.slice().sort((a,b)=> (DAY_ORDER[a.day]-DAY_ORDER[b.day]) || a.time.localeCompare(b.time));
+    return [DAY_ORDER[sorted[0].day], sorted[0].time];
+  }
+
   function renderBookingStep(){
     renderFilterChips();
     const wrap = document.getElementById('slotPickGrid'); wrap.innerHTML='';
@@ -2484,15 +2519,30 @@
       const instOk = filterInstrument==='all' || g.instrument===filterInstrument;
       const ageOk = filterAge==='all' || g.age_range===filterAge;
       const levelOk = filterLevel==='all' || g.level===filterLevel;
-      return instOk && ageOk && levelOk;
+      const hasSchedule = findGroupSlots(g.id).length > 0; // групи без доделен термин сè уште не се подготвени за резервација
+      return instOk && ageOk && levelOk && hasSchedule;
+    }).sort((a,b)=>{
+      const ka = groupSortKey(a.id), kb = groupSortKey(b.id);
+      return (ka[0]-kb[0]) || ka[1].localeCompare(kb[1]);
     });
 
     if(filtered.length===0){
-      wrap.innerHTML = '<div class="no-match">Нема групи што одговараат на избраните филтри. Пробај да ги промениш возраста или нивото.</div>';
+      wrap.innerHTML = '<div class="no-match">Нема групи со доделен термин што одговараат на избраните филтри. Пробај да ги промениш возраста или нивото.</div>';
       return;
     }
 
+    let lastDay = null;
     filtered.forEach(g=>{
+      const entries = findGroupSlots(g.id).slice().sort((a,b)=>(DAY_ORDER[a.day]-DAY_ORDER[b.day])||a.time.localeCompare(b.time));
+      const firstDay = entries[0].day;
+      if(firstDay !== lastDay){
+        const header = document.createElement('div');
+        header.className = 'slot-day-header';
+        header.textContent = firstDay;
+        wrap.appendChild(header);
+        lastDay = firstDay;
+      }
+
       const slotLabel = slotsLabel(g.id);
       const memberCount = g.members ? g.members.length : 0;
       const spotsLeft = g.spots_left != null ? g.spots_left : (g.capacity - memberCount);
@@ -2500,6 +2550,7 @@
       const card = document.createElement('div'); card.className='slot-pick-card';
       card.innerHTML = `
         <h4>${g.name}</h4>
+        <div class="prof-line">👤 проф. ${escapeHtml(g.professor_name||'—')}</div>
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
           <span class="tag age">${ageLabel(g.age_range)}</span>
