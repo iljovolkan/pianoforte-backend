@@ -22,7 +22,22 @@ const app = express();
 // што го прави rate limiting-от неточен/неактивен.
 app.set('trust proxy', 1);
 
-app.use(cors());
+// CORS — дозволени се само нашите вистински домени (не "било кој сајт")
+const ALLOWED_ORIGINS = [
+  'https://app.pianoforte.edu.mk',
+  'https://pianoforte-backend-production.up.railway.app'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // барања без Origin header (пр. мобилни апликации, curl, Postman) се дозволени —
+    // само browser cross-origin барања од непознат сајт се одбиваат
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 app.use(express.json());
 
 // Ја servира апликацијата (HTML/CSS/JS) — сè што е во папката public/
