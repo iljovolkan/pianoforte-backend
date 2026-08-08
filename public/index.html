@@ -461,29 +461,29 @@
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:480px;">
-    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Креирај профил за ученик</p></div>
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reg_tagline">Креирај профил за ученик</p></div>
 
-    <label class="field-label">Име и презиме</label>
+    <label class="field-label" data-i18n="reg_name_label">Име и презиме</label>
     <input class="login-input" id="regName" placeholder="Име и презиме на детето">
-    <label class="field-label">Email</label>
+    <label class="field-label" data-i18n="label_email">Email</label>
     <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com">
-    <label class="field-label">Лозинка</label>
+    <label class="field-label" data-i18n="label_password">Лозинка</label>
     <input class="login-input" id="regPassword" type="password" placeholder="••••••••">
-    <label class="field-label">Возраст на детето</label>
+    <label class="field-label" data-i18n="reg_age_label">Возраст на детето</label>
     <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
 
-    <label class="field-label">Инструмент</label>
+    <label class="field-label" data-i18n="reg_instrument_label">Инструмент</label>
     <div class="type-toggle" id="regInstrumentToggle" style="flex-wrap:wrap; margin-bottom:18px;"></div>
 
-    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;">
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;" id="regTermsLabel">
       <input type="checkbox" id="regTermsCheckbox" style="margin-top:2px;">
-      <span>Се согласувам со <a href="#" id="openTermsFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">Условите за користење и Политиката на приватност</a>, и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.</span>
+      <span id="regTermsText"></span>
     </label>
 
-    <button class="login-btn" id="registerBtn">Креирај профил</button>
+    <button class="login-btn" id="registerBtn" data-i18n="reg_submit_btn">Креирај профил</button>
     <div id="registerError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div style="text-align:center; margin-top:16px;">
-      <a href="#" id="backToLoginLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">← Веќе имаш профил? Најави се</a>
+      <a href="#" id="backToLoginLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;" data-i18n="reg_back_to_login">← Веќе имаш профил? Најави се</a>
     </div>
   </div>
 </div>
@@ -591,9 +591,9 @@
       </div>
 
       <div class="view-toggle-row">
-        <button class="view-toggle-btn" data-view="week">Недела</button>
-        <button class="view-toggle-btn" data-view="month">Месец</button>
-        <button class="view-toggle-btn" data-view="year">Година</button>
+        <button class="view-toggle-btn" data-view="week" data-i18n="view_week">Недела</button>
+        <button class="view-toggle-btn" data-view="month" data-i18n="view_month">Месец</button>
+        <button class="view-toggle-btn" data-view="year" data-i18n="view_year">Година</button>
         <div class="cal-nav" id="calNav"></div>
       </div>
 
@@ -895,7 +895,7 @@
     if(diffDays <= 5) return {state:'due_soon', diffDays, sub};
     return {state:'paid', diffDays, sub};
   }
-  const paymentStateLabel = {paid:'Платено', due_soon:'Наближува рок', late:'Задоцнето', released:'Термин ослободен', none:'Нема пакет'};
+  const paymentStateLabel = new Proxy({}, { get: (_, key) => t('pay_'+key) });
   const paymentStateClass = {paid:'status-done', due_soon:'status-delivered', late:'status-opened', released:'status-queued', none:'status-queued'};
 
   /* ===================== SESSION ===================== */
@@ -907,8 +907,8 @@
   let pendingIndividualBooking = null; // {professor_id, instrument, booking_date, start_time}
 
   const typeIcon = {note:'🎼', audio:'🎧', task:'✎'};
-  const typeLabelMk = {note:'Ноти', audio:'Аудио', task:'Задача'};
-  const statusLabel = {queued:'Во ред', delivered:'Ново', opened:'Отворено', done:'Завршено'};
+  const typeLabelMk = new Proxy({}, { get: (_, key) => t('mat_'+key) });
+  const statusLabel = new Proxy({}, { get: (_, key) => t('status_'+key) });
   const statusClass = {queued:'status-queued', delivered:'status-delivered', opened:'status-opened', done:'status-done'};
 
   function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
@@ -1099,9 +1099,19 @@
   document.getElementById('openTermsFromLoginLink').addEventListener('click', (e)=>{
     e.preventDefault(); openTermsScreen('loginScreen');
   });
-  document.getElementById('openTermsFromRegisterLink').addEventListener('click', (e)=>{
-    e.preventDefault(); openTermsScreen('registerScreen');
+
+  function renderRegTermsText(){
+    document.getElementById('regTermsText').innerHTML =
+      t('reg_terms_pre') + ' <a href="#" id="openTermsFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_terms_link') + '</a>' + t('reg_terms_post');
+  }
+  renderRegTermsText();
+  document.getElementById('regTermsLabel').addEventListener('click', (e)=>{
+    if(e.target && e.target.id === 'openTermsFromRegisterLink'){
+      e.preventDefault(); e.stopPropagation();
+      openTermsScreen('registerScreen');
+    }
   });
+
   document.getElementById('closeTermsBtn').addEventListener('click', ()=>{
     document.getElementById('termsScreen').style.display = 'none';
     document.getElementById(termsReturnScreenId).style.display = 'flex';
@@ -1252,9 +1262,9 @@
       login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
       login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење и Политика на приватност',
       logout:'Одјави се', refresh_title:'Освежи',
-      nav_index:'Индекс', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
+      nav_index:'Почетна', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
       role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
-      eyebrow_index:'Дигитален индекс', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
+      eyebrow_index:'Почетна', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
       schedule_title:'Календар по групи',
       schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
       profile_eyebrow:'Профил', profile_title:'Твojot профил', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
@@ -1265,16 +1275,30 @@
       profile_saved:'✓ Зачувано.', profile_saved_verify:'✓ Зачувано — провери го новиот email за да го потврдиш.',
       profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.',
       profile_packages_title:'Твоите пакети', profile_no_packages:'Сè уште немаш активни пакети или закажувања.',
-      profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан'
+      profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
+
+      reg_tagline:'Креирај профил за ученик', reg_name_label:'Име и презиме', reg_age_label:'Возраст на детето',
+      reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
+      reg_terms_pre:'Се согласувам со', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
+
+      index_title_student:'Твоите материјали', index_title_professor:'Материјали',
+      index_sub_student:'Материјалите се појавуваат откако ќе влезеш во училница.',
+      index_sub_professor:'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.',
+      view_week:'Недела', view_month:'Месец', view_year:'Година',
+      status_queued:'Во ред', status_delivered:'Ново', status_opened:'Отворено', status_done:'Завршено',
+      pay_paid:'Платено', pay_due_soon:'Наближува рок', pay_late:'Задоцнето', pay_released:'Термин ослободен', pay_none:'Нема пакет',
+      plan_full:'Целосно (1 уплата)', plan_two:'2 полугодишни рати', plan_eight:'8 месечни рати', plan_trial:'Пробен пакет (1 уплата)',
+      inst_pending:'Чека', inst_paid:'Платена', inst_released:'Откажана',
+      mat_note:'Ноти', mat_audio:'Аудио', mat_task:'Задача'
     },
     en: {
       login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
       login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
       login_forgot:'Forgot your password?', login_terms_link:'Terms of Use and Privacy Policy',
       logout:'Log out', refresh_title:'Refresh',
-      nav_index:'Index', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
+      nav_index:'Home', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
       role_student:'Student', role_professor:'Professor', role_admin:'Admin',
-      eyebrow_index:'Digital Index', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
+      eyebrow_index:'Home', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
       schedule_title:'Group Calendar',
       schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
       profile_eyebrow:'Profile', profile_title:'Your profile', profile_sub:'Update your personal details and password.',
@@ -1285,7 +1309,21 @@
       profile_saved:'✓ Saved.', profile_saved_verify:'✓ Saved — check your new email to verify it.',
       profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.',
       profile_packages_title:'Your packages', profile_no_packages:"You don't have any active packages or bookings yet.",
-      profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked'
+      profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
+
+      reg_tagline:'Create a student account', reg_name_label:'Full name', reg_age_label:"Child's age",
+      reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
+      reg_terms_pre:'I agree to the', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
+
+      index_title_student:'Your materials', index_title_professor:'Materials',
+      index_sub_student:'Materials appear once you enter the classroom.',
+      index_sub_professor:'Materials appear on the tablet once the student enters the classroom.',
+      view_week:'Week', view_month:'Month', view_year:'Year',
+      status_queued:'Queued', status_delivered:'New', status_opened:'Opened', status_done:'Done',
+      pay_paid:'Paid', pay_due_soon:'Due soon', pay_late:'Overdue', pay_released:'Slot released', pay_none:'No package',
+      plan_full:'Full (1 payment)', plan_two:'2 half-year installments', plan_eight:'8 monthly installments', plan_trial:'Trial package (1 payment)',
+      inst_pending:'Pending', inst_paid:'Paid', inst_released:'Cancelled',
+      mat_note:'Notes', mat_audio:'Audio', mat_task:'Task'
     }
   };
   let currentLang = localStorage.getItem('pf_lang') || 'mk';
@@ -1297,10 +1335,13 @@
     });
     document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
     document.documentElement.lang = currentLang;
+    renderRegTermsText();
     if(session){
       buildNav();
       const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
       document.getElementById('uRole').textContent = t(roleKey);
+      if(session.role==='admin'){ renderAdminPage(); }
+      else { renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage(); }
     }
   }
 
@@ -1633,8 +1674,8 @@
     const isStudent = session.role === 'student';
     document.getElementById('professorFormCard').style.display = isStudent ? 'none' : 'block';
     document.getElementById('sentList').parentElement.style.display = isStudent ? 'none' : 'block';
-    document.getElementById('indexTitle').textContent = isStudent ? 'Твоите материјали' : 'Материјали';
-    document.getElementById('indexSub').textContent = isStudent ? 'Материјалите се појавуваат откако ќе влезеш во училница.' : 'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.';
+    document.getElementById('indexTitle').textContent = isStudent ? t('index_title_student') : t('index_title_professor');
+    document.getElementById('indexSub').textContent = isStudent ? t('index_sub_student') : t('index_sub_professor');
     if(isStudent) activeStudentForIndex = session.realUserId;
 
     if(!activeStudentForIndex){
@@ -2100,9 +2141,9 @@
     return {paid:'✓', due_soon:'⏳', late:'⚠', released:'✕', none:'—'}[state] || '—';
   }
 
-  const installmentStatusLabel = {pending:'Чека', paid:'Платена', released:'Откажана'};
+  const installmentStatusLabel = new Proxy({}, { get: (_, key) => t('inst_'+key) });
   const installmentStatusClass = {pending:'status-delivered', paid:'status-done', released:'status-queued'};
-  const planFullLabel = {full:'Целосно (1 уплата)', two:'2 рати', eight:'8 месечни рати'};
+  const planFullLabel = new Proxy({}, { get: (_, key) => t('plan_'+key) });
 
   function renderBillingPage(){
     const wrap = document.getElementById('billingContent');
