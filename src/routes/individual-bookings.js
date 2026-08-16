@@ -120,7 +120,11 @@ router.delete('/:id', requireAuth, async (req, res) => {
   const [[booking]] = await pool.query('SELECT * FROM individual_bookings WHERE id = ?', [req.params.id]);
   if (!booking) return res.status(404).json({ error: 'Часот не постои.' });
 
-  const isOwner = req.user.id === booking.student_id || req.user.id === booking.professor_id;
+  let isOwner = req.user.id === booking.professor_id;
+  if (!isOwner && req.user.role === 'student') {
+    const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [booking.student_id, req.user.id]);
+    isOwner = !!child;
+  }
   if (!isOwner && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Немаш пристап до овоj час.' });
   }
