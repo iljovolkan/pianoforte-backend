@@ -85,6 +85,10 @@
   main{max-width:1300px; margin:0 auto; padding:36px 28px 80px;}
   .page{display:none;} .page.active{display:block;}
   .page-head{margin-bottom:26px;}
+  .billing-subtabs{display:flex; gap:8px; margin-bottom:20px;}
+  .billing-subtab{background:#fff; border:1.5px solid var(--line); border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600; color:var(--mist); cursor:pointer; transition:.2s;}
+  .billing-subtab:hover{border-color:var(--lilac-pale);}
+  .billing-subtab.active{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
   .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--sand-deep); display:block; margin-bottom:8px;}
   .page-head h2{font-size:26px;}
   .page-head p{color:var(--mist); font-size:14px; margin-top:6px; max-width:560px;}
@@ -366,7 +370,10 @@
     <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
       <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;" data-i18n="login_go_register">Немаш профил? Регистрирај се →</a>
       <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;" data-i18n="login_forgot">Ja заборави лозинката?</a>
-      <a href="#" id="openTermsFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none; margin-top:6px;" data-i18n="login_terms_link">Услови за користење и Политика на приватност</a>
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:6px;">
+        <a href="#" id="openTermsFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none;" data-i18n="login_terms_link">Услови за користење</a>
+        <a href="#" id="openPrivacyFromLoginLink" style="color:var(--mist); font-size:11.5px; text-decoration:none;" data-i18n="login_privacy_link">Политика на приватност</a>
+      </div>
     </div>
   </div>
 </div>
@@ -412,7 +419,7 @@
   <div style="max-width:720px; margin:0 auto;">
     <button id="closeTermsBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;">← Назад</button>
     <div class="login-card" style="max-width:100%; text-align:left;">
-      <h1 style="font-size:22px; margin-bottom:18px;">Услови за користење и Политика на приватност</h1>
+      <h1 style="font-size:22px; margin-bottom:18px;">Услови за користење</h1>
       <div style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
         <p style="margin-bottom:14px;">Добредојдовте на pianoforte.edu.mk. Со вашиот пристап на страничката/платформата, се согласувате со општите одредби објавени подолу. Ве молиме прочитајте ги внимателно.</p>
         <p style="margin-bottom:14px;">pianoforte.edu.mk претставува интернет платформа за испорака на онлајн подучување за свирење на инструмент. Преносот на податоците се врши на серверот на pianoforte.edu.mk.</p>
@@ -426,25 +433,8 @@
         <h3 style="font-size:15px; margin:20px 0 8px;">Пристап</h3>
         <p style="margin-bottom:14px;">Малолетни лица под 18 годишна возраст немаат право на пристап без согласност или надзор од родител/старател овластен за плаќањето со неговата/нејзината дебитна или кредитна картичка.</p>
 
-        <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на лични податоци</h3>
-        <p style="margin-bottom:14px;">Основна цел при прибирање на личните информации е да обезбедиме сигурно, лесно и ефикасно користење на страничката. Се согласувате дека може да ги користиме вашите лични податоци за: да ви ги овозможиме услугите и поддршката кои ќе ги побарате; решавање на ваши барања или проблеми; прилагодување, мерење и подобрување на нашите услуги и содржина.</p>
-
-        <h3 style="font-size:15px; margin:20px 0 8px;">Правила на приватност и заштита на личните податоци</h3>
-        <p style="margin-bottom:14px;">Прибирањето на личните податоци е усогласено со прописите за заштита на личните податоци. Личните податоци се прибираат, обработуваат и чуваат исклучиво за потребите на нашата страничка — име, презиме, адреса, телефонски број и електронска пошта, со цел непречено испорачување на услугата изучување музички инструмент. Податоците се чуваат не подолго од што е потребно за целите поради кои се собрани, по што се бришат и уништуваат.</p>
-        <p style="margin-bottom:14px;"><strong>Малолетните лица не смеат да даваат лични податоци без дозвола од родител или старател. Пијано Форте никогаш нема да проследи на трети лица лични податоци од малолетници.</strong> Им препорачуваме на сите родители и старатели да ги научат своите деца на безбедно и одговорно ракување со личните податоци на интернет.</p>
-        <p style="margin-bottom:14px;">За прашања или забелешки на овие правила, пишете на info@pianoforte.edu.mk. На ваше барање, во рок од 7 дена ќе бидете известени кои од вашите лични податоци се прибрани.</p>
-
         <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на вашата корисничка сметка</h3>
         <p style="margin-bottom:14px;">Вашата лозинка е клучот од вашата корисничка сметка — никому не ja откривајте. Доколку изгубите контрола врз лозинката, можете да станете предмет на измами и злоупотреби направени во ваше име. Доколку лозинката ви е пробиена, веднаш променете ja и известете нè.</p>
-
-        <h3 style="font-size:15px; margin:20px 0 8px;">„Колачиња" / Технологија на следење</h3>
-        <p style="margin-bottom:14px;">Нашата страничка може да употребува „колачиња" (cookies) и технологија на следење, корисни за подобрување на страната и прилагодување кон потребите на посетителите. Лични податоци не можат да се прибираат преку „колачиња".</p>
-
-        <h3 style="font-size:15px; margin:20px 0 8px;">Давање на лични податоци на користење</h3>
-        <p style="margin-bottom:14px;">Единствено врз основа на закон, вашите лични податоци можат да бидат дадени на користење на државни органи или други институции (пр. дозвола побарана од овластена институција врз основа на закон, заштита од измама, истрага за веќе случена измама).</p>
-
-        <h3 style="font-size:15px; margin:20px 0 8px;">Чување на личните податоци</h3>
-        <p style="margin-bottom:14px;">Личните податоци се безбедно сочувани од губење, уништување, фалсификување и неовластен пристап. Единствено овластени лица имаат пристап. Преносот е заштитен со соодветни методи, а се преземаат сите потребни технички и организациски мерки за заштита.</p>
 
         <h3 style="font-size:15px; margin:20px 0 8px;">Опис на услугите и општи услови на работење</h3>
         <p style="margin-bottom:14px;">Учебната година во Пијано Форте започнува на 1 септември и трае индивидуално за секој клиент во зависност од купениот фонд на часови. Пијано Форте нема да работи на признатите државни празници, но тоа нема да се одрази на испорачаниот фонд на часови — секој изгубен час поради државен празник ќе биде презакажан во друг термин. Однапред најавени отсуства (не повеќе од 4 часа по семестар) и отсуства поради болест ќе бидат одработени во други термини. Час кој не бил одржан поради ненајавено отсуство од клиентот нема да се одработува и ќе се смета за реализиран. Час кој не бил одржан поради откажување од Пијано Форте, ќе биде одработен.</p>
@@ -470,6 +460,38 @@
     </div>
   </div>
 </div>
+
+<div id="privacyScreen" style="display:none; min-height:100vh; padding:24px; background:var(--bg);">
+  <div style="max-width:720px; margin:0 auto;">
+    <button id="closePrivacyBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;">← Назад</button>
+    <div class="login-card" style="max-width:100%; text-align:left;">
+      <h1 style="font-size:22px; margin-bottom:18px;">Правила за приватност и заштита на личните податоци</h1>
+      <div style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+        <p style="margin-bottom:14px;">Со Правилата се уредуваат начинот на користење и правото на приватност, сигурност и заштита на дадените лични податоци на pianoforte.edu.mk. Правилата можат да бидат изменети и секоја измена ќе биде видливо означена, а корисниците известени.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на лични податоци</h3>
+        <p style="margin-bottom:14px;">Основна цел при прибирање на личните информации е да обезбедиме сигурно, лесно и ефикасно користење на страничката. Се согласувате дека може да ги користиме вашите лични податоци за: да ви ги овозможиме услугите и поддршката кои ќе ги побарате; решавање на ваши барања или проблеми; прилагодување, мерење и подобрување на нашите услуги и содржина.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Правила на приватност и заштита на личните податоци</h3>
+        <p style="margin-bottom:14px;">Прибирањето на личните податоци е усогласено со прописите за заштита на личните податоци. Личните податоци се прибираат, обработуваат и чуваат исклучиво за потребите на нашата страничка — име, презиме, адреса, телефонски број и електронска пошта, со цел непречено испорачување на услугата изучување музички инструмент. Податоците се чуваат не подолго од што е потребно за целите поради кои се собрани, по што се бришат и уништуваат.</p>
+        <p style="margin-bottom:14px;"><strong>Малолетните лица не смеат да даваат лични податоци без дозвола од родител или старател. Пијано Форте никогаш нема да проследи на трети лица лични податоци од малолетници.</strong> Им препорачуваме на сите родители и старатели да ги научат своите деца на безбедно и одговорно ракување со личните податоци на интернет.</p>
+        <p style="margin-bottom:14px;">За прашања или забелешки на овие правила, пишете на info@pianoforte.edu.mk. На ваше барање, во рок од 7 дена ќе бидете известени кои од вашите лични податоци се прибрани.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">„Колачиња" / Технологија на следење</h3>
+        <p style="margin-bottom:14px;">Нашата страничка може да употребува „колачиња" (cookies) и технологија на следење, корисни за подобрување на страната и прилагодување кон потребите на посетителите. Лични податоци не можат да се прибираат преку „колачиња".</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Давање на лични податоци на користење</h3>
+        <p style="margin-bottom:14px;">Единствено врз основа на закон, вашите лични податоци можат да бидат дадени на користење на државни органи или други институции (пр. дозвола побарана од овластена институција врз основа на закон, заштита од измама, истрага за веќе случена измама).</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Чување на личните податоци</h3>
+        <p style="margin-bottom:14px;">Личните податоци се безбедно сочувани од губење, уништување, фалсификување и неовластен пристап. Единствено овластени лица имаат пристап. Преносот е заштитен со соодветни методи, а се преземаат сите потребни технички и организациски мерки за заштита.</p>
+
+        <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Адреса: Пијано Форте ДОО Скопје, ул. Виенска 1 Б/1-2, Карпош, 1000 Скопје, Македонија.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
@@ -722,6 +744,10 @@
 
     <!-- ---- BILLING PAGE ---- -->
     <section class="page" id="page-billing">
+      <div class="billing-subtabs" id="billingSubtabs" style="display:none;">
+        <button class="billing-subtab active" data-subtarget="billing" data-i18n="subtab_payments">Вашите уплати</button>
+        <button class="billing-subtab" data-subtarget="packages" data-i18n="nav_packages">Пакети</button>
+      </div>
       <div class="page-head">
         <span class="eyebrow" data-i18n="eyebrow_billing">Наплата</span>
         <h2 id="billingTitle">Статус на плаќање</h2>
@@ -736,6 +762,10 @@
 
     <!-- ---- PACKAGES PAGE ---- -->
     <section class="page" id="page-packages">
+      <div class="billing-subtabs" id="packagesSubtabs" style="display:none;">
+        <button class="billing-subtab" data-subtarget="billing" data-i18n="subtab_payments">Вашите уплати</button>
+        <button class="billing-subtab active" data-subtarget="packages" data-i18n="nav_packages">Пакети</button>
+      </div>
       <div class="page-head">
         <span class="eyebrow" data-i18n="eyebrow_packages">Пакети</span>
         <h2>Избери пакет на часови</h2>
@@ -823,6 +853,11 @@
       <div class="form-row"><label>Истек</label><input type="text" id="cardExpiry" placeholder="MM/ГГ" maxlength="5"></div>
       <div class="form-row"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="3"></div>
     </div>
+    <label id="payTermsLabel" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
+      <input type="checkbox" id="payTermsCheckbox" style="margin-top:2px;">
+      <span id="payTermsText"></span>
+    </label>
+
     <button class="pay-btn" id="payConfirmBtn">Плати ja првата рата</button>
     <button class="pm-cancel" id="payCancelBtn">Откажи</button>
     <div class="pm-note">Плаќањето сè уште не е поврзано со вистински платежен процесор — не се врши вистинска наплата. Картичните податоци не се складираат.</div>
@@ -836,14 +871,15 @@
     mk: {
       login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
       login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
-      login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење и Политика на приватност',
+      login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење', login_privacy_link:'Политика на приватност',
       logout:'Одјави се', refresh_title:'Освежи',
-      nav_index:'Почетна', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
+      nav_index:'Почетна', nav_profile:'Профил', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
+      subtab_payments:'Вашите уплати',
       role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
       eyebrow_index:'Почетна', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
       schedule_title:'Календар по групи',
       schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
-      profile_eyebrow:'Профил', profile_title:'Твojot профил', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
+      profile_eyebrow:'Поставки', profile_title:'Поставки на сметката', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
       profile_info_title:'Лични податоци', profile_name_label:'Име и презиме', profile_email_label:'Email',
       profile_email_hint:'Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.',
       profile_save_btn:'Зачувај промени', profile_password_title:'Смени лозинка', profile_current_pw:'Тековна лозинка',
@@ -855,7 +891,8 @@
 
       reg_tagline:'Креирај профил за ученик', reg_name_label:'Име и презиме', reg_age_label:'Возраст на детето',
       reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
-      reg_terms_pre:'Се согласувам со', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
+      reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
+      pay_terms_post:' за оваа уплата.',
 
       index_title_student:'Твоите материјали', index_title_professor:'Материјали',
       index_sub_student:'Материјалите се појавуваат откако ќе влезеш во училница.',
@@ -870,14 +907,15 @@
     en: {
       login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
       login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
-      login_forgot:'Forgot your password?', login_terms_link:'Terms of Use and Privacy Policy',
+      login_forgot:'Forgot your password?', login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
       logout:'Log out', refresh_title:'Refresh',
-      nav_index:'Home', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
+      nav_index:'Home', nav_profile:'Profile', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
+      subtab_payments:'Your payments',
       role_student:'Student', role_professor:'Professor', role_admin:'Admin',
       eyebrow_index:'Home', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
       schedule_title:'Group Calendar',
       schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
-      profile_eyebrow:'Profile', profile_title:'Your profile', profile_sub:'Update your personal details and password.',
+      profile_eyebrow:'Settings', profile_title:'Account settings', profile_sub:'Update your personal details and password.',
       profile_info_title:'Personal details', profile_name_label:'Full name', profile_email_label:'Email',
       profile_email_hint:'If you change your email, you may need to verify it again.',
       profile_save_btn:'Save changes', profile_password_title:'Change password', profile_current_pw:'Current password',
@@ -889,7 +927,8 @@
 
       reg_tagline:'Create a student account', reg_name_label:'Full name', reg_age_label:"Child's age",
       reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
-      reg_terms_pre:'I agree to the', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
+      reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
+      pay_terms_post:' for this payment.',
 
       index_title_student:'Your materials', index_title_professor:'Materials',
       index_sub_student:'Materials appear once you enter the classroom.',
@@ -957,9 +996,10 @@
 
   const AGE_RANGES = [
     {id:'all', label:'Сите возрасти'},
-    {id:'4-6', label:'4–6 год.'},
-    {id:'7-10', label:'7–10 год.'},
-    {id:'11-14', label:'11–14 год.'},
+    {id:'4-5', label:'4–5 год.'},
+    {id:'6-8', label:'6–8 год.'},
+    {id:'9-11', label:'9–11 год.'},
+    {id:'12-14', label:'12–14 год.'},
     {id:'15+', label:'15+ год.'}
   ];
   const LEVELS = [
@@ -1201,33 +1241,44 @@
   });
 
   /* ===================== TERMS / PRIVACY ===================== */
-  let termsReturnScreenId = 'loginScreen';
-  function openTermsScreen(fromScreenId){
-    termsReturnScreenId = fromScreenId;
-    document.getElementById(fromScreenId).style.display = 'none';
-    document.getElementById('termsScreen').style.display = 'block';
+  let legalReturnAction = null; // функција што се повикува кога ќе се затвори документот
+  function openLegalScreen(doc, returnAction){
+    legalReturnAction = returnAction;
+    document.getElementById('termsScreen').style.display = 'none';
+    document.getElementById('privacyScreen').style.display = 'none';
+    document.getElementById(doc==='privacy' ? 'privacyScreen' : 'termsScreen').style.display = 'block';
     window.scrollTo(0,0);
   }
+  function closeLegalScreen(){
+    document.getElementById('termsScreen').style.display = 'none';
+    document.getElementById('privacyScreen').style.display = 'none';
+    if(legalReturnAction) legalReturnAction();
+  }
   document.getElementById('openTermsFromLoginLink').addEventListener('click', (e)=>{
-    e.preventDefault(); openTermsScreen('loginScreen');
+    e.preventDefault(); openLegalScreen('terms', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
+  });
+  document.getElementById('openPrivacyFromLoginLink').addEventListener('click', (e)=>{
+    e.preventDefault(); openLegalScreen('privacy', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
   });
 
   function renderRegTermsText(){
     document.getElementById('regTermsText').innerHTML =
-      t('reg_terms_pre') + ' <a href="#" id="openTermsFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_terms_link') + '</a>' + t('reg_terms_post');
+      t('reg_terms_pre') + ' <a href="#" id="openTermsFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_terms_link') + '</a> ' + t('reg_terms_and') + ' <a href="#" id="openPrivacyFromRegisterLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_privacy_link') + '</a>' + t('reg_terms_post');
   }
   renderRegTermsText();
   document.getElementById('regTermsLabel').addEventListener('click', (e)=>{
     if(e.target && e.target.id === 'openTermsFromRegisterLink'){
       e.preventDefault(); e.stopPropagation();
-      openTermsScreen('registerScreen');
+      openLegalScreen('terms', ()=>{ document.getElementById('registerScreen').style.display = 'flex'; });
+    }
+    if(e.target && e.target.id === 'openPrivacyFromRegisterLink'){
+      e.preventDefault(); e.stopPropagation();
+      openLegalScreen('privacy', ()=>{ document.getElementById('registerScreen').style.display = 'flex'; });
     }
   });
 
-  document.getElementById('closeTermsBtn').addEventListener('click', ()=>{
-    document.getElementById('termsScreen').style.display = 'none';
-    document.getElementById(termsReturnScreenId).style.display = 'flex';
-  });
+  document.getElementById('closeTermsBtn').addEventListener('click', closeLegalScreen);
+  document.getElementById('closePrivacyBtn').addEventListener('click', closeLegalScreen);
 
   /* ===================== FORGOT / RESET PASSWORD ===================== */
   document.getElementById('goToForgotPasswordLink').addEventListener('click', (e)=>{
@@ -1544,10 +1595,10 @@
     const nav = document.getElementById('topnav'); nav.innerHTML = '';
     const tabs = [];
     if(session.role==='admin') tabs.push({id:'admin', label:t('nav_admin')});
-    tabs.push({id:'index', label:t('nav_index')});
+    tabs.push({id:'index', label: session.role==='student' ? t('nav_profile') : t('nav_index')});
     if(session.role==='professor') tabs.push({id:'schedule', label:t('nav_schedule')});
     tabs.push({id:'billing', label:t('nav_billing')});
-    tabs.push({id:'packages', label:t('nav_packages')});
+    if(session.role !== 'student') tabs.push({id:'packages', label:t('nav_packages')});
     tabs.forEach(tab=>{
       const btn = document.createElement('button'); btn.textContent = tab.label; btn.dataset.page = tab.id;
       btn.addEventListener('click', ()=>{
@@ -1564,7 +1615,24 @@
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.getElementById('page-'+id).classList.add('active');
     document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active', b.dataset.page===id));
+    // "Наплата" ставката во менито останува активна и кога гледаме „Пакети" —
+    // за ученик, Пакети се под-таб внатре во Наплата, не посебна ставка
+    if((id==='billing' || id==='packages') && session && session.role==='student'){
+      document.querySelectorAll('#topnav button').forEach(b=>b.classList.toggle('active', b.dataset.page==='billing'));
+    }
+    document.querySelectorAll('.billing-subtabs').forEach(bar=>{
+      bar.style.display = (session && session.role==='student' && (id==='billing'||id==='packages')) ? 'flex' : 'none';
+      bar.querySelectorAll('.billing-subtab').forEach(b=>b.classList.toggle('active', b.dataset.subtarget===id));
+    });
   }
+  document.querySelectorAll('.billing-subtab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const target = btn.dataset.subtarget;
+      showPage(target);
+      if(target==='billing') renderBillingPage();
+      if(target==='packages') renderPackagesPage();
+    });
+  });
 
   /* ===================== INDEX PAGE ===================== */
   const studentSelect = document.getElementById('studentSelect');
@@ -2685,9 +2753,26 @@
   }
 
   const overlay = document.getElementById('paymentOverlay');
+  function renderPayTermsText(){
+    document.getElementById('payTermsText').innerHTML =
+      t('reg_terms_pre') + ' <a href="#" id="openTermsFromPayLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_terms_link') + '</a> ' + t('reg_terms_and') + ' <a href="#" id="openPrivacyFromPayLink" style="color:var(--lilac-deep); font-weight:600;">' + t('login_privacy_link') + '</a>' + t('pay_terms_post');
+  }
+  renderPayTermsText();
+  document.getElementById('payTermsLabel').addEventListener('click', (e)=>{
+    if(e.target && e.target.id === 'openTermsFromPayLink'){
+      e.preventDefault(); e.stopPropagation();
+      openLegalScreen('terms', ()=>{ overlay.classList.add('show'); });
+    }
+    if(e.target && e.target.id === 'openPrivacyFromPayLink'){
+      e.preventDefault(); e.stopPropagation();
+      openLegalScreen('privacy', ()=>{ overlay.classList.add('show'); });
+    }
+  });
+
   function openPaymentModal(){
     document.getElementById('cardName').value=''; document.getElementById('cardNumber').value='';
     document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
+    document.getElementById('payTermsCheckbox').checked = false;
 
     if(pendingIndividualBooking){
       const p = packages.find(x=>x.id===chosenPackage);
@@ -2732,6 +2817,12 @@
     if(!name || !num || !exp || !cvv){
       document.getElementById('paymentSub').style.color = 'var(--wine)';
       setTimeout(()=>{ document.getElementById('paymentSub').style.color=''; }, 900);
+      return;
+    }
+    if(!document.getElementById('payTermsCheckbox').checked){
+      const label = document.getElementById('payTermsLabel');
+      label.style.color = 'var(--wine)';
+      setTimeout(()=>{ label.style.color=''; }, 1200);
       return;
     }
     const payBtn = document.getElementById('payConfirmBtn');
