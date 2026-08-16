@@ -93,6 +93,11 @@
   .page-head h2{font-size:26px;}
   .page-head p{color:var(--mist); font-size:14px; margin-top:6px; max-width:560px;}
   .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px;}
+  .admin-stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;}
+  .admin-stat-card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
+  .admin-stat-card .num{font-family:'Fraunces',serif; font-size:26px; font-weight:600; color:var(--lilac-deep); line-height:1.1;}
+  .admin-stat-card .num.warn{color:#B3555F;}
+  .admin-stat-card .lbl{font-size:11.5px; color:var(--mist); margin-top:4px;}
 
   /* ---- shared form bits ---- */
   .form-row{margin-bottom:14px;}
@@ -240,25 +245,20 @@
 
   .pkg-table-section{margin-bottom:32px;}
   .pkg-table-section h3{font-family:'Fraunces',serif; font-size:16px; font-weight:600; margin-bottom:12px; color:var(--ink);}
-  .pkg-table{background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;}
-  .pkg-table-row{display:grid; grid-template-columns:1.5fr 0.9fr 0.6fr 2.2fr auto; gap:14px; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line);}
-  .pkg-table-row:last-child{border-bottom:none;}
-  .pkg-table-row.head{background:var(--surface-2); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--mist); font-weight:700; padding:11px 18px;}
-  .ptc-name{font-weight:600; font-size:13.5px; color:var(--ink);}
-  .ptc-price{font-weight:700; color:var(--sand-deep); font-size:14.5px; white-space:nowrap;}
-  .ptc-discount{font-size:12px; color:var(--leaf); font-weight:600;}
-  .ptc-desc{font-size:11.5px; color:var(--mist); line-height:1.5;}
-  .pkg-table-buy-btn{background:var(--surface-2); border:1.5px solid var(--line); color:var(--ink); padding:9px 16px; border-radius:8px; font-weight:600; font-size:12.5px; cursor:pointer; transition:.2s; white-space:nowrap;}
+  .pkg-horiz-row{display:flex; gap:16px; flex-wrap:wrap;}
+  .pkg-horiz-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; flex:1 1 220px; min-width:220px; display:flex; flex-direction:column;}
+  .ptc-name{font-weight:600; font-size:13.5px; color:var(--ink); margin-bottom:8px;}
+  .ptc-price{font-weight:700; color:var(--sand-deep); font-size:19px; white-space:nowrap;}
+  .ptc-discount{font-size:12px; color:var(--leaf); font-weight:600; min-height:16px; margin:2px 0 12px;}
+  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:8px;}
+  .ptc-desc{font-size:11.5px; color:var(--mist); line-height:1.5; background:var(--surface-2); border-radius:8px; padding:10px 12px; margin-bottom:12px;}
+  .pkg-table-buy-btn{background:var(--surface-2); border:1.5px solid var(--line); color:var(--ink); padding:10px 16px; border-radius:8px; font-weight:600; font-size:12.5px; cursor:pointer; transition:.2s; white-space:nowrap; margin-top:auto;}
   .pkg-table-buy-btn:hover{border-color:var(--lilac-deep);}
   .pkg-table-buy-btn.chosen{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
 
   @media(max-width:820px){
-    .pkg-table-row{grid-template-columns:1fr; gap:6px; padding:16px 18px;}
-    .pkg-table-row.head{display:none;}
-    .ptc-name{font-size:14.5px;}
-    .ptc-price::before{content:'Цена: ';color:var(--mist); font-weight:500;}
-    .ptc-discount:not(:empty)::before{content:'Попуст: ';color:var(--mist); font-weight:500;}
-    .pkg-table-buy-btn{width:100%; margin-top:8px; padding:11px;}
+    .pkg-horiz-row{flex-direction:column;}
+    .pkg-horiz-card{min-width:0;}
   }
   .pkg-select-btn:hover{transform:translateY(-1px);}
   .pkg-card.chosen{border-color:var(--leaf); background:var(--leaf-pale);}
@@ -752,6 +752,18 @@
     <section class="page" id="page-admin">
       <div class="page-head">
         <span class="eyebrow">Администрација</span>
+        <h2>Преглед и управување</h2>
+        <p>Целосен надзор на системот — статистика, активност, професори и корисници.</p>
+      </div>
+
+      <div class="admin-stats-grid" id="adminStatsGrid"></div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Последна активност (купувања)</h3>
+        <div id="adminPurchasesList"></div>
+      </div>
+
+      <div class="page-head" style="margin-top:12px;">
         <h2>Управувај со професори</h2>
         <p>Создади нова professor сметка. Привремената лозинка се прикажува само еднаш — сподели ja рачно со професорот.</p>
       </div>
@@ -2586,8 +2598,57 @@
   }
   window.deleteUser = deleteUser;
 
+  async function renderAdminOverview(){
+    const grid = document.getElementById('adminStatsGrid');
+    try{
+      const o = await authApiCall('/admin/overview');
+      const stats = [
+        {num: o.parents, lbl: 'Родители'},
+        {num: o.children, lbl: 'Деца'},
+        {num: o.professors, lbl: 'Професори'},
+        {num: o.groups, lbl: 'Групи'},
+        {num: o.active_subscriptions, lbl: 'Активни претплати'},
+        {num: o.pending_group_selection, lbl: 'Чекаат термин', warn: o.pending_group_selection > 0},
+        {num: o.late_installments, lbl: 'Задоцнети рати', warn: o.late_installments > 0},
+        {num: o.individual_bookings, lbl: 'Индив. часови'},
+        {num: Number(o.total_revenue).toLocaleString('mk-MK') + ' ден.', lbl: 'Вкупен приход'}
+      ];
+      grid.innerHTML = stats.map(s=>`
+        <div class="admin-stat-card">
+          <div class="num${s.warn?' warn':''}">${s.num}</div>
+          <div class="lbl">${s.lbl}</div>
+        </div>
+      `).join('');
+    } catch(err){
+      grid.innerHTML = `<div class="empty-state">Грешка при вчитување статистика: ${err.message}</div>`;
+    }
+
+    const purchList = document.getElementById('adminPurchasesList');
+    purchList.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    try{
+      const purchases = await authApiCall('/admin/purchases');
+      if(purchases.length === 0){
+        purchList.innerHTML = '<div class="empty-state">Сè уште нема купувања.</div>';
+      } else {
+        purchList.innerHTML = purchases.map(p=>`
+          <div class="sent-item">
+            <div class="sent-icon">${instrumentInfo(p.instrument).icon}</div>
+            <div class="sent-meta">
+              <div class="t">${escapeHtml(p.student_name)} · ${escapeHtml(p.package_name)}</div>
+              <div class="sub">${p.group_name ? escapeHtml(p.group_name) : 'чека термин'} · ${new Date(p.purchased_at).toLocaleDateString('mk-MK')} · ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.</div>
+            </div>
+            <span class="status-pill ${p.payment_status==='paid'?'status-done':'status-queued'}">${p.payment_status==='paid'?'Платено':p.payment_status}</span>
+          </div>
+        `).join('');
+      }
+    } catch(err){
+      purchList.innerHTML = `<div class="empty-state">Грешка: ${err.message}</div>`;
+    }
+  }
+
   async function renderAdminPage(){
     renderAdminIndivBookings();
+    renderAdminOverview();
     const listBox = document.getElementById('adminProfList');
     listBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
     try{
@@ -2600,7 +2661,7 @@
             <div class="sent-icon">${p.instrument ? instrumentInfo(p.instrument).icon : '🎹'}</div>
             <div class="sent-meta">
               <div class="t">${escapeHtml(p.full_name)}</div>
-              <div class="sub">${escapeHtml(p.email)} · ${p.instrument ? instrumentLabel(p.instrument) : 'нема доделен инструмент'}</div>
+              <div class="sub">${escapeHtml(p.email)} · ${p.instrument ? instrumentLabel(p.instrument) : 'нема доделен инструмент'} · ${p.group_count} ${p.group_count===1?'група':'групи'} · ${p.student_count} ${p.student_count===1?'ученик':'ученици'}</div>
             </div>
             <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${p.id}, '${escapeHtml(p.full_name)}')">Избриши</button>
           </div>
@@ -2621,10 +2682,10 @@
           <div class="sent-item">
             <div class="sent-icon">🎧</div>
             <div class="sent-meta">
-              <div class="t">${escapeHtml(s.full_name)}</div>
-              <div class="sub">${escapeHtml(s.email)} · регистриран ${new Date(s.created_at).toLocaleDateString('mk-MK')} ${s.email_verified ? '· ✓ потврден email' : '· ⏳ непотврден email'}</div>
+              <div class="t">${escapeHtml(s.full_name)}${s.age ? ' · ' + s.age + ' год.' : ''}</div>
+              <div class="sub">Родител: ${escapeHtml(s.parent_email)} · регистриран ${new Date(s.created_at).toLocaleDateString('mk-MK')} ${s.parent_email_verified ? '· ✓ потврден email' : '· ⏳ непотврден email'}</div>
             </div>
-            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${s.id}, '${escapeHtml(s.full_name)}')">Избриши</button>
+            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${s.parent_id}, '${escapeHtml(s.full_name)}')">Избриши родител</button>
           </div>
         `).join('');
       }
@@ -2727,13 +2788,16 @@
     const individual = forInstrument.find(p=>p.package_type==='individual');
     const isViolin = selectedPkgInstrument === 'violina';
 
+    let descCounter = 0;
     function rowHtml(name, price, discount, desc, pkgId, type, plan){
-      return `<div class="pkg-table-row">
+      const descId = 'pkgdesc-' + (descCounter++);
+      return `<div class="pkg-horiz-card">
         <div class="ptc-name">${escapeHtml(name)}</div>
         <div class="ptc-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
-        <div class="ptc-discount">${discount || '—'}</div>
-        <div class="ptc-desc">${escapeHtml(desc)}</div>
-        <div><button class="pkg-table-buy-btn${chosenPackage===pkgId && preselectedPlan===plan?' chosen':''}" data-pkg="${pkgId}" data-type="${type}" data-plan="${plan||''}">${chosenPackage===pkgId && preselectedPlan===plan?'✓ Избрано':'Купи'}</button></div>
+        <div class="ptc-discount">${discount || '\u00A0'}</div>
+        <button class="pkg-desc-btn" data-target="${descId}">ℹ️ Опис на пакет</button>
+        <div class="ptc-desc" id="${descId}" style="display:none;">${escapeHtml(desc)}</div>
+        <button class="pkg-table-buy-btn${chosenPackage===pkgId && preselectedPlan===plan?' chosen':''}" data-pkg="${pkgId}" data-type="${type}" data-plan="${plan||''}">${chosenPackage===pkgId && preselectedPlan===plan?'✓ Избрано':'Купи'}</button>
       </div>`;
     }
 
@@ -2742,8 +2806,7 @@
     if(trial){
       html += `<div class="pkg-table-section">
         <h3>Пробни/Промотивни ${instrumentLabel(selectedPkgInstrument).replace(/^\S+\s/,'')} пакети за почетници</h3>
-        <div class="pkg-table">
-          <div class="pkg-table-row head"><div>Пакет</div><div>Цена</div><div>Попуст</div><div>Опис на пакет</div><div>Купи</div></div>
+        <div class="pkg-horiz-row">
           ${rowHtml(trial.name, trial.price_mkd, null, trial.description, trial.id, 'trial', 'trial')}
         </div>
       </div>`;
@@ -2757,8 +2820,7 @@
       const hourDesc = isViolin ? '(45 мин. групен и 45 мин. индивидуален час)' : 'во групна настава, секој час со времетраење од 45 мин.';
       html += `<div class="pkg-table-section">
         <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-        <div class="pkg-table">
-          <div class="pkg-table-row head"><div>Пакет</div><div>Цена</div><div>Попуст</div><div>Опис на пакет</div><div>Купи</div></div>
+        <div class="pkg-horiz-row">
           ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
           ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
           ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
@@ -2769,14 +2831,22 @@
     if(individual){
       html += `<div class="pkg-table-section">
         <h3>Индивидуален час по ${instrumentLabel(selectedPkgInstrument).replace(/^\S+\s/,'')}</h3>
-        <div class="pkg-table">
-          <div class="pkg-table-row head"><div>Пакет</div><div>Цена</div><div>Попуст</div><div>Опис на пакет</div><div>Купи</div></div>
+        <div class="pkg-horiz-row">
           ${rowHtml('1 час', individual.price_mkd, null, individual.description, individual.id, 'individual', 'individual')}
         </div>
       </div>`;
     }
 
     grid.innerHTML = html;
+
+    grid.querySelectorAll('.pkg-desc-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const target = document.getElementById(btn.dataset.target);
+        const isOpen = target.style.display !== 'none';
+        target.style.display = isOpen ? 'none' : 'block';
+        btn.textContent = isOpen ? 'ℹ️ Опис на пакет' : '▲ Скриј опис';
+      });
+    });
 
     grid.querySelectorAll('.pkg-table-buy-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -3167,3 +3237,4 @@ if('serviceWorker' in navigator){
 
 </body>
 </html>
+
