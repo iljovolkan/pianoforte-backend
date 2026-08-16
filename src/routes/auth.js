@@ -48,7 +48,7 @@ function issueTokens(user) {
 
 // POST /auth/register  { email, password, full_name, role }
 router.post('/register', registerLimiter, async (req, res) => {
-  const { email, password, full_name, role } = req.body;
+  const { email, password, full_name, role, child_name, child_age } = req.body;
 
   if (!email || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Сите полиња се задолжителни.' });
@@ -58,6 +58,9 @@ router.post('/register', registerLimiter, async (req, res) => {
   }
   if (password.length < 8) {
     return res.status(400).json({ error: 'Лозинката мора да има барем 8 карактери.' });
+  }
+  if (role === 'student' && (!child_name || !child_name.trim())) {
+    return res.status(400).json({ error: 'Името на детето е задолжително.' });
   }
 
   try {
@@ -73,6 +76,15 @@ router.post('/register', registerLimiter, async (req, res) => {
       'INSERT INTO users (email, password_hash, role, full_name, verify_token, email_verified) VALUES (?, ?, ?, ?, ?, FALSE)',
       [email, passwordHash, role, full_name, verifyToken]
     );
+
+    // за родителски (student) сметки, автоматски креирај го првото дете —
+    // родителот подоцна може да додаде уште деца од профилот
+    if (role === 'student') {
+      await pool.query(
+        'INSERT INTO children (parent_id, full_name, age) VALUES (?, ?, ?)',
+        [result.insertId, child_name.trim(), child_age || null]
+      );
+    }
 
     const verifyLink = `${APP_URL}/auth/verify?token=${verifyToken}`;
     await sendMail({
