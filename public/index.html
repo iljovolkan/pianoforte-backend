@@ -522,14 +522,20 @@
   <div class="login-card" style="max-width:480px;">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reg_tagline">Креирај профил за ученик</p></div>
 
-    <label class="field-label" data-i18n="reg_name_label">Име и презиме</label>
-    <input class="login-input" id="regName" placeholder="Име и презиме на детето">
+    <label class="field-label" data-i18n="reg_parent_name_label">Твоето име и презиме (родител/старател)</label>
+    <input class="login-input" id="regName" placeholder="пр. Марија Петровска">
     <label class="field-label" data-i18n="label_email">Email</label>
     <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
     <input class="login-input" id="regPassword" type="password" placeholder="••••••••">
-    <label class="field-label" data-i18n="reg_age_label">Возраст на детето</label>
-    <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
+
+    <div style="border-top:1px solid var(--line); margin:18px 0 14px; padding-top:14px;">
+      <div style="font-size:11px; color:var(--mist); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em;" data-i18n="reg_child_section">Прво дете (можеш да додадеш уште подоцна)</div>
+      <label class="field-label" data-i18n="reg_child_name_label">Име и презиме на детето</label>
+      <input class="login-input" id="regChildName" placeholder="Име и презиме на детето">
+      <label class="field-label" data-i18n="reg_age_label">Возраст на детето</label>
+      <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
+    </div>
 
     <label class="field-label" data-i18n="reg_instrument_label">Инструмент</label>
     <div class="type-toggle" id="regInstrumentToggle" style="flex-wrap:wrap; margin-bottom:18px;"></div>
@@ -591,6 +597,10 @@
         <span class="eyebrow" data-i18n="eyebrow_index">Дигитален индекс</span>
         <h2 id="indexTitle">Материјали</h2>
         <p id="indexSub">Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.</p>
+      </div>
+      <div class="form-row" id="childSelectorRow" style="display:none; max-width:320px; margin-bottom:20px;">
+        <label data-i18n="child_selector_label">Дете</label>
+        <select class="login-select" id="childSelect" style="margin-bottom:0;"></select>
       </div>
       <div class="index-layout">
         <div>
@@ -690,6 +700,26 @@
         </div>
         <button class="send-btn" id="profileSaveBtn" style="margin-top:16px;" data-i18n="profile_save_btn">Зачувај промени</button>
         <div id="profileInfoMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
+      </div>
+
+      <div class="card" style="max-width:480px; margin-top:20px; display:none;" id="myChildrenCard">
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="children_title">Твоите деца</h3>
+        <div id="myChildrenList" style="margin-bottom:16px;"></div>
+        <div id="childFormBox" style="display:none; padding-top:14px; border-top:1px solid var(--line);">
+          <div class="form-row">
+            <label data-i18n="reg_child_name_label">Име и презиме на детето</label>
+            <input type="text" id="childFormName" class="login-input" style="margin-bottom:0;">
+          </div>
+          <div style="height:12px;"></div>
+          <div class="form-row">
+            <label data-i18n="reg_age_label">Возраст на детето</label>
+            <input type="number" min="3" max="99" id="childFormAge" class="login-input" style="margin-bottom:0;">
+          </div>
+          <button class="send-btn" id="childFormSaveBtn" style="margin-top:12px;" data-i18n="children_save_btn">Зачувај</button>
+          <button class="mc-btn" id="childFormCancelBtn" style="margin-top:8px; width:100%;" data-i18n="children_cancel_btn">Откажи</button>
+        </div>
+        <button class="pkg-select-btn" id="addChildBtn" style="width:100%;" data-i18n="children_add_btn">+ Додади дете</button>
+        <div id="childFormMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
       </div>
 
       <div class="card" style="max-width:480px; margin-top:20px; display:none;" id="profilePackagesCard">
@@ -859,6 +889,11 @@
     <h3>Плаќање со картичка</h3>
     <p class="psub" id="paymentSub">Пакет · термин</p>
 
+    <div class="form-row" id="payChildSelectorRow" style="display:none;">
+      <label>За кое дете?</label>
+      <select class="login-select" id="payChildSelect" style="margin-bottom:0;"></select>
+    </div>
+
     <div class="form-row" id="planSelectorRow">
       <label>План на плаќање</label>
       <div class="type-toggle" id="planToggle" style="margin-bottom:0;">
@@ -911,8 +946,9 @@
       profile_pw_changed:'✓ Лозинката е сменета.', profile_pw_mismatch:'Новите лозинки не се совпаѓаат.',
       profile_packages_title:'Твоите пакети', profile_no_packages:'Сè уште немаш активни пакети или закажувања.',
       profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
+      child_selector_label:'Дете', children_title:'Твоите деца', children_save_btn:'Зачувај', children_cancel_btn:'Откажи', children_add_btn:'+ Додади дете',
 
-      reg_tagline:'Креирај профил за ученик', reg_name_label:'Име и презиме', reg_age_label:'Возраст на детето',
+      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
       reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
       reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
       pay_terms_post:' за оваа уплата.',
@@ -947,8 +983,9 @@
       profile_pw_changed:'✓ Password changed.', profile_pw_mismatch:'New passwords do not match.',
       profile_packages_title:'Your packages', profile_no_packages:"You don't have any active packages or bookings yet.",
       profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
+      child_selector_label:'Child', children_title:'Your children', children_save_btn:'Save', children_cancel_btn:'Cancel', children_add_btn:'+ Add child',
 
-      reg_tagline:'Create a student account', reg_name_label:'Full name', reg_age_label:"Child's age",
+      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
       reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
       reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
       pay_terms_post:' for this payment.',
@@ -1016,6 +1053,8 @@
   let subscriptions = []; // GET /subscriptions (сурови редови)
   let installments = []; // GET /installments
   let individualBookings = []; // GET /individual-bookings
+  let children = []; // GET /children — децата на најавениот родител
+  let activeChildId = null; // кое дете е избрано за приказ/дејствија
 
   const AGE_RANGES = [
     {id:'all', label:'Сите возрасти'},
@@ -1192,6 +1231,10 @@
   }
   async function loadIndividualBookings(){
     try{ individualBookings = await authApiCall('/individual-bookings'); } catch(err){ individualBookings = []; }
+  }
+  async function loadChildren(){
+    try{ children = await authApiCall('/children'); } catch(err){ children = []; }
+    if(!children.find(c=>c.id===activeChildId)) activeChildId = children.length ? children[0].id : null;
   }
 
   function validateLoginForm(){
@@ -1391,13 +1434,14 @@
   let pendingRegistration = null;
   document.getElementById('registerBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('regName').value.trim();
+    const childName = document.getElementById('regChildName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value.trim();
     const age = document.getElementById('regAge').value;
     const errBox = document.getElementById('registerError');
     errBox.style.display = 'none';
 
-    if(!name || !email || !password || !age || !regInstrument){
+    if(!name || !childName || !email || !password || !age || !regInstrument){
       errBox.textContent = 'Пополни ги сите полиња и избери инструмент.';
       errBox.style.display = 'block';
       return;
@@ -1420,10 +1464,10 @@
       // Вистински повик кон живиот backend — ова реално креира ред во MySQL базата
       await apiCall('/auth/register', {
         method:'POST',
-        body: JSON.stringify({ email, password, full_name:name, role:'student' })
+        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age })
       });
 
-      pendingRegistration = {name, email, password, age, instrument: regInstrument};
+      pendingRegistration = {name, childName, email, password, age, instrument: regInstrument};
       document.getElementById('confirmEmailAddress').textContent = `Испративме потврда до ${email}`;
       document.getElementById('registerScreen').style.display = 'none';
       document.getElementById('confirmEmailScreen').style.display = 'flex';
@@ -1451,7 +1495,7 @@
       if(session.role==='admin'){
         await renderAdminPage();
       } else {
-        await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings()]);
+        await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings(), loadChildren()]);
         if(session.role!=='student'){ buildStudentSelect(); }
         if(activeStudentForIndex) await loadMaterialsFor(activeStudentForIndex);
         renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
@@ -1478,7 +1522,90 @@
     document.getElementById('page-profile').classList.add('active');
     document.querySelectorAll('#topnav button').forEach(b=>b.classList.remove('active'));
     renderProfilePackages();
+    renderMyChildren();
   }
+
+  let editingChildId = null;
+
+  function renderMyChildren(){
+    const card = document.getElementById('myChildrenCard');
+    if(session.role !== 'student'){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    document.getElementById('childFormBox').style.display = 'none';
+    document.getElementById('childFormMsg').style.display = 'none';
+
+    const list = document.getElementById('myChildrenList');
+    list.innerHTML = children.map(c=>`
+      <div class="sent-item">
+        <div class="sent-icon">🎵</div>
+        <div class="sent-meta">
+          <div class="t">${escapeHtml(c.full_name)}</div>
+          <div class="sub">${c.age ? c.age + ' год.' : ''}</div>
+        </div>
+        <button class="mc-btn" style="flex:none;" onclick="editChild(${c.id})">Уреди</button>
+        ${children.length>1 ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteChild(${c.id})">Избриши</button>` : ''}
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('addChildBtn').addEventListener('click', ()=>{
+    editingChildId = null;
+    document.getElementById('childFormName').value = '';
+    document.getElementById('childFormAge').value = '';
+    document.getElementById('childFormBox').style.display = 'block';
+    document.getElementById('childFormMsg').style.display = 'none';
+  });
+
+  window.editChild = function(id){
+    const c = children.find(x=>x.id===id);
+    if(!c) return;
+    editingChildId = id;
+    document.getElementById('childFormName').value = c.full_name;
+    document.getElementById('childFormAge').value = c.age || '';
+    document.getElementById('childFormBox').style.display = 'block';
+    document.getElementById('childFormMsg').style.display = 'none';
+  };
+
+  window.deleteChild = async function(id){
+    const c = children.find(x=>x.id===id);
+    if(!confirm(`Дали сигурно сакаш да го избришеш детето „${c ? c.full_name : ''}"? Ова ги брише и сите негови материјали, претплати и закажувања.`)) return;
+    try{
+      await authApiCall('/children/'+id, { method:'DELETE' });
+      await loadChildren();
+      renderMyChildren();
+      if(activeChildId) await loadMaterialsFor(activeChildId);
+      renderIndexPage();
+    } catch(err){ alert('Грешка: ' + err.message); }
+  };
+
+  document.getElementById('childFormCancelBtn').addEventListener('click', ()=>{
+    document.getElementById('childFormBox').style.display = 'none';
+  });
+
+  document.getElementById('childFormSaveBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('childFormName').value.trim();
+    const age = document.getElementById('childFormAge').value;
+    const msgBox = document.getElementById('childFormMsg');
+    msgBox.style.display = 'none';
+    if(!name){ msgBox.style.color='var(--wine)'; msgBox.textContent='Името е задолжително.'; msgBox.style.display='block'; return; }
+
+    const btn = document.getElementById('childFormSaveBtn');
+    btn.disabled = true;
+    try{
+      if(editingChildId){
+        await authApiCall('/children/'+editingChildId, { method:'PUT', body: JSON.stringify({ full_name:name, age }) });
+      } else {
+        await authApiCall('/children', { method:'POST', body: JSON.stringify({ full_name:name, age }) });
+      }
+      await loadChildren();
+      renderMyChildren();
+      renderIndexPage();
+    } catch(err){
+      msgBox.style.color='var(--wine)'; msgBox.textContent = err.message; msgBox.style.display='block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   function renderProfilePackages(){
     const card = document.getElementById('profilePackagesCard');
@@ -1603,10 +1730,10 @@
     } else {
       showPage('index');
       document.getElementById('tabletFeed').innerHTML = '<div class="empty-state">Се вчитува...</div>';
-      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings()]);
+      await Promise.all([loadGroups(), loadSchedule(), loadPackages(), loadSubscriptions(), loadInstallments(), loadIndividualBookings(), loadChildren()]);
       if(session.role==='student'){
-        activeStudentForIndex = session.realUserId;
-        await loadMaterialsFor(activeStudentForIndex);
+        activeStudentForIndex = activeChildId;
+        if(activeStudentForIndex) await loadMaterialsFor(activeStudentForIndex);
       } else {
         buildStudentSelect();
         if(activeStudentForIndex) await loadMaterialsFor(activeStudentForIndex);
@@ -1680,6 +1807,13 @@
   studentSelect.addEventListener('change', async e=>{
     activeStudentForIndex = Number(e.target.value);
     await loadMaterialsFor(activeStudentForIndex);
+    renderIndexPage();
+  });
+
+  document.getElementById('childSelect').addEventListener('change', async e=>{
+    activeChildId = Number(e.target.value);
+    activeStudentForIndex = activeChildId;
+    await loadMaterialsFor(activeChildId);
     renderIndexPage();
   });
 
@@ -1783,7 +1917,16 @@
     document.getElementById('sentList').parentElement.style.display = isStudent ? 'none' : 'block';
     document.getElementById('indexTitle').textContent = isStudent ? t('index_title_student') : t('index_title_professor');
     document.getElementById('indexSub').textContent = isStudent ? t('index_sub_student') : t('index_sub_professor');
-    if(isStudent) activeStudentForIndex = session.realUserId;
+    if(isStudent) activeStudentForIndex = activeChildId;
+
+    const childRow = document.getElementById('childSelectorRow');
+    if(isStudent && children.length > 1){
+      const sel = document.getElementById('childSelect');
+      sel.innerHTML = children.map(c=>`<option value="${c.id}" ${c.id===activeChildId?'selected':''}>${escapeHtml(c.full_name)}</option>`).join('');
+      childRow.style.display = 'block';
+    } else {
+      childRow.style.display = 'none';
+    }
 
     if(!activeStudentForIndex){
       document.getElementById('tabletName').textContent = '—';
@@ -2305,7 +2448,8 @@
       selector.className = 'billing-pkg-selector';
       selector.innerHTML = subscriptions.map(s=>{
         const active = s.id===selectedBillingSubId;
-        return `<button class="billing-pkg-tab${active?' active':''}" data-sub="${s.id}">${instrumentInfo(s.instrument).icon} ${escapeHtml(s.package_name)}</button>`;
+        const childPrefix = children.length > 1 ? `${escapeHtml(s.student_name)} · ` : '';
+        return `<button class="billing-pkg-tab${active?' active':''}" data-sub="${s.id}">${childPrefix}${instrumentInfo(s.instrument).icon} ${escapeHtml(s.package_name)}</button>`;
       }).join('');
       wrap.appendChild(selector);
       selector.querySelectorAll('.billing-pkg-tab').forEach(btn=>{
@@ -2361,6 +2505,7 @@
 
       const card = document.createElement('div'); card.className = 'billing-summary-card';
       card.innerHTML = `
+        <div class="bs-row"><span class="bs-label">Дете</span><span class="bs-value">${escapeHtml(sub.student_name||'—')}</span></div>
         <div class="bs-row"><span class="bs-label">Пакет</span><span class="bs-value">${escapeHtml(sub.package_name||'—')}</span></div>
         <div class="bs-row"><span class="bs-label">Група</span><span class="bs-value">${escapeHtml(sub.group_name||'—')}</span></div>
         <div class="bs-row"><span class="bs-label">План на плаќање</span><span class="bs-value">${planFullLabel[sub.payment_plan]||'—'}</span></div>
@@ -2683,7 +2828,7 @@
       const slotLabel = slotsLabel(g.id);
       const memberCount = g.members ? g.members.length : 0;
       const spotsLeft = g.spots_left != null ? g.spots_left : (g.capacity - memberCount);
-      const alreadyMember = session.role==='student' && g.members && g.members.some(m=>m.id===session.realUserId);
+      const alreadyMember = session.role==='student' && g.members && g.members.some(m=>m.id===activeChildId);
       const card = document.createElement('div'); card.className='slot-pick-card';
       card.innerHTML = `
         <h4>${g.name}</h4>
@@ -2801,6 +2946,15 @@
     document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
     document.getElementById('payTermsCheckbox').checked = false;
 
+    const childRow = document.getElementById('payChildSelectorRow');
+    if(children.length > 1){
+      const sel = document.getElementById('payChildSelect');
+      sel.innerHTML = children.map(c=>`<option value="${c.id}" ${c.id===activeChildId?'selected':''}>${escapeHtml(c.full_name)}</option>`).join('');
+      childRow.style.display = 'block';
+    } else {
+      childRow.style.display = 'none';
+    }
+
     if(pendingIndividualBooking){
       const p = packages.find(x=>x.id===chosenPackage);
       document.getElementById('planSelectorRow').style.display = 'none';
@@ -2830,6 +2984,10 @@
     selectedPlan = btn.dataset.plan;
     const p = packages.find(x=>x.id===chosenPackage);
     document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
+  });
+
+  document.getElementById('payChildSelect').addEventListener('change', e=>{
+    activeChildId = Number(e.target.value);
   });
 
   document.getElementById('payCancelBtn').addEventListener('click', ()=>{
@@ -2866,7 +3024,8 @@
             instrument: pendingIndividualBooking.instrument,
             booking_date: pendingIndividualBooking.booking_date,
             start_time: pendingIndividualBooking.start_time,
-            payment_method_id: 'SIMULATED-' + Date.now()
+            payment_method_id: 'SIMULATED-' + Date.now(),
+            child_id: activeChildId
           })
         });
 
@@ -2887,7 +3046,8 @@
           package_id: chosenPackage,
           group_id: pendingBooking.groupId,
           payment_method_id: 'SIMULATED-' + Date.now(),
-          payment_plan: selectedPlan
+          payment_plan: selectedPlan,
+          child_id: activeChildId
         })
       });
 
