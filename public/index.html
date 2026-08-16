@@ -1117,6 +1117,7 @@
   let selectedSlotKey = null;
   let chosenPackage = null;
   let preselectedPlan = null; // кој конкретен ред (рата/полугодишен/целогодишен) е кликнат во табелата
+  let chooseGroupMode = null; // {subscriptionId} кога родителот избира термин за веќе платена претплата
   let selectedBillingSubId = null; // кој пакет е избран за приказ во Наплата (кога има повеќе од еден)
   let pendingBooking = null; // {groupId}
   let pendingIndividualBooking = null; // {professor_id, instrument, booking_date, start_time}
@@ -2503,6 +2504,26 @@
       }
       section.innerHTML = banner;
 
+      if(!sub.group_id && !sub.released){
+        const cta = document.createElement('div');
+        cta.className = 'notif-banner warn';
+        cta.style.marginTop = '10px';
+        cta.innerHTML = `<div class="n-ic">📅</div><div>
+          <div class="n-title">Сè уште немаш избрано термин</div>
+          <div class="n-body">Уплатата е примена — сега избери група/термин за ${escapeHtml(sub.student_name||'детето')}. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.</div>
+          <button class="send-btn choose-group-btn" data-sub="${sub.id}" data-inst="${sub.instrument}" style="margin-top:10px; width:auto; padding:9px 18px;">Избери термин</button>
+          </div>`;
+        section.appendChild(cta);
+        cta.querySelector('.choose-group-btn').addEventListener('click', ()=>{
+          chooseGroupMode = { subscriptionId: sub.id };
+          selectedPkgInstrument = sub.instrument;
+          filterInstrument = sub.instrument;
+          filterAge = 'all'; filterLevel = 'all';
+          showPage('packages');
+          renderPackagesPage();
+        });
+      }
+
       const card = document.createElement('div'); card.className = 'billing-summary-card';
       card.innerHTML = `
         <div class="bs-row"><span class="bs-label">Дете</span><span class="bs-value">${escapeHtml(sub.student_name||'—')}</span></div>
@@ -2660,6 +2681,24 @@
   let selectedPkgInstrument = null;
 
   function renderPackagesPage(){
+    if(chooseGroupMode){
+      document.getElementById('pkgInstrumentChips').parentElement.parentElement.style.display = 'none';
+      const grid = document.getElementById('pkgGrid'); grid.innerHTML = `
+        <button class="mc-btn" id="cancelChooseGroupBtn" style="margin-bottom:16px;">← Назад кон Наплата</button>
+        <div style="font-size:13px; color:var(--mist); margin-bottom:16px;">Избери термин за <strong>${instrumentLabel(selectedPkgInstrument)}</strong>. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.</div>
+      `;
+      document.getElementById('cancelChooseGroupBtn').addEventListener('click', ()=>{
+        chooseGroupMode = null;
+        showPage('billing');
+        renderBillingPage();
+      });
+      document.getElementById('individualBookingStep').style.display = 'none';
+      document.getElementById('bookingStep').style.display = 'block';
+      renderBookingStep();
+      return;
+    }
+    document.getElementById('pkgInstrumentChips').parentElement.parentElement.style.display = 'block';
+
     const chipsWrap = document.getElementById('pkgInstrumentChips');
     chipsWrap.innerHTML = INSTRUMENTS.map(inst => `
       <button class="filter-chip${selectedPkgInstrument===inst.id ? ' active' : ''}" data-inst="${inst.id}">${inst.icon} ${inst.label}</button>
@@ -2754,12 +2793,12 @@
           renderIndividualBookingStep();
           document.getElementById('individualBookingStep').scrollIntoView({behavior:'smooth', block:'start'});
         } else {
+          // 'trial' / 'annual' — прво се плаќа, терминот се избира ПОДОЦНА (во Наплата)
+          document.getElementById('bookingStep').style.display = 'none';
           document.getElementById('individualBookingStep').style.display = 'none';
-          document.getElementById('bookingStep').style.display = 'block';
-          filterInstrument = selectedPkgInstrument;
-          filterAge = 'all'; filterLevel = 'all';
-          renderBookingStep();
-          document.getElementById('bookingStep').scrollIntoView({behavior:'smooth', block:'start'});
+          pendingBooking = { groupId: null };
+          pendingIndividualBooking = null;
+          openPaymentModal();
         }
       });
     });
@@ -2830,6 +2869,7 @@
       const spotsLeft = g.spots_left != null ? g.spots_left : (g.capacity - memberCount);
       const alreadyMember = session.role==='student' && g.members && g.members.some(m=>m.id===activeChildId);
       const card = document.createElement('div'); card.className='slot-pick-card';
+      const btnLabel = chooseGroupMode ? 'Избери термин' : 'Резервирај термин';
       card.innerHTML = `
         <h4>${g.name}</h4>
         <div class="prof-line">👤 проф. ${escapeHtml(g.professor_name||'—')}</div>
@@ -2841,13 +2881,31 @@
         <div class="when">🕐 ${slotLabel}<div class="bsub" style="margin-top:2px;">Ист термин низ целата учебна година</div></div>
         <div class="fill">${memberCount}/${g.capacity} деца ${spotsLeft>0 ? '· '+spotsLeft+' слободни места' : '· пополнето'}</div>
         <button class="book-btn" data-group="${g.id}" ${(spotsLeft<=0 || alreadyMember) ? 'disabled' : ''}>
-          ${alreadyMember ? 'Веќе си во групата' : (spotsLeft<=0 ? 'Нема слободни места' : 'Резервирај термин')}
+          ${alreadyMember ? 'Веќе си во групата' : (spotsLeft<=0 ? 'Нема слободни места' : btnLabel)}
         </button>`;
       wrap.appendChild(card);
     });
     wrap.querySelectorAll('.book-btn:not(:disabled)').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+      btn.addEventListener('click', async ()=>{
         const gid = Number(btn.dataset.group);
+        if(chooseGroupMode){
+          btn.disabled = true; btn.textContent = 'Се зачувува...';
+          try{
+            await authApiCall('/subscriptions/'+chooseGroupMode.subscriptionId+'/choose-group', {
+              method:'POST', body: JSON.stringify({ group_id: gid })
+            });
+            const finishedFor = chooseGroupMode;
+            chooseGroupMode = null;
+            await loadGroups(); await loadSubscriptions();
+            alert('Терминот е избран! 🎉');
+            showPage('billing');
+            renderBillingPage();
+          } catch(err){
+            alert('Грешка: ' + err.message);
+            btn.disabled = false; btn.textContent = 'Избери термин';
+          }
+          return;
+        }
         pendingBooking = {groupId: gid};
         pendingIndividualBooking = null;
         openPaymentModal();
@@ -2964,13 +3022,13 @@
       return;
     }
 
-    const g = groups.find(x=>x.id===pendingBooking.groupId);
+    const g = pendingBooking.groupId ? groups.find(x=>x.id===pendingBooking.groupId) : null;
     const p = packages.find(x=>x.id===chosenPackage);
     const isTrial = p.package_type === 'trial';
     selectedPlan = isTrial ? 'trial' : (['eight','two','full'].includes(preselectedPlan) ? preselectedPlan : 'eight');
     document.getElementById('planSelectorRow').style.display = isTrial ? 'none' : 'block';
     document.querySelectorAll('#planToggle .type-btn').forEach(b=>b.classList.toggle('active', b.dataset.plan===selectedPlan));
-    document.getElementById('paymentSub').textContent = `${p.name} · ${g.name} · ${slotsLabel(g.id)}`;
+    document.getElementById('paymentSub').textContent = g ? `${p.name} · ${g.name} · ${slotsLabel(g.id)}` : `${p.name} · термин ќе избереш по плаќањето`;
     document.getElementById('planSummary').textContent = isTrial
       ? `1 еднократна уплата од ${Number(p.price_mkd).toLocaleString('mk-MK')} ден. (${p.lessons_per_month} часа)`
       : planSummaryText(selectedPlan, Number(p.price_mkd));
@@ -3055,13 +3113,17 @@
       await loadSubscriptions();
       await loadInstallments();
 
-      const g = groups.find(x=>x.id===pendingBooking.groupId);
+      const g = pendingBooking.groupId ? groups.find(x=>x.id===pendingBooking.groupId) : null;
       const p = packages.find(x=>x.id===chosenPackage);
       const planLabel = {full:'целосно, во 1 уплата', two:'на 2 полугодишни рати', eight:'на 8 месечни рати', trial:'еднократно (пробен пакет)'}[selectedPlan];
 
       overlay.classList.remove('show');
       document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
-      document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Избра да плаќаш <strong>${planLabel}</strong>.${result.next_due_date ? ` Следна рата доспева на ${fmtDate(result.next_due_date)}.` : ' Целиот пакет е платен.'}<br><br>📧 Испративме потврда за уплатата на твojot email.`;
+      if(g){
+        document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Избра да плаќаш <strong>${planLabel}</strong>.${result.next_due_date ? ` Следна рата доспева на ${fmtDate(result.next_due_date)}.` : ' Целиот пакет е платен.'}<br><br>📧 Испративме потврда за уплатата на твojot email.`;
+      } else {
+        document.getElementById('pkgConfirmSub').innerHTML = `Уплатата е примена (${planLabel}). Сега треба да избереш термин — оди во <strong>Наплата</strong> и кликни „Избери термин" до овoj пакет. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.<br><br>📧 Испративме потврда за уплатата на твojot email.`;
+      }
       document.getElementById('pkgConfirm').classList.add('show');
       document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
 
