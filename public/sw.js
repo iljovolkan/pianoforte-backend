@@ -3,7 +3,7 @@
 // (за корисникот веднаш да ги гледа најновите промени), статичните икони/
 // manifest се cache-first (не се менуваат често). НЕ ги кешира API повиците.
 
-const CACHE_NAME = 'pianoforte-shell-v2'; // зголемено — ja поништува старата верзија кај сите инсталирани корисници
+const CACHE_NAME = 'pianoforte-shell-v3'; // зголемено — ja поништува старата верзија (стар кеширан /children одговор) кај сите инсталирани корисници
 const SHELL_FILES = [
   '/manifest.json',
   '/icons/icon-192.png',
@@ -31,7 +31,7 @@ self.addEventListener('fetch', (event) => {
 
   // никогаш не кешираj API повици — секогаш мора да одат до серверот
   const isApiCall = ['/auth', '/groups', '/schedule', '/materials', '/packages',
-    '/purchases', '/admin', '/subscriptions', '/installments', '/individual-bookings', '/health']
+    '/purchases', '/admin', '/subscriptions', '/installments', '/individual-bookings', '/children', '/health']
     .some((p) => url.pathname.startsWith(p));
   if (isApiCall || event.request.method !== 'GET') return;
 
