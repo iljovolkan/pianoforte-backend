@@ -6,16 +6,17 @@ const router = express.Router();
 const GRACE_DAYS = 5; // колку дена по рокот терминот сè уште стои пред да се ослободи
 
 // GET /subscriptions
-// Ученик гледа само своја претплата. Професор/админ гледаат за сите ученици
-// во СВОИТЕ групи (професорот) или за сите (админ).
+// Родител гледа претплати на СИТЕ свои деца. Професор/админ гледаат за сите
+// ученици во СВОИТЕ групи (професорот) или за сите (админ).
 router.get('/', requireAuth, async (req, res) => {
   if (req.user.role === 'student') {
     const [rows] = await pool.query(
-      `SELECT s.*, p.name AS package_name, p.instrument, g.name AS group_name, g.professor_id
+      `SELECT s.*, p.name AS package_name, p.instrument, g.name AS group_name, g.professor_id, c.full_name AS student_name
        FROM subscriptions s
        JOIN packages p ON p.id = s.package_id
        JOIN groups_table g ON g.id = s.group_id
-       WHERE s.student_id = ?
+       JOIN children c ON c.id = s.student_id
+       WHERE c.parent_id = ?
        ORDER BY s.created_at DESC`,
       [req.user.id]
     );
@@ -26,9 +27,9 @@ router.get('/', requireAuth, async (req, res) => {
   const params = req.user.role === 'admin' ? [] : [req.user.id];
 
   const [rows] = await pool.query(
-    `SELECT s.*, u.full_name AS student_name, p.name AS package_name, g.name AS group_name
+    `SELECT s.*, c.full_name AS student_name, p.name AS package_name, g.name AS group_name
      FROM subscriptions s
-     JOIN users u ON u.id = s.student_id
+     JOIN children c ON c.id = s.student_id
      JOIN packages p ON p.id = s.package_id
      JOIN groups_table g ON g.id = s.group_id
      WHERE ${whereClause}
@@ -53,8 +54,9 @@ function paymentState(sub) {
 router.post('/:id/renew', requireAuth, async (req, res) => {
   const [[sub]] = await pool.query('SELECT * FROM subscriptions WHERE id = ?', [req.params.id]);
   if (!sub) return res.status(404).json({ error: 'Претплатата не постои.' });
-  if (req.user.role === 'student' && req.user.id !== sub.student_id) {
-    return res.status(403).json({ error: 'Немаш пристап до туѓа претплата.' });
+  if (req.user.role === 'student') {
+    const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [sub.student_id, req.user.id]);
+    if (!child) return res.status(403).json({ error: 'Немаш пристап до туѓа претплата.' });
   }
 
   const newDue = new Date();
