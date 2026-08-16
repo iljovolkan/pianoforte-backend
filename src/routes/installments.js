@@ -9,12 +9,13 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   if (req.user.role === 'student') {
     const [rows] = await pool.query(
-      `SELECT i.*, s.payment_plan, s.group_id, p.name AS package_name, g.name AS group_name
+      `SELECT i.*, s.payment_plan, s.group_id, p.name AS package_name, g.name AS group_name, c.full_name AS student_name
        FROM installments i
        JOIN subscriptions s ON s.id = i.subscription_id
+       JOIN children c ON c.id = s.student_id
        JOIN packages p ON p.id = s.package_id
        JOIN groups_table g ON g.id = s.group_id
-       WHERE s.student_id = ?
+       WHERE c.parent_id = ?
        ORDER BY i.due_date ASC`,
       [req.user.id]
     );
@@ -25,10 +26,10 @@ router.get('/', requireAuth, async (req, res) => {
   const params = req.user.role === 'admin' ? [] : [req.user.id];
 
   const [rows] = await pool.query(
-    `SELECT i.*, s.payment_plan, u.full_name AS student_name, p.name AS package_name, g.name AS group_name
+    `SELECT i.*, s.payment_plan, c.full_name AS student_name, p.name AS package_name, g.name AS group_name
      FROM installments i
      JOIN subscriptions s ON s.id = i.subscription_id
-     JOIN users u ON u.id = s.student_id
+     JOIN children c ON c.id = s.student_id
      JOIN packages p ON p.id = s.package_id
      JOIN groups_table g ON g.id = s.group_id
      WHERE ${whereClause}
@@ -46,16 +47,18 @@ router.post('/:id/pay', requireAuth, requireRole('student'), async (req, res) =>
   }
 
   const [[inst]] = await pool.query(
-    `SELECT i.*, s.student_id, s.id AS subscription_id, s.released, u.email, u.full_name, p.name AS package_name
+    `SELECT i.*, s.student_id, s.id AS subscription_id, s.released, u.email, c.full_name, p.name AS package_name
      FROM installments i
      JOIN subscriptions s ON s.id = i.subscription_id
-     JOIN users u ON u.id = s.student_id
+     JOIN children c ON c.id = s.student_id
+     JOIN users u ON u.id = c.parent_id
      JOIN packages p ON p.id = s.package_id
      WHERE i.id = ?`,
     [req.params.id]
   );
   if (!inst) return res.status(404).json({ error: 'Ратата не постои.' });
-  if (inst.student_id !== req.user.id) return res.status(403).json({ error: 'Немаш пристап до туѓа рата.' });
+  const [[ownedChild]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [inst.student_id, req.user.id]);
+  if (!ownedChild) return res.status(403).json({ error: 'Немаш пристап до туѓа рата.' });
   if (inst.status === 'paid') return res.status(409).json({ error: 'Оваа рата е веќе платена.' });
   if (inst.status === 'released') return res.status(409).json({ error: 'Терминот е веќе ослободен — потребна е нова резервација.' });
 
