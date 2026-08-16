@@ -29,7 +29,13 @@ const upload = multer({
   }
 });
 
-// POST /materials  multipart/form-data: student_id, title, type, note, file (опционално)
+// Проверува дали даденото дете (student_id) припаѓа на овоj родител (parent/student login)
+async function isMyChild(parentId, childId) {
+  const [[row]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [childId, parentId]);
+  return !!row;
+}
+
+// POST /materials  multipart/form-data: student_id (= id на детето), title, type, note, file (опционално)
 router.post('/', requireAuth, requireRole('professor', 'admin'), (req, res) => {
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message });
@@ -60,12 +66,12 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), (req, res) => {
   });
 });
 
-// GET /materials/:studentId — целиот дигитален индекс на ученикот
-// Ученик смее да го гледа само својот; професор/админ гледаат секаде.
+// GET /materials/:studentId — целиот дигитален индекс на детето
+// Родител смее да гледа само материјали на СВОИ деца; professor/admin гледаат секаде.
 // НЕ ja враќа file_data (тешко поле) — само дали постои фајл, за брзина.
 router.get('/:studentId', requireAuth, async (req, res) => {
   const studentId = Number(req.params.studentId);
-  if (req.user.role === 'student' && req.user.id !== studentId) {
+  if (req.user.role === 'student' && !(await isMyChild(req.user.id, studentId))) {
     return res.status(403).json({ error: 'Немаш пристап до туѓ индекс.' });
   }
 
@@ -87,8 +93,8 @@ router.get('/:id/file', requireAuth, async (req, res) => {
   );
   if (!material || !material.file_data) return res.status(404).json({ error: 'Нема прикачен фајл.' });
 
-  if (req.user.role === 'student' && req.user.id !== material.student_id) {
-    return res.status(403).json({ error: 'Немаш пристап до овој фајл.' });
+  if (req.user.role === 'student' && !(await isMyChild(req.user.id, material.student_id))) {
+    return res.status(403).json({ error: 'Немаш пристап до овoj фајл.' });
   }
 
   res.setHeader('Content-Type', material.file_mimetype || 'application/octet-stream');
@@ -102,8 +108,8 @@ router.put('/:id/status', requireAuth, async (req, res) => {
   const [[material]] = await pool.query('SELECT * FROM materials WHERE id = ?', [req.params.id]);
   if (!material) return res.status(404).json({ error: 'Материјалот не постои.' });
 
-  if (req.user.role === 'student' && req.user.id !== material.student_id) {
-    return res.status(403).json({ error: 'Немаш пристап до овој материјал.' });
+  if (req.user.role === 'student' && !(await isMyChild(req.user.id, material.student_id))) {
+    return res.status(403).json({ error: 'Немаш пристап до овoj материјал.' });
   }
 
   const allowedNext = ALLOWED_TRANSITIONS[material.status] || [];
