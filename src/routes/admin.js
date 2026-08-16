@@ -58,10 +58,13 @@ router.get('/professors', requireAuth, requireRole('admin'), async (req, res) =>
   res.json(rows);
 });
 
-// GET /admin/students — листа на сите ученици кои се регистрирале (само admin)
+// GET /admin/students — листа на сите деца (со податоци за родителот), само admin
 router.get('/students', requireAuth, requireRole('admin'), async (req, res) => {
   const [rows] = await pool.query(
-    "SELECT id, email, full_name, email_verified, created_at FROM users WHERE role = 'student' ORDER BY created_at DESC"
+    `SELECT c.id, c.full_name, c.age, c.created_at,
+            u.id AS parent_id, u.email AS parent_email, u.email_verified AS parent_email_verified
+     FROM children c JOIN users u ON u.id = c.parent_id
+     ORDER BY c.created_at DESC`
   );
   res.json(rows);
 });
