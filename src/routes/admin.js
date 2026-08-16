@@ -50,11 +50,19 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
   });
 });
 
-// GET /admin/professors — листа на сите професори (само admin)
+// GET /admin/professors — листа на сите професори, со број групи/ученици (само admin)
 router.get('/professors', requireAuth, requireRole('admin'), async (req, res) => {
-  const [rows] = await pool.query(
-    "SELECT id, email, full_name, instrument, created_at FROM users WHERE role = 'professor' ORDER BY created_at DESC"
-  );
+  const [rows] = await pool.query(`
+    SELECT u.id, u.email, u.full_name, u.instrument, u.created_at,
+           COUNT(DISTINCT g.id) AS group_count,
+           COUNT(DISTINCT gm.student_id) AS student_count
+    FROM users u
+    LEFT JOIN groups_table g ON g.professor_id = u.id
+    LEFT JOIN group_members gm ON gm.group_id = g.id
+    WHERE u.role = 'professor'
+    GROUP BY u.id
+    ORDER BY u.created_at DESC
+  `);
   res.json(rows);
 });
 
@@ -93,4 +101,50 @@ router.post('/run-maintenance', requireAuth, requireRole('admin'), async (req, r
   }
 });
 
+// GET /admin/overview — севкупна статистика за целиот систем (само admin)
+router.get('/overview', requireAuth, requireRole('admin'), async (req, res) => {
+  const [[childrenCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM children');
+  const [[parentCount]] = await pool.query("SELECT COUNT(*) AS cnt FROM users WHERE role = 'student'");
+  const [[profCount]] = await pool.query("SELECT COUNT(*) AS cnt FROM users WHERE role = 'professor'");
+  const [[groupCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM groups_table');
+  const [[activeSubCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE released = FALSE');
+  const [[releasedSubCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE released = TRUE');
+  const [[pendingGroupCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE group_id IS NULL AND released = FALSE');
+  const [[revenue]] = await pool.query("SELECT COALESCE(SUM(amount),0) AS total FROM installments WHERE status = 'paid'");
+  const [[lateCount]] = await pool.query(
+    "SELECT COUNT(*) AS cnt FROM installments WHERE status = 'pending' AND due_date < CURDATE()"
+  );
+  const [[indivCount]] = await pool.query("SELECT COUNT(*) AS cnt FROM individual_bookings WHERE status = 'confirmed'");
+
+  res.json({
+    children: childrenCount.cnt,
+    parents: parentCount.cnt,
+    professors: profCount.cnt,
+    groups: groupCount.cnt,
+    active_subscriptions: activeSubCount.cnt,
+    released_subscriptions: releasedSubCount.cnt,
+    pending_group_selection: pendingGroupCount.cnt,
+    total_revenue: revenue.total,
+    late_installments: lateCount.cnt,
+    individual_bookings: indivCount.cnt
+  });
+});
+
+// GET /admin/purchases — последните 50 купувања (за преглед на активноста) (само admin)
+router.get('/purchases', requireAuth, requireRole('admin'), async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT p.id, p.payment_status, p.purchased_at, p.payment_provider_ref,
+           c.full_name AS student_name, pk.name AS package_name, pk.price_mkd, pk.instrument,
+           g.name AS group_name
+    FROM purchases p
+    JOIN children c ON c.id = p.student_id
+    JOIN packages pk ON pk.id = p.package_id
+    LEFT JOIN groups_table g ON g.id = p.group_id
+    ORDER BY p.purchased_at DESC
+    LIMIT 50
+  `);
+  res.json(rows);
+});
+
 module.exports = router;
+
