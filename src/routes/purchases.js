@@ -41,11 +41,14 @@ function buildAnnualSchedule(plan, monthlyPrice) {
  * За 'trial' пакети, планот секогаш е една еднократна уплата.
  */
 router.post('/', requireAuth, requireRole('student'), async (req, res) => {
+  // group_id е ОПЦИОНАЛЕН — плаќањето и изборот на термин се два одделни чекори.
+  // Ако не е испратен, претплатата се создава без група; терминот се избира
+  // подоцна преку POST /subscriptions/:id/choose-group.
   const { package_id, group_id, payment_method_id, child_id } = req.body;
   let { payment_plan } = req.body;
 
-  if (!package_id || !group_id || !payment_method_id || !child_id) {
-    return res.status(400).json({ error: 'package_id, group_id, child_id и payment_method_id се задолжителни.' });
+  if (!package_id || !payment_method_id || !child_id) {
+    return res.status(400).json({ error: 'package_id, child_id и payment_method_id се задолжителни.' });
   }
 
   const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [child_id, req.user.id]);
@@ -57,18 +60,21 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     return res.status(400).json({ error: 'Индивидуалните часови се закажуваат преку /individual-bookings, не преку /purchases.' });
   }
 
-  const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [group_id]);
-  if (!group) return res.status(404).json({ error: 'Групата не постои.' });
-  if (group.instrument !== pkg.instrument) {
-    return res.status(400).json({ error: 'Пакетот и групата се за различни инструменти.' });
-  }
-
-  const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [group_id]);
-  if (members.length >= group.capacity) {
-    return res.status(409).json({ error: 'Групата е веќе пополнета.' });
-  }
-  if (members.some(m => m.student_id === child_id)) {
-    return res.status(409).json({ error: 'Детето е веќе во оваа група.' });
+  let group = null;
+  if (group_id) {
+    const [[g]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [group_id]);
+    if (!g) return res.status(404).json({ error: 'Групата не постои.' });
+    if (g.instrument !== pkg.instrument) {
+      return res.status(400).json({ error: 'Пакетот и групата се за различни инструменти.' });
+    }
+    const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [group_id]);
+    if (members.length >= g.capacity) {
+      return res.status(409).json({ error: 'Групата е веќе пополнета.' });
+    }
+    if (members.some(m => m.student_id === child_id)) {
+      return res.status(409).json({ error: 'Детето е веќе во оваа група.' });
+    }
+    group = g;
   }
 
   const plan = pkg.package_type === 'trial' ? 'trial' : (['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight');
@@ -76,7 +82,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   const [purchaseResult] = await pool.query(
     `INSERT INTO purchases (student_id, package_id, group_id, payment_status)
      VALUES (?, ?, ?, 'pending')`,
-    [child_id, package_id, group_id]
+    [child_id, package_id, group_id || null]
   );
 
   try {
@@ -86,10 +92,12 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       `UPDATE purchases SET payment_status = 'paid', payment_provider_ref = ? WHERE id = ?`,
       [fakeProviderRef, purchaseResult.insertId]
     );
-    await pool.query(
-      'INSERT INTO group_members (group_id, student_id) VALUES (?, ?)',
-      [group_id, child_id]
-    );
+    if (group) {
+      await pool.query(
+        'INSERT INTO group_members (group_id, student_id) VALUES (?, ?)',
+        [group_id, child_id]
+      );
+    }
 
     // распоред на рати: 'trial' = 1 еднократна уплата за целата цена на пакетот;
     // 'annual' = 8/2/целосно според buildAnnualSchedule
@@ -103,7 +111,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     const [subResult] = await pool.query(
       `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released, payment_plan)
        VALUES (?, ?, ?, ?, FALSE, ?)`,
-      [child_id, package_id, group_id, firstDueDate, plan]
+      [child_id, package_id, group_id || null, firstDueDate, plan]
     );
 
     let nextPendingDueDate = null;
@@ -136,6 +144,9 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     const remainingHtml = schedule.length > 1
       ? `<p>Останати рати: <strong>${schedule.length - 1}</strong>. Следна рата: <strong>${nextPendingDueDate ? nextPendingDueDate.toLocaleDateString('mk-MK') : '—'}</strong> (${schedule[1].amount} ден.)</p>`
       : '';
+    const groupNoteHtml = !group
+      ? `<p style="color:#B3555F;">Уплатата е примена — сега влези во апликацијата и избери термин (група) за твojot пакет.</p>`
+      : '';
 
     await sendMail({
       to: req.user.email,
@@ -144,10 +155,11 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
         <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
           <h2>Плаќањето е успешно!</h2>
           <p>Пакет: <strong>${pkg.name}</strong></p>
-          <p>Група: <strong>${group.name}</strong></p>
+          <p>Група: <strong>${group ? group.name : 'сè уште не е избрана'}</strong></p>
           <p>План на плаќање: <strong>${planLabel}</strong></p>
           <p>Прва рата (платена сега): <strong>${schedule[0].amount} ден.</strong></p>
           ${remainingHtml}
+          ${groupNoteHtml}
           <p style="color:#888; font-size:13px; margin-top:20px;">Референца: ${fakeProviderRef}</p>
         </div>
       `
@@ -160,7 +172,8 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
       provider_ref: fakeProviderRef,
       payment_plan: plan,
       installments: schedule.length,
-      next_due_date: nextPendingDueDate ? nextPendingDueDate.toISOString().slice(0, 10) : null
+      next_due_date: nextPendingDueDate ? nextPendingDueDate.toISOString().slice(0, 10) : null,
+      needs_group_selection: !group
     });
   } catch (err) {
     await pool.query(`UPDATE purchases SET payment_status = 'failed' WHERE id = ?`, [purchaseResult.insertId]);
