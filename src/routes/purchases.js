@@ -41,12 +41,15 @@ function buildAnnualSchedule(plan, monthlyPrice) {
  * За 'trial' пакети, планот секогаш е една еднократна уплата.
  */
 router.post('/', requireAuth, requireRole('student'), async (req, res) => {
-  const { package_id, group_id, payment_method_id } = req.body;
+  const { package_id, group_id, payment_method_id, child_id } = req.body;
   let { payment_plan } = req.body;
 
-  if (!package_id || !group_id || !payment_method_id) {
-    return res.status(400).json({ error: 'package_id, group_id и payment_method_id се задолжителни.' });
+  if (!package_id || !group_id || !payment_method_id || !child_id) {
+    return res.status(400).json({ error: 'package_id, group_id, child_id и payment_method_id се задолжителни.' });
   }
+
+  const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [child_id, req.user.id]);
+  if (!child) return res.status(403).json({ error: 'Ова дете не е поврзано со твojot профил.' });
 
   const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
   if (!pkg) return res.status(404).json({ error: 'Пакетот не постои.' });
@@ -64,8 +67,8 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   if (members.length >= group.capacity) {
     return res.status(409).json({ error: 'Групата е веќе пополнета.' });
   }
-  if (members.some(m => m.student_id === req.user.id)) {
-    return res.status(409).json({ error: 'Веќе си во оваа група.' });
+  if (members.some(m => m.student_id === child_id)) {
+    return res.status(409).json({ error: 'Детето е веќе во оваа група.' });
   }
 
   const plan = pkg.package_type === 'trial' ? 'trial' : (['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight');
@@ -73,7 +76,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   const [purchaseResult] = await pool.query(
     `INSERT INTO purchases (student_id, package_id, group_id, payment_status)
      VALUES (?, ?, ?, 'pending')`,
-    [req.user.id, package_id, group_id]
+    [child_id, package_id, group_id]
   );
 
   try {
@@ -85,7 +88,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     );
     await pool.query(
       'INSERT INTO group_members (group_id, student_id) VALUES (?, ?)',
-      [group_id, req.user.id]
+      [group_id, child_id]
     );
 
     // распоред на рати: 'trial' = 1 еднократна уплата за целата цена на пакетот;
@@ -100,7 +103,7 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
     const [subResult] = await pool.query(
       `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released, payment_plan)
        VALUES (?, ?, ?, ?, FALSE, ?)`,
-      [req.user.id, package_id, group_id, firstDueDate, plan]
+      [child_id, package_id, group_id, firstDueDate, plan]
     );
 
     let nextPendingDueDate = null;
@@ -166,11 +169,12 @@ router.post('/', requireAuth, requireRole('student'), async (req, res) => {
   }
 });
 
-// GET /purchases/history/:studentId — историја на купувања
+// GET /purchases/history/:studentId — историја на купувања (studentId = id на детето)
 router.get('/history/:studentId', requireAuth, async (req, res) => {
   const studentId = Number(req.params.studentId);
-  if (req.user.role === 'student' && req.user.id !== studentId) {
-    return res.status(403).json({ error: 'Немаш пристап до туѓи купувања.' });
+  if (req.user.role === 'student') {
+    const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [studentId, req.user.id]);
+    if (!child) return res.status(403).json({ error: 'Немаш пристап до туѓи купувања.' });
   }
   const [rows] = await pool.query(
     `SELECT p.*, pk.name AS package_name FROM purchases p
