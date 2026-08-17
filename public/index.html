@@ -1048,7 +1048,8 @@
     {id:'el-gitara', label:'Електрична гитара', icon:'🎸'},
     {id:'tapani', label:'Тапани', icon:'🥁'},
     {id:'peenje', label:'Пеење', icon:'🎤'},
-    {id:'violina', label:'Виолина', icon:'🎻'}
+    {id:'violina', label:'Виолина', icon:'🎻'},
+    {id:'ran-razvoj', label:'Ран музички развој', icon:'🌱'}
   ];
   function instrumentInfo(id){ return INSTRUMENTS.find(x=>x.id===id) || {label:id, icon:'🎵'}; }
   function instrumentLabel(id){ const i=instrumentInfo(id); return `${i.icon} ${i.label}`; }
@@ -2828,15 +2829,28 @@
       const annualTotal = monthly * 8;
       const halfPrice = Math.round((annualTotal/2) * (1 - HALF_PLAN_DISCOUNT));
       const fullPrice = Math.round(annualTotal * (1 - FULL_PLAN_DISCOUNT));
-      const hourDesc = isViolin ? '(45 мин. групен и 45 мин. индивидуален час)' : 'во групна настава, секој час со времетраење од 45 мин.';
-      html += `<div class="pkg-table-section">
-        <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-        <div class="pkg-horiz-row">
-          ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
-          ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
-          ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
-        </div>
-      </div>`;
+      const isEarlyDev = selectedPkgInstrument === 'ran-razvoj';
+
+      if(isEarlyDev){
+        html += `<div class="pkg-table-section">
+          <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
+          <div class="pkg-horiz-row">
+            ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 4-5 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'eight')}
+            ${rowHtml('Полугодишен пакет (18 часа)', halfPrice, '−3%', `Се состои од 18 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'two')}
+            ${rowHtml('Целогодишен пакет (36 часа)', fullPrice, '−5%', `Се состои од 36 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'full')}
+          </div>
+        </div>`;
+      } else {
+        const hourDesc = isViolin ? '(45 мин. групен и 45 мин. индивидуален час)' : 'во групна настава, секој час со времетраење од 45 мин.';
+        html += `<div class="pkg-table-section">
+          <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
+          <div class="pkg-horiz-row">
+            ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
+            ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
+            ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
+          </div>
+        </div>`;
+      }
     }
 
     if(individual){
