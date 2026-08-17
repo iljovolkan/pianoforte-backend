@@ -245,8 +245,10 @@
 
   .pkg-table-section{margin-bottom:32px;}
   .pkg-table-section h3{font-family:'Fraunces',serif; font-size:16px; font-weight:600; margin-bottom:12px; color:var(--ink);}
-  .pkg-horiz-row{display:flex; gap:16px; flex-wrap:wrap;}
-  .pkg-horiz-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; flex:1 1 220px; min-width:220px; display:flex; flex-direction:column;}
+  .pkg-horiz-row{display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; overscroll-behavior-x:contain;}
+  .pkg-horiz-row::-webkit-scrollbar{height:6px;}
+  .pkg-horiz-row::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+  .pkg-horiz-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; flex:0 0 240px; scroll-snap-align:start; display:flex; flex-direction:column;}
   .ptc-name{font-weight:600; font-size:13.5px; color:var(--ink); margin-bottom:8px;}
   .ptc-price{font-weight:700; color:var(--sand-deep); font-size:19px; white-space:nowrap;}
   .ptc-discount{font-size:12px; color:var(--leaf); font-weight:600; min-height:16px; margin:2px 0 12px;}
@@ -257,8 +259,7 @@
   .pkg-table-buy-btn.chosen{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
 
   @media(max-width:820px){
-    .pkg-horiz-row{flex-direction:column;}
-    .pkg-horiz-card{min-width:0;}
+    .pkg-horiz-card{flex:0 0 78vw;}
   }
   .pkg-select-btn:hover{transform:translateY(-1px);}
   .pkg-card.chosen{border-color:var(--leaf); background:var(--leaf-pale);}
@@ -598,10 +599,6 @@
         <h2 id="indexTitle">Материјали</h2>
         <p id="indexSub">Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.</p>
       </div>
-      <div class="form-row" id="childSelectorRow" style="display:none; max-width:320px; margin-bottom:20px;">
-        <label data-i18n="child_selector_label">Дете</label>
-        <select class="login-select" id="childSelect" style="margin-bottom:0;"></select>
-      </div>
       <div class="index-layout">
         <div>
           <div class="card" id="professorFormCard">
@@ -630,6 +627,10 @@
           <div class="sent-list"><h3>Историја на испратени материјали</h3><div id="sentList"></div></div>
         </div>
         <div class="card">
+          <div class="form-row" id="childSelectorRow" style="display:none; margin-bottom:14px;">
+            <span class="fg-label" data-i18n="child_selector_label" style="display:block; margin-bottom:8px;">Училница за</span>
+            <div class="filter-chips" id="childSelectorChips"></div>
+          </div>
           <div class="tablet">
             <div class="tablet-topbar"><span class="name" id="tabletName">—</span><span class="mono" id="tabletClock" style="font-size:11px; color:var(--mist);"></span></div>
             <button class="room-btn" id="roomBtn">Влези во училница</button>
@@ -1823,13 +1824,6 @@
     renderIndexPage();
   });
 
-  document.getElementById('childSelect').addEventListener('change', async e=>{
-    activeChildId = Number(e.target.value);
-    activeStudentForIndex = activeChildId;
-    await loadMaterialsFor(activeChildId);
-    renderIndexPage();
-  });
-
   document.getElementById('typeToggle').addEventListener('click', e=>{
     const btn = e.target.closest('.type-btn'); if(!btn) return;
     document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
@@ -1933,9 +1927,19 @@
     if(isStudent) activeStudentForIndex = activeChildId;
 
     const childRow = document.getElementById('childSelectorRow');
-    if(isStudent && children.length > 1){
-      const sel = document.getElementById('childSelect');
-      sel.innerHTML = children.map(c=>`<option value="${c.id}" ${c.id===activeChildId?'selected':''}>${escapeHtml(c.full_name)}</option>`).join('');
+    if(isStudent && children.length > 0){
+      const chipsWrap = document.getElementById('childSelectorChips');
+      chipsWrap.innerHTML = children.map(c=>`
+        <button class="filter-chip${c.id===activeChildId?' active':''}" data-child="${c.id}">${escapeHtml(c.full_name)}</button>
+      `).join('');
+      chipsWrap.querySelectorAll('.filter-chip').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          activeChildId = Number(btn.dataset.child);
+          activeStudentForIndex = activeChildId;
+          await loadMaterialsFor(activeChildId);
+          renderIndexPage();
+        });
+      });
       childRow.style.display = 'block';
     } else {
       childRow.style.display = 'none';
