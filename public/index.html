@@ -1336,10 +1336,14 @@
     if(legalReturnAction) legalReturnAction();
   }
   document.getElementById('openTermsFromLoginLink').addEventListener('click', (e)=>{
-    e.preventDefault(); openLegalScreen('terms', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
+    e.preventDefault();
+    document.getElementById('loginScreen').style.display = 'none';
+    openLegalScreen('terms', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
   });
   document.getElementById('openPrivacyFromLoginLink').addEventListener('click', (e)=>{
-    e.preventDefault(); openLegalScreen('privacy', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
+    e.preventDefault();
+    document.getElementById('loginScreen').style.display = 'none';
+    openLegalScreen('privacy', ()=>{ document.getElementById('loginScreen').style.display = 'flex'; });
   });
 
   function renderRegTermsText(){
@@ -1350,10 +1354,12 @@
   document.getElementById('regTermsLabel').addEventListener('click', (e)=>{
     if(e.target && e.target.id === 'openTermsFromRegisterLink'){
       e.preventDefault(); e.stopPropagation();
+      document.getElementById('registerScreen').style.display = 'none';
       openLegalScreen('terms', ()=>{ document.getElementById('registerScreen').style.display = 'flex'; });
     }
     if(e.target && e.target.id === 'openPrivacyFromRegisterLink'){
       e.preventDefault(); e.stopPropagation();
+      document.getElementById('registerScreen').style.display = 'none';
       openLegalScreen('privacy', ()=>{ document.getElementById('registerScreen').style.display = 'flex'; });
     }
   });
@@ -3065,10 +3071,12 @@
   document.getElementById('payTermsLabel').addEventListener('click', (e)=>{
     if(e.target && e.target.id === 'openTermsFromPayLink'){
       e.preventDefault(); e.stopPropagation();
+      overlay.classList.remove('show');
       openLegalScreen('terms', ()=>{ overlay.classList.add('show'); });
     }
     if(e.target && e.target.id === 'openPrivacyFromPayLink'){
       e.preventDefault(); e.stopPropagation();
+      overlay.classList.remove('show');
       openLegalScreen('privacy', ()=>{ overlay.classList.add('show'); });
     }
   });
