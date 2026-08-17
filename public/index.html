@@ -1963,7 +1963,8 @@
       return;
     }
 
-    document.getElementById('tabletName').textContent = isStudent ? session.name : studentName(activeStudentForIndex);
+    const childForTablet = children.find(c=>c.id===activeStudentForIndex);
+    document.getElementById('tabletName').textContent = isStudent ? (childForTablet ? childForTablet.full_name : session.name) : studentName(activeStudentForIndex);
     document.getElementById('tabletClock').textContent = nowStr();
     if(!isStudent && studentSelect.value) studentSelect.value = activeStudentForIndex;
 
