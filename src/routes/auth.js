@@ -116,7 +116,7 @@ router.get('/verify', async (req, res) => {
     <html><body style="font-family:sans-serif; text-align:center; padding:60px 20px; background:#FBF7F1;">
       <h2 style="color:#3B3142;">${title}</h2>
       <p style="color:#8A8290;">${msg}</p>
-      <a href="${APP_URL}" style="display:inline-block; margin-top:20px; background:#6B4E8E; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none;">Оди на PianoForte</a>
+      <a href="${APP_URL}/app" style="display:inline-block; margin-top:20px; background:#6B4E8E; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none;">Оди на PianoForte</a>
     </body></html>
   `;
 
@@ -229,7 +229,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
       [resetToken, expires, user.id]);
 
-    const resetLink = `${APP_URL}/?reset_token=${resetToken}`;
+    const resetLink = `${APP_URL}/app/?reset_token=${resetToken}`;
     await sendMail({
       to: email,
       subject: 'Ресетирање лозинка — PianoForte',
