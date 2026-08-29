@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PianoForte</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/app/manifest.json">
 <meta name="theme-color" content="#A97E33">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PianoForte">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1762,6 +1762,25 @@
       }
       renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
     }
+    handleDeepLink();
+  }
+
+  // Ако URL-от е #packages/<instrument> (пр. дојден од маркетинг сајтот),
+  // по успешна најава автоматски нè носи на Пакети со тoj инструмент избран.
+  function handleDeepLink(){
+    const hash = window.location.hash;
+    const hashMatch = hash.match(/^#packages\/([a-z-]+)$/);
+    let instrument = hashMatch ? hashMatch[1] : null;
+    if(!instrument){
+      try{ instrument = localStorage.getItem('pf_pending_instrument'); }catch(e){}
+    }
+    if(!instrument || session.role !== 'student') return;
+    if(!INSTRUMENTS.find(i=>i.id===instrument)) return;
+    selectedPkgInstrument = instrument;
+    showPage('packages');
+    renderPackagesPage();
+    history.replaceState(null, '', window.location.pathname);
+    try{ localStorage.removeItem('pf_pending_instrument'); }catch(e){}
   }
 
   function buildNav(){
@@ -3238,6 +3257,15 @@
   /* ---- примени го зачуваниот јазик уште на почетниот приказ (login екран) ---- */
   applyLanguage();
 
+  /* ---- зачувај го #packages/<instrument> во localStorage, за да не се изгуби
+     ако корисникот прво мора да се регистрира и потврди email (одделен чекор) ---- */
+  (function captureDeepLink(){
+    const match = window.location.hash.match(/^#packages\/([a-z-]+)$/);
+    if(match){
+      try{ localStorage.setItem('pf_pending_instrument', match[1]); }catch(e){}
+    }
+  })();
+
   /* ---- обиди се да ja обновиш сесијата ако веќе постои (по рефреш на страницата) ---- */
   (async function restoreSession(){
     if(new URLSearchParams(window.location.search).get('reset_token')) return; // приоритет на reset екранот
@@ -3258,7 +3286,7 @@
 // PWA — регистрирај service worker (надвор од главниот IIFE, важи за целата страница)
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('/sw.js').catch(err=>console.log('SW registration failed:', err));
+    navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(err=>console.log('SW registration failed:', err));
   });
 }
 </script>
