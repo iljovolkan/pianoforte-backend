@@ -2,8 +2,8 @@
   "name": "PianoForte",
   "short_name": "PianoForte",
   "description": "Дигитален систем на PianoForte — распоред, материјали, наплата.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/app",
+  "scope": "/app",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#FBF7F1",
@@ -11,25 +11,25 @@
   "lang": "mk",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/app/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/app/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/app/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/app/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
