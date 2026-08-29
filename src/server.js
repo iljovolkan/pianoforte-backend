@@ -41,9 +41,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Ја servира апликацијата (HTML/CSS/JS) — сè што е во папката public/
-// Ова мора да биде ПРЕД API рутите, за index.html да се стартува на "/"
+// Маркетинг страниците (Почетна/За нас/Инструменти/Блог/Контакт) — на root
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Операциската апликација (логирање, материјали, наплата...) — на /app
+app.use('/app', express.static(path.join(__dirname, '..', 'public', 'app')));
+app.get('/app/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app', 'index.html'));
+});
 
 app.get('/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
