@@ -3,11 +3,11 @@
 // (за корисникот веднаш да ги гледа најновите промени), статичните икони/
 // manifest се cache-first (не се менуваат често). НЕ ги кешира API повиците.
 
-const CACHE_NAME = 'pianoforte-shell-v3'; // зголемено — ja поништува старата верзија (стар кеширан /children одговор) кај сите инсталирани корисници
+const CACHE_NAME = 'pianoforte-shell-v4'; // зголемено — поради преместување на апликацијата под /app патека
 const SHELL_FILES = [
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/app/manifest.json',
+  '/app/icons/icon-192.png',
+  '/app/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
 
   // Навигација / самата страница (index.html) — секогаш прво мрежа, кешот е
   // само резервна опција ако интернетот е прекинат (offline fallback)
-  const isNavigation = event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html');
+  const isNavigation = event.request.mode === 'navigate' || url.pathname === '/app' || url.pathname === '/app/' || url.pathname.endsWith('.html');
   if (isNavigation) {
     event.respondWith(
       fetch(event.request)
