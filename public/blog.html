@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Блог — PianoForte</title>
+<meta name="description" content="Новости, интервјуа и приказни од PianoForte музичкото училиште.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:#FBF7F1; --surface:#FFFFFF; --surface-2:#F4EEE3; --line:#E7DFD1;
+    --ink:#3B3142; --mist:#8A8290;
+    --lilac-deep:#6B4E8E; --lilac-pale:#EEE6F6;
+    --sand-deep:#A97E33; --sand-pale:#F4E4C4;
+    --leaf:#5E8B6B; --leaf-pale:#E4EFE6;
+    --wine:#B3555F; --wine-pale:#F6E4E6;
+    --dark-card:#241E29; --dark-card-2:#3B3142;
+    --shadow:0 20px 50px -20px rgba(59,49,66,0.22);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  h1,h2,h3,h4{font-family:'Fraunces',serif; font-weight:500; margin:0; letter-spacing:-.01em;}
+  p{margin:0; line-height:1.65;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 28px;}
+  img{max-width:100%; display:block;}
+
+  /* ===== UTILITY TOP BAR ===== */
+  .utility-bar{background:linear-gradient(90deg, var(--lilac-pale), var(--sand-pale)); color:var(--ink); font-size:12.5px; border-bottom:1px solid var(--line);}
+  .utility-bar .wrap{display:flex; justify-content:space-between; align-items:center; height:40px;}
+  .utility-left{display:flex; gap:18px;}
+  .utility-left a{text-decoration:none; opacity:.85; display:flex; align-items:center; gap:5px; color:var(--ink); font-weight:600;}
+  .utility-left a:hover{opacity:1; color:var(--lilac-deep);}
+  .utility-right{display:flex; gap:14px; align-items:center;}
+  .utility-right a{text-decoration:none; opacity:.9; font-weight:700; color:var(--lilac-deep);}
+  .lang-toggle{display:flex; gap:2px; background:rgba(255,255,255,.55); border-radius:6px; padding:2px;}
+  .lang-toggle button{background:none; border:none; color:var(--ink); font-size:11px; font-weight:700; padding:3px 7px; border-radius:4px; opacity:.55;}
+  .lang-toggle button.active{background:#fff; opacity:1; color:var(--lilac-deep);}
+  .cta-mini{background:var(--wine); color:#fff !important; padding:5px 12px; border-radius:20px;}
+
+  /* ===== MAIN NAV ===== */
+  header.main-nav{position:sticky; top:0; z-index:100; background:rgba(251,246,237,.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line);}
+  .nav-row{display:flex; align-items:center; justify-content:space-between; height:76px;}
+  .brand{font-family:'Fraunces',serif; font-size:24px; font-weight:600; text-decoration:none; color:var(--ink);}
+  .brand span{color:var(--sand-deep);}
+  nav.links{display:flex; align-items:center; gap:6px;}
+  .nav-item{position:relative;}
+  .nav-item > a, .nav-item > span{display:flex; align-items:center; gap:4px; padding:10px 14px; font-size:14.5px; font-weight:600; text-decoration:none; color:var(--ink); border-radius:8px; cursor:pointer;}
+  .nav-item > a:hover, .nav-item:hover > span{background:var(--surface-2);}
+  .caret{font-size:10px; opacity:.6; transition:transform .2s;}
+  .nav-item:hover .caret{transform:rotate(180deg);}
+  .dropdown{position:absolute; top:100%; left:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:10px; min-width:220px; opacity:0; visibility:hidden; transform:translateY(6px); transition:.18s;}
+  .nav-item:hover .dropdown{opacity:1; visibility:visible; transform:translateY(4px);}
+  .dropdown a{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500;}
+  .dropdown a:hover{background:var(--lilac-pale); color:var(--lilac-deep);}
+  .dropdown.instruments{min-width:240px; width:420px; display:grid; grid-template-columns:1fr 1fr; gap:2px;}
+  .cta-primary{background:var(--lilac-deep); color:#fff !important; padding:11px 20px; border-radius:24px; font-weight:700; font-size:14px; text-decoration:none; white-space:nowrap;}
+  .cta-primary:hover{background:#5a4184;}
+  .burger{display:none; background:none; border:none; font-size:26px; color:var(--ink);}
+
+  /* ===== HERO ===== */
+  .hero{position:relative; padding:90px 0 70px; overflow:hidden;}
+  .hero::before{content:''; position:absolute; top:-120px; right:-100px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle, var(--lilac-pale) 0%, transparent 70%); z-index:0;}
+  .hero::after{content:''; position:absolute; bottom:-140px; left:-80px; width:360px; height:360px; border-radius:50%; background:radial-gradient(circle, var(--sand-pale) 0%, transparent 70%); z-index:0;}
+  .hero .hero-grid{position:relative; z-index:1;}
+  .hero-grid{display:grid; grid-template-columns:1.1fr .9fr; gap:50px; align-items:center;}
+  .eyebrow{display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:6px 14px; border-radius:20px; margin-bottom:20px;}
+  .hero h1{font-size:52px; line-height:1.08; font-weight:600; margin-bottom:22px;}
+  .hero h1 em{font-style:normal; color:var(--lilac-deep);}
+  .hero p.lead{font-size:17.5px; color:var(--mist); max-width:480px; margin-bottom:32px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .cta-ghost{border:1.5px solid var(--line); color:var(--ink) !important; padding:13px 24px; border-radius:24px; font-weight:700; font-size:14.5px; text-decoration:none; background:var(--surface); display:inline-flex; align-items:center; gap:8px;}
+  .cta-ghost:hover{border-color:var(--lilac-deep);}
+  .hero .cta-primary{padding:13px 26px; font-size:14.5px; display:inline-flex; align-items:center; gap:8px;}
+
+  .staff-wrap{position:relative; height:400px; background:linear-gradient(160deg, var(--dark-card-2), var(--dark-card)); border-radius:28px; overflow:visible;}
+  .staff-svg{width:100%; height:100%; padding:20px;}
+  .staff-line{stroke:#fff; stroke-opacity:.14; stroke-width:1.5;}
+  .note{animation:drift 7s ease-in-out infinite;}
+  .note:nth-child(2){animation-delay:1.2s;}
+  .note:nth-child(3){animation-delay:2.4s;}
+  .note:nth-child(4){animation-delay:3.6s;}
+  @keyframes drift{ 0%,100%{transform:translateY(0px);} 50%{transform:translateY(-14px);} }
+  @media (prefers-reduced-motion: reduce){ .note{animation:none;} }
+
+  .stats-card{position:absolute; bottom:-28px; right:-18px; background:#fff; border-radius:18px; box-shadow:var(--shadow); padding:8px 22px; z-index:2; width:220px;}
+  .stat-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+  .stat-row:last-child{border-bottom:none;}
+  .stat-icon{width:34px; height:34px; border-radius:10px; background:var(--lilac-pale); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .stat-icon svg{width:17px; height:17px; stroke:var(--lilac-deep);}
+  .stat-row .num{font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:var(--ink); line-height:1.1;}
+  .stat-row .lbl{font-size:11px; color:var(--mist);}
+
+  /* ===== FEATURE STRIP ===== */
+  .feature-strip{padding:36px 0; border-bottom:1px solid var(--line);}
+  .feature-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+  .feature-item{display:flex; gap:14px; align-items:flex-start;}
+  .feature-icon{width:42px; height:42px; border-radius:12px; background:var(--lilac-pale); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .feature-icon svg{width:21px; height:21px; stroke:var(--lilac-deep);}
+  .feature-item h5{font-size:14px; font-weight:700; margin-bottom:3px; font-family:'Inter',sans-serif;}
+  .feature-item p{font-size:12.5px; color:var(--mist);}
+  @media(max-width:980px){ .feature-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:560px){ .feature-grid{grid-template-columns:1fr;} .stats-card{position:static; margin-top:16px; width:auto;} }
+
+  /* ===== SECTION SHELL ===== */
+  section{padding:88px 0;}
+  section.alt{background:var(--surface);}
+  .tint-lilac{background:linear-gradient(180deg, var(--lilac-pale) 0%, var(--bg) 100%);}
+  .tint-sand{background:linear-gradient(180deg, var(--sand-pale) 0%, var(--bg) 100%);}
+  .section-head{max-width:640px; margin-bottom:48px;}
+  .section-head h2{font-size:34px; font-weight:600; margin-bottom:14px;}
+  .section-head p{color:var(--mist); font-size:16px;}
+  .section-head.center{margin-left:auto; margin-right:auto; text-align:center;}
+
+  /* ===== INSTRUMENTS GRID ===== */
+  .instruments-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
+  .instrument-card{background:linear-gradient(160deg, var(--dark-card-2), var(--dark-card)); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:26px 20px 22px; text-align:left; text-decoration:none; color:#fff; transition:.25s; position:relative; overflow:hidden; min-height:160px; display:flex; flex-direction:column; justify-content:flex-end;}
+  .instrument-card::before{content:''; position:absolute; top:-30%; right:-20%; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle, rgba(184,134,46,.22), transparent 70%);}
+  .instrument-card:hover{transform:translateY(-4px); box-shadow:var(--shadow);}
+  .instrument-icon{width:44px; height:44px; margin-bottom:14px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.08); border-radius:12px; position:relative; z-index:1;}
+  .instrument-icon svg{width:22px; height:22px; stroke:#fff;}
+  .instrument-card h4{font-size:16px; font-weight:600; color:#fff; margin-bottom:12px; position:relative; z-index:1; font-family:'Fraunces',serif;}
+  .instrument-explore{display:inline-block; background:var(--lilac-deep); color:#1C1712 !important; font-size:11px; font-weight:700; padding:7px 14px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; width:fit-content; position:relative; z-index:1;}
+  .instrument-card .soon{position:absolute; top:14px; right:14px; font-size:9px; background:rgba(255,255,255,.12); color:#fff; padding:3px 8px; border-radius:10px; font-weight:700; z-index:1;}
+  .instrument-card h4{font-size:15px; font-weight:600;}
+
+  /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
+  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;}
+  .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:20px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
+  .placeholder-tag{display:inline-block; font-size:11px; font-weight:700; color:var(--wine); background:var(--wine-pale); padding:4px 10px; border-radius:8px; margin-bottom:14px;}
+
+  /* ===== EMPTY BLOG STATE ===== */
+  .empty-blog{text-align:center; max-width:420px; margin:0 auto; padding:60px 20px;}
+  .empty-blog-icon{width:64px; height:64px; margin:0 auto 20px; background:var(--lilac-pale); border-radius:18px; display:flex; align-items:center; justify-content:center;}
+  .empty-blog-icon svg{width:30px; height:30px; stroke:var(--lilac-deep);}
+  .empty-blog h3{font-size:22px; margin-bottom:10px;}
+  .empty-blog p{color:var(--mist); font-size:14.5px;}
+
+  /* ===== BLOG ===== */
+  .blog-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
+  .blog-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; overflow:hidden;}
+  .blog-card .thumb{aspect-ratio:16/10; background:var(--surface-2);}
+  .blog-card .body{padding:20px;}
+  .blog-card .tag{font-size:11px; font-weight:700; color:var(--leaf); text-transform:uppercase; letter-spacing:.04em;}
+  .blog-card h4{font-size:16px; margin:10px 0 8px;}
+  .blog-card p{font-size:13.5px; color:var(--mist);}
+
+  /* ===== CONTACT ===== */
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:50px;}
+  .contact-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:24px;}
+  .contact-card h4{font-size:14px; margin-bottom:10px; color:var(--sand-deep);}
+  .contact-card p{font-size:14.5px; margin-bottom:4px;}
+  .contact-form .frow{margin-bottom:14px;}
+  .contact-form label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px;}
+  .contact-form input, .contact-form textarea{width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14px; background:var(--surface);}
+  .contact-form textarea{min-height:100px; resize:vertical;}
+  .contact-form button{width:100%; background:var(--lilac-deep); color:#fff; border:none; padding:14px; border-radius:10px; font-weight:700; font-size:14.5px;}
+
+  /* ===== FOOTER ===== */
+  footer{background:var(--ink); color:#EFE7DA; padding:60px 0 24px;}
+  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px;}
+  footer h4{font-size:13px; color:#C9BBA0; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+  footer p, footer a{font-size:13.5px; color:#EFE7DA; text-decoration:none; opacity:.85; line-height:1.8;}
+  footer a:hover{opacity:1; text-decoration:underline;}
+  .footer-brand{font-family:'Fraunces',serif; font-size:22px; margin-bottom:12px;}
+  .footer-brand span{color:var(--sand-deep);}
+  .social-row{display:flex; gap:10px; margin-top:16px;}
+  .social-row a{width:34px; height:34px; border:1px solid rgba(255,255,255,.2); border-radius:50%; display:flex; align-items:center; justify-content:center;}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,.12); padding-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:12.5px; opacity:.7;}
+  .footer-bottom .links{display:flex; gap:18px;}
+  .footer-bottom a{opacity:1;}
+
+  /* ===== NEWSLETTER POPUP ===== */
+  .newsletter-overlay{position:fixed; inset:0; background:rgba(42,32,24,.55); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  .newsletter-overlay.show{display:flex;}
+  .newsletter-modal{background:var(--bg); border-radius:20px; max-width:440px; width:100%; padding:36px; position:relative; text-align:center; box-shadow:var(--shadow);}
+  .newsletter-modal .close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:var(--mist);}
+  .newsletter-modal h3{font-size:22px; margin-bottom:26px; line-height:1.25;}
+  .newsletter-modal p{color:var(--mist); font-size:14px; margin-bottom:22px;}
+  .newsletter-form{display:flex; flex-direction:column; gap:14px;}
+  .nl-email-row{display:flex; gap:8px;}
+  .newsletter-form input[type="email"]{flex:1; padding:13px 14px; border-radius:10px; border:1.5px solid var(--line); font-size:14px;}
+  .newsletter-form button[type="submit"]{background:var(--sand-deep); color:#fff; border:none; padding:13px 18px; border-radius:10px; font-weight:700; font-size:13.5px; white-space:nowrap;}
+  .nl-consent{display:flex; align-items:flex-start; gap:8px; text-align:left; font-size:11.5px; color:var(--mist); cursor:pointer; line-height:1.5;}
+  .nl-consent input{margin-top:2px; flex-shrink:0;}
+  .nl-consent a{color:var(--lilac-deep); font-weight:600; text-decoration:none;}
+  .nl-consent a:hover{text-decoration:underline;}
+  .newsletter-note{font-size:11px; color:var(--mist); margin-top:12px;}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:980px){
+    nav.links, .utility-left{display:none;}
+    .burger{display:block;}
+    .hero-grid{grid-template-columns:1fr;}
+    .staff-wrap{height:200px; order:-1;}
+    .hero h1{font-size:38px;}
+    .about-grid, .contact-grid{grid-template-columns:1fr;}
+    .instruments-grid{grid-template-columns:repeat(2,1fr);}
+    .blog-grid{grid-template-columns:1fr;}
+    .footer-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:560px){
+    .instruments-grid{grid-template-columns:repeat(2,1fr);}
+    .footer-grid{grid-template-columns:1fr;}
+    .hero{padding:50px 0 40px;}
+  }
+
+  .page-hero{padding:56px 0 44px; border-bottom:1px solid var(--line);}
+  .page-hero .eyebrow{display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:6px 14px; border-radius:20px; margin-bottom:16px;}
+  .page-hero h1{font-size:38px; font-weight:600; margin-bottom:12px;}
+  .page-hero p{color:var(--mist); font-size:16px; max-width:560px;}
+  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:16px;}
+  .breadcrumb a{color:var(--lilac-deep); text-decoration:none; font-weight:600;}
+  .nav-item.current > a{color:var(--lilac-deep); background:var(--lilac-pale); border-radius:8px;}
+  .teaser-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
+  .teaser-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; overflow:hidden; text-decoration:none; color:var(--ink); transition:.2s; display:block;}
+  .teaser-card:hover{border-color:var(--lilac-deep); transform:translateY(-4px); box-shadow:var(--shadow);}
+  .teaser-card .thumb{aspect-ratio:16/10; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); display:flex; align-items:center; justify-content:center;}
+  .teaser-card .body{padding:20px;}
+  .teaser-card h4{font-size:16px; margin-bottom:8px;}
+  .teaser-card p{font-size:13.5px; color:var(--mist);}
+  .teaser-card .arrow{color:var(--lilac-deep); font-weight:700; font-size:13px; margin-top:12px; display:block;}
+  @media(max-width:980px){ .teaser-grid{grid-template-columns:1fr;} }
+
+</style>
+</head>
+<body>
+<div class="utility-bar">
+  <div class="wrap">
+    <div class="utility-left">
+      <a href="tel:+38923066999">☎ +389 2 30 66 999</a>
+      <a href="tel:+38978309692">📱 +389 78 309 692</a>
+    </div>
+    <div class="utility-right">
+      <a href="/app" data-i18n="util_login">Најави се / Регистрација</a>
+      <a href="/app" class="cta-mini" data-i18n="util_buy">Купи час</a>
+      <div class="lang-toggle">
+        <button class="active" data-lang="mk">MK</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="main-nav">
+  <div class="wrap nav-row">
+    <a href="index.html" class="brand">Piano<span>Forte</span></a>
+    <nav class="links">
+      <div class="nav-item"><a href="index.html" data-i18n="nav_home">Почетна</a></div>
+      <div class="nav-item">
+        <span data-i18n="nav_about">За нас <span class="caret">▾</span></span>
+        <div class="dropdown">
+          <a href="about.html" data-i18n="nav_about_us">За нас</a>
+          <a href="projects.html" data-i18n="nav_projects">Проекти</a>
+          <a href="summer-school.html" data-i18n="nav_summer">Летна школа</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <span data-i18n="nav_instruments">Инструменти <span class="caret">▾</span></span>
+        <div class="dropdown instruments">
+          <a href="/app/#packages/piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
+          <a href="/app/#packages/gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
+          <a href="/app/#packages/el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
+          <a href="/app/#packages/bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
+          <a href="/app/#packages/violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
+          <a href="/app/#packages/tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
+          <a href="/app/#packages/peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
+          <a href="/app/#packages/ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+        </div>
+      </div>
+      <div class="nav-item current"><a href="blog.html" data-i18n="nav_blog">Блог</a></div>
+      <div class="nav-item"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
+    </nav>
+    <a href="/app" class="cta-primary" data-i18n="nav_cta">Купи/Најави се</a>
+    <button class="burger" id="burgerBtn">☰</button>
+  </div>
+</header>
+
+<div class="page-hero tint-sand">
+  <div class="wrap">
+    <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_blog">Блог</span></div>
+    <h1 data-i18n="blog_title">Блог</h1>
+    <p data-i18n="blog_sub">Новости, интервјуа и приказни од нашето училиште.</p>
+  </div>
+</div>
+<section>
+  <div class="wrap">
+    <div class="empty-blog">
+      <div class="empty-blog-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+      </div>
+      <h3 data-i18n="blog_empty_title">Наскоро првите објави</h3>
+      <p data-i18n="blog_empty_body">Подготвуваме новости, интервјуа и приказни од нашето училиште. Врати се наскоро!</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">Piano<span>Forte</span></div>
+        <p data-i18n="footer_tag">Музичко училиште за деца и возрасни во Скопје.</p>
+        <div class="social-row">
+          <a href="https://www.instagram.com/pijanoforte/" aria-label="Instagram">📷</a>
+        </div>
+      </div>
+      <div>
+        <h4 data-i18n="footer_address">Адреса</h4>
+        <p>Виенска Бр 1<br>1000, Скопје</p>
+        <p style="margin-top:8px;">Булевар Јане Сандански Бр 79а<br>1000, Скопје</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_hours">Работно време</h4>
+        <p data-i18n="contact_hours_val">Понеделник – Петок: 12:00 – 20:00</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_contact">Контакт</h4>
+        <p><a href="tel:+38978309692">+389 78 309 692</a></p>
+        <p><a href="tel:+38923066999">+389 2 30 66 999</a></p>
+        <p><a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 PianoForte — <span data-i18n="footer_rights">Сите права задржани</span></span>
+      <div class="links">
+        <a href="/app" target="_blank" data-i18n="footer_terms">Услови за користење</a>
+        <a href="/app" target="_blank" data-i18n="footer_privacy">Правила за приватност</a>
+        <a href="#" data-i18n="footer_faq">ЧПП</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="newsletter-overlay" id="newsletterOverlay">
+  <div class="newsletter-modal">
+    <button class="close-x" id="newsletterClose">✕</button>
+    <h3 data-i18n="nl_title">Претплатете се на нашата листа на е-пошта</h3>
+    <form class="newsletter-form" id="newsletterForm">
+      <div class="nl-email-row">
+        <input type="email" placeholder="твoja@email.com" required id="newsletterEmail">
+        <button type="submit" data-i18n="nl_submit">Пријави се</button>
+      </div>
+      <label class="nl-consent">
+        <input type="checkbox" required id="newsletterConsent">
+        <span id="newsletterConsentText"></span>
+      </label>
+    </form>
+    <div class="newsletter-note" data-i18n="nl_note">Можеш да се отпишеш во секое време.</div>
+  </div>
+</div>
+
+<script>
+
+(function(){
+  const translations = {
+    mk: {
+      util_login:'Најави се / Регистрација', util_buy:'Купи час',
+      nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
+      inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
+      inst_bass:'Бас гитара', inst_drums:'Тапани', inst_singing:'Пеење', inst_early:'Ран музички развој', soon:'наскоро',
+      hero_eyebrow:'Музичко училиште · Скопје',
+      hero_title:'Секое дете заслужува своja прва песна',
+      hero_lead:'Часови по пијано, виолина, гитара, тапани и пеење — во групи или индивидуално, за деца и возрасни, во срцето на Скопје.',
+      hero_cta_primary:'Резервирај пробен час', hero_cta_ghost:'Види инструменти',
+      inst_head:'Избери инструмент', inst_sub:'Кликни на инструмент за да ги видиш пакетите и цените, и веднаш да резервираш термин.',
+      about_media:'[Слика — училиште/настава]', pending_marina:'Текст чека — Марина', pending_iskra:'Текст чека — Искра', pending_elena:'Текст чека — Елена',
+      about_title:'За PianoForte',
+      about_p1:'[ПОПОЛНИ] Овде доаѓа приказната на училиштето — кога е основано, филозофијата на учење, зошто родителите го избираат PianoForte.',
+      about_p2:'[ПОПОЛНИ] Дополнителен пасус за наставниот пристап и искуството на професорите.',
+      projects_title:'Проекти', projects_sub:'[ПОПОЛНИ] Концерти, настапи, соработки со други институции.',
+      summer_title:'Летна музичка школа', summer_p1:'[ПОПОЛНИ] Опис на летната програма — термини, активности, возрасни групи.',
+      blog_title:'Блог', blog_sub:'Новости, интервјуа и приказни од нашето училиште.',
+      blog_tag1:'Новост', blog_title1:'[ПОПОЛНИ наслов]', blog_body1:'[ПОПОЛНИ краток опис на текстот...]',
+      blog_tag2:'Интервју', blog_title2:'[ПОПОЛНИ наслов]', blog_body2:'[ПОПОЛНИ краток опис на текстот...]',
+      blog_empty_title:'Наскоро првите објави', blog_empty_body:'Подготвуваме новости, интервјуа и приказни од нашето училиште. Врати се наскоро!',
+      contact_title:'Контакт', contact_sub:'Прашај нè било што — за пакети, термини, или локации.',
+      contact_loc1:'Локација 1', contact_loc2:'Локација 2', contact_hours:'Работно време', contact_hours_val:'Понеделник – Петок: 12:00 – 20:00',
+      form_name:'Име и презиме', form_email:'Email', form_msg:'Порака', form_submit:'Испрати порака',
+      footer_tag:'Музичко училиште за деца и возрасни во Скопје.', footer_address:'Адреса', footer_hours:'Работно време', footer_contact:'Контакт',
+      footer_rights:'Сите права задржани', footer_terms:'Услови за користење', footer_privacy:'Правила за приватност', footer_faq:'ЧПП',
+      nl_title:'Претплатете се на нашата листа на е-пошта', nl_sub:'Пријави се за новости, настани и попусти од PianoForte.', nl_submit:'Пријави се', nl_note:'Можеш да се отпишеш во секое време.',
+      nl_consent_pre:'Се согласувам со', nl_consent_post:' на PianoForte.', reg_terms_and:'и',
+      login_terms_link:'Условите за користење', login_privacy_link:'Политиката на приватност',
+      breadcrumb_home:'Почетна',
+      teaser_about_title:'За нас', teaser_about_body:'Дознај повеќе за нашата филозофија и училиштето.',
+      teaser_projects_title:'Проекти', teaser_projects_body:'Концерти, настапи и соработки.',
+      teaser_summer_title:'Летна школа', teaser_summer_body:'Музичка програма преку летото.',
+      teaser_blog_title:'Блог', teaser_blog_body:'Новости и приказни од нашето училиште.',
+      teaser_contact_title:'Контакт', teaser_contact_body:'Прашај нè било што.',
+      teaser_more:'Дознај повеќе →', explore_head:'Истражи го училиштето',
+      explore_btn:'Истражи →',
+      stat3_lbl:'Инструменти', stat4_num:'2', stat4_lbl:'Локации во Скопје', stat5_num:'Групно и индивидуално', stat5_lbl:'Настава за секое дете',
+      feat1_title:'Лесно закажување', feat1_body:'Резервирај термин онлајн за неколку секунди.',
+      feat2_title:'Флексибилно плаќање', feat2_body:'Месечно, полугодишно или целосно, по твoj избор.',
+      feat3_title:'Персонализирано учење', feat3_body:'Програми прилагодени на секое дете.',
+      feat4_title:'Следи го напредокот', feat4_body:'Гледај материјали и активности во реално време.'
+    },
+    en: {
+      util_login:'Sign in / Register', util_buy:'Buy a lesson',
+      nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
+      inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
+      inst_bass:'Bass guitar', inst_drums:'Drums', inst_singing:'Singing', inst_early:'Early musical development', soon:'coming soon',
+      hero_eyebrow:'Music school · Skopje',
+      hero_title:'Every child deserves their first song',
+      hero_lead:'Piano, violin, guitar, drums, and singing lessons — in groups or one-on-one, for children and adults, in the heart of Skopje.',
+      hero_cta_primary:'Book a trial lesson', hero_cta_ghost:'See instruments',
+      inst_head:'Choose an instrument', inst_sub:'Click an instrument to see packages and pricing, and book a slot right away.',
+      about_media:'[Image — school/lesson]', pending_marina:'Copy pending — Marina', pending_iskra:'Copy pending — Iskra', pending_elena:'Copy pending — Elena',
+      about_title:'About PianoForte',
+      about_p1:'[FILL IN] The school\u2019s story — when it was founded, the teaching philosophy, why parents choose PianoForte.',
+      about_p2:'[FILL IN] Additional paragraph on the teaching approach and instructor experience.',
+      projects_title:'Projects', projects_sub:'[FILL IN] Concerts, performances, collaborations with other institutions.',
+      summer_title:'Summer music school', summer_p1:'[FILL IN] Description of the summer program — dates, activities, age groups.',
+      blog_title:'Blog', blog_sub:'News, interviews, and stories from our school.',
+      blog_tag1:'News', blog_title1:'[FILL IN title]', blog_body1:'[FILL IN short excerpt...]',
+      blog_tag2:'Interview', blog_title2:'[FILL IN title]', blog_body2:'[FILL IN short excerpt...]',
+      blog_empty_title:'First posts coming soon', blog_empty_body:'We\'re preparing news, interviews, and stories from our school. Check back soon!',
+      contact_title:'Contact', contact_sub:'Ask us anything — packages, time slots, or locations.',
+      contact_loc1:'Location 1', contact_loc2:'Location 2', contact_hours:'Working hours', contact_hours_val:'Monday – Friday: 12:00 – 20:00',
+      form_name:'Full name', form_email:'Email', form_msg:'Message', form_submit:'Send message',
+      footer_tag:'Music school for children and adults in Skopje.', footer_address:'Address', footer_hours:'Working hours', footer_contact:'Contact',
+      footer_rights:'All rights reserved', footer_terms:'Terms of Use', footer_privacy:'Privacy Policy', footer_faq:'FAQ',
+      nl_title:'Subscribe to our email list', nl_sub:'Sign up for news, events, and discounts from PianoForte.', nl_submit:'Subscribe', nl_note:'You can unsubscribe anytime.',
+      nl_consent_pre:'I agree to the', nl_consent_post:' of PianoForte.', reg_terms_and:'and',
+      login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
+      breadcrumb_home:'Home',
+      teaser_about_title:'About us', teaser_about_body:'Learn about our philosophy and the school.',
+      teaser_projects_title:'Projects', teaser_projects_body:'Concerts, performances, and collaborations.',
+      teaser_summer_title:'Summer school', teaser_summer_body:'A music program through the summer.',
+      teaser_blog_title:'Blog', teaser_blog_body:'News and stories from our school.',
+      teaser_contact_title:'Contact', teaser_contact_body:'Ask us anything.',
+      teaser_more:'Learn more →', explore_head:'Explore the school',
+      explore_btn:'Explore →',
+      stat3_lbl:'Instruments', stat4_num:'2', stat4_lbl:'Locations in Skopje', stat5_num:'Group & 1-on-1', stat5_lbl:'Teaching for every child',
+      feat1_title:'Easy booking', feat1_body:'Book a lesson online in seconds.',
+      feat2_title:'Flexible payment', feat2_body:'Monthly, half-yearly, or full — your choice.',
+      feat3_title:'Personalized learning', feat3_body:'Programs tailored to every child.',
+      feat4_title:'Track progress', feat4_body:'See materials and activity in real time.'
+    }
+  };
+  let currentLang = 'mk';
+  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
+  function applyLanguage(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
+    document.documentElement.lang = currentLang;
+    if(typeof renderNlConsentText === 'function') renderNlConsentText();
+  }
+  document.querySelector('.lang-toggle').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    currentLang = btn.dataset.lang;
+    applyLanguage();
+  });
+  applyLanguage();
+
+  // mobile burger -> simple toggle of nav links visibility
+  const burger = document.getElementById('burgerBtn');
+  const links = document.querySelector('nav.links');
+  burger.addEventListener('click', ()=>{
+    const isOpen = links.style.display === 'flex';
+    links.style.cssText = isOpen ? '' : 'display:flex; flex-direction:column; position:absolute; top:76px; left:0; right:0; background:var(--surface); padding:16px 28px; border-bottom:1px solid var(--line);';
+  });
+
+  // newsletter popup — се појавува само еднаш по прв посета (се памети во browser-от)
+  const nlOverlay = document.getElementById('newsletterOverlay');
+  const NL_DISMISSED_KEY = 'pf_newsletter_dismissed';
+  function nlDismiss(){
+    try{ localStorage.setItem(NL_DISMISSED_KEY, '1'); }catch(e){}
+    nlOverlay.classList.remove('show');
+  }
+  try{
+    if(!localStorage.getItem(NL_DISMISSED_KEY)){
+      setTimeout(()=>{ nlOverlay.classList.add('show'); }, 6000);
+    }
+  }catch(e){
+    // ако localStorage не е достапен (пр. приватен режим), сепак го прикажи еднаш по сесија
+    setTimeout(()=>{ nlOverlay.classList.add('show'); }, 6000);
+  }
+  document.getElementById('newsletterClose').addEventListener('click', nlDismiss);
+  nlOverlay.addEventListener('click', e=>{ if(e.target === nlOverlay) nlDismiss(); });
+
+  function renderNlConsentText(){
+    const el = document.getElementById('newsletterConsentText');
+    if(!el) return;
+    el.innerHTML = t('nl_consent_pre') + ' <a href="/app" target="_blank">' + t('login_terms_link') + '</a> ' + t('reg_terms_and') + ' <a href="/app" target="_blank">' + t('login_privacy_link') + '</a>' + t('nl_consent_post');
+  }
+  renderNlConsentText();
+
+  const nlForm = document.getElementById('newsletterForm');
+  if(nlForm) nlForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    if(!document.getElementById('newsletterConsent').checked) return;
+    // TODO: поврзи со вистински backend за собирање email адреси (пр. Brevo листа)
+    const modal = nlForm.closest('.newsletter-modal');
+    modal.innerHTML = '<div style="padding:20px 0;"><div style="font-size:38px; margin-bottom:14px;">✓</div><h3>' +
+      (currentLang==='mk' ? 'Ти благодариме!' : 'Thank you!') + '</h3><p>' +
+      (currentLang==='mk' ? 'Ќе те известиме за новости и попусти.' : 'We\'ll keep you posted on news and discounts.') + '</p></div>';
+    try{ localStorage.setItem(NL_DISMISSED_KEY, '1'); }catch(e){}
+    setTimeout(()=>{ nlOverlay.classList.remove('show'); }, 2200);
+  });
+
+  // contact form — stub, shows inline confirmation for now
+  const cForm = document.getElementById('contactForm');
+  if(cForm) cForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    // TODO: поврзи со вистински backend/email сервис
+    cForm.innerHTML = '<div style="text-align:center; padding:30px 10px;"><div style="font-size:38px; margin-bottom:14px;">✓</div><h4 style="margin-bottom:8px;">' +
+      (currentLang==='mk' ? 'Пораката е испратена!' : 'Message sent!') + '</h4><p style="color:var(--mist); font-size:14px;">' +
+      (currentLang==='mk' ? 'Ќе те контактираме наскоро.' : 'We\'ll get back to you soon.') + '</p></div>';
+  });
+
+})();
+
+</script>
+</body>
+</html>
