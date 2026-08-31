@@ -249,21 +249,27 @@
 
   .pkg-table-section{margin-bottom:32px;}
   .pkg-table-section h3{font-family:'Fraunces',serif; font-size:16px; font-weight:600; margin-bottom:12px; color:var(--ink);}
-  .pkg-horiz-row{display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; overscroll-behavior-x:contain;}
-  .pkg-horiz-row::-webkit-scrollbar{height:6px;}
-  .pkg-horiz-row::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
-  .pkg-horiz-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; flex:0 0 240px; scroll-snap-align:start; display:flex; flex-direction:column;}
-  .ptc-name{font-weight:600; font-size:13.5px; color:var(--ink); margin-bottom:8px;}
-  .ptc-price{font-weight:700; color:var(--sand-deep); font-size:19px; white-space:nowrap;}
-  .ptc-discount{font-size:12px; color:var(--leaf); font-weight:600; min-height:16px; margin:2px 0 12px;}
-  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:8px;}
-  .ptc-desc{font-size:11.5px; color:var(--mist); line-height:1.5; background:var(--surface-2); border-radius:8px; padding:10px 12px; margin-bottom:12px;}
-  .pkg-table-buy-btn{background:var(--surface-2); border:1.5px solid var(--line); color:var(--ink); padding:10px 16px; border-radius:8px; font-weight:600; font-size:12.5px; cursor:pointer; transition:.2s; white-space:nowrap; margin-top:auto;}
+  .pkg-table{background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .pkg-table-row{display:grid; grid-template-columns:1.4fr 1fr 0.7fr 2.2fr 1fr; gap:14px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line);}
+  .pkg-table-row:last-child{border-bottom:none;}
+  .pkg-table-row.pkg-table-head{background:var(--surface-2); padding:12px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--mist);}
+  .pkg-td-name{font-weight:600; font-size:13.5px; color:var(--ink);}
+  .pkg-td-price{font-weight:700; color:var(--sand-deep); font-size:16px; white-space:nowrap;}
+  .pkg-td-discount{font-size:12px; color:var(--leaf); font-weight:600;}
+  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-align:left;}
+  .pkg-desc-text{font-size:11.5px; color:var(--mist); line-height:1.5; margin-top:6px; max-height:0; overflow:hidden; transition:max-height .3s ease;}
+  .pkg-desc-text.open{max-height:300px;}
+  .pkg-table-buy-btn{background:var(--surface-2); border:1.5px solid var(--line); color:var(--ink); padding:10px 16px; border-radius:100px; font-weight:600; font-size:12px; cursor:pointer; transition:.2s; white-space:nowrap;}
   .pkg-table-buy-btn:hover{border-color:var(--lilac-deep);}
   .pkg-table-buy-btn.chosen{background:var(--lilac-deep); border-color:var(--lilac-deep); color:#fff;}
 
   @media(max-width:820px){
-    .pkg-horiz-card{flex:0 0 78vw;}
+    .pkg-table-row{grid-template-columns:1fr; gap:6px; padding:16px 18px;}
+    .pkg-table-row.pkg-table-head{display:none;}
+    .pkg-td-name{font-size:14.5px;}
+    .pkg-td-price::before{content:'Цена: '; color:var(--mist); font-weight:500; font-size:11.5px;}
+    .pkg-td-discount:not(:empty)::before{content:'Попуст: '; color:var(--mist); font-weight:500;}
+    .pkg-table-buy-btn{width:100%; margin-top:6px; padding:12px;}
   }
   .pkg-select-btn:hover{transform:translateY(-1px);}
   .pkg-card.chosen{border-color:var(--leaf); background:var(--leaf-pale);}
@@ -544,7 +550,7 @@
       <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
     </div>
 
-    <div class="g-recaptcha" data-sitekey="6LeCg6EtAAAAAMPhrnIAriFkNyy-yF3XXgpR41T2" style="margin-bottom:16px;"></div>
+    <div class="g-recaptcha" data-sitekey="YOUR_RECAPTCHA_SITE_KEY_HERE" style="margin-bottom:16px;"></div>
 
     <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;" id="regTermsLabel">
       <input type="checkbox" id="regTermsCheckbox" style="margin-top:2px;">
@@ -2833,13 +2839,20 @@
     let descCounter = 0;
     function rowHtml(name, price, discount, desc, pkgId, type, plan){
       const descId = 'pkgdesc-' + (descCounter++);
-      return `<div class="pkg-horiz-card">
-        <div class="ptc-name">${escapeHtml(name)}</div>
-        <div class="ptc-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
-        <div class="ptc-discount">${discount || '\u00A0'}</div>
-        <button class="pkg-desc-btn" data-target="${descId}">ℹ️ Опис на пакет</button>
-        <div class="ptc-desc" id="${descId}" style="display:none;">${escapeHtml(desc)}</div>
-        <button class="pkg-table-buy-btn${chosenPackage===pkgId && preselectedPlan===plan?' chosen':''}" data-pkg="${pkgId}" data-type="${type}" data-plan="${plan||''}">${chosenPackage===pkgId && preselectedPlan===plan?'✓ Избрано':'Купи'}</button>
+      return `<div class="pkg-table-row">
+        <div class="pkg-td-name">${escapeHtml(name)}</div>
+        <div class="pkg-td-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
+        <div class="pkg-td-discount">${discount || '—'}</div>
+        <div>
+          <button class="pkg-desc-btn" data-target="${descId}">ℹ️ Опис на пакет</button>
+          <div class="pkg-desc-text" id="${descId}">${escapeHtml(desc)}</div>
+        </div>
+        <div><button class="pkg-table-buy-btn${chosenPackage===pkgId && preselectedPlan===plan?' chosen':''}" data-pkg="${pkgId}" data-type="${type}" data-plan="${plan||''}">${chosenPackage===pkgId && preselectedPlan===plan?'✓ Избрано':'Купи'}</button></div>
+      </div>`;
+    }
+    function tableHead(){
+      return `<div class="pkg-table-row pkg-table-head">
+        <div>Пакети</div><div>Цена</div><div>Попуст</div><div>Опис на пакет</div><div>Купи</div>
       </div>`;
     }
 
@@ -2848,7 +2861,8 @@
     if(trial){
       html += `<div class="pkg-table-section">
         <h3>Пробни/Промотивни ${instrumentLabel(selectedPkgInstrument).replace(/^\S+\s/,'')} пакети за почетници</h3>
-        <div class="pkg-horiz-row">
+        <div class="pkg-table">
+          ${tableHead()}
           ${rowHtml(trial.name, trial.price_mkd, null, trial.description, trial.id, 'trial', 'trial')}
         </div>
       </div>`;
@@ -2864,7 +2878,8 @@
       if(isEarlyDev){
         html += `<div class="pkg-table-section">
           <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-          <div class="pkg-horiz-row">
+          <div class="pkg-table">
+            ${tableHead()}
             ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 4-5 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'eight')}
             ${rowHtml('Полугодишен пакет (18 часа)', halfPrice, '−3%', `Се состои од 18 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'two')}
             ${rowHtml('Целогодишен пакет (36 часа)', fullPrice, '−5%', `Се состои од 36 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'full')}
@@ -2874,7 +2889,8 @@
         const hourDesc = isViolin ? '(45 мин. групен и 45 мин. индивидуален час)' : 'во групна настава, секој час со времетраење од 45 мин.';
         html += `<div class="pkg-table-section">
           <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-          <div class="pkg-horiz-row">
+          <div class="pkg-table">
+            ${tableHead()}
             ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
             ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
             ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
@@ -2886,7 +2902,8 @@
     if(individual){
       html += `<div class="pkg-table-section">
         <h3>Индивидуален час по ${instrumentLabel(selectedPkgInstrument).replace(/^\S+\s/,'')}</h3>
-        <div class="pkg-horiz-row">
+        <div class="pkg-table">
+          ${tableHead()}
           ${rowHtml('1 час', individual.price_mkd, null, individual.description, individual.id, 'individual', 'individual')}
         </div>
       </div>`;
@@ -2897,9 +2914,8 @@
     grid.querySelectorAll('.pkg-desc-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const target = document.getElementById(btn.dataset.target);
-        const isOpen = target.style.display !== 'none';
-        target.style.display = isOpen ? 'none' : 'block';
-        btn.textContent = isOpen ? 'ℹ️ Опис на пакет' : '▲ Скриј опис';
+        const isOpen = target.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ Скриј опис' : 'ℹ️ Опис на пакет';
       });
     });
 
@@ -3303,4 +3319,3 @@ if('serviceWorker' in navigator){
 
 </body>
 </html>
-
