@@ -134,43 +134,47 @@
   .instrument-card h4{font-size:16px; font-weight:600; color:var(--ink);}
   @media(max-width:820px){ .instruments-grid{grid-template-columns:repeat(2,1fr); gap:14px;} .instrument-card{padding:26px 16px;} }
 
-  /* ===== PACKAGES PREVIEW ===== */
+  /* ===== PACKAGES PREVIEW — табела (вертикална листа, хоризонтално проширена) ===== */
   .pkg-section{margin-bottom:40px;}
   .pkg-section h3{font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-bottom:16px;}
-  .pkg-row-wrap{display:flex; gap:16px; overflow-x:auto; padding-bottom:12px; -webkit-overflow-scrolling:touch;}
-  .pkg-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px; flex:0 0 250px; display:flex; flex-direction:column; transition:.3s var(--ease);}
-  .pkg-card:hover{box-shadow:var(--shadow-sm);}
-  .pkg-card-name{font-weight:600; font-size:14px; margin-bottom:8px;}
-  .pkg-card-price{font-family:'Fraunces',serif; font-weight:600; color:var(--sand-deep); font-size:22px;}
-  .pkg-card-discount{font-size:12px; color:var(--leaf); font-weight:600; min-height:16px; margin:2px 0 12px;}
-  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:8px;}
-  .pkg-card-desc{font-size:11.5px; color:var(--mist); line-height:1.6; background:var(--surface-2); border-radius:9px; padding:11px 13px; margin-bottom:14px; display:none;}
-  .pkg-buy-btn{background:var(--ink); color:#fff; border:none; padding:12px 16px; border-radius:100px; font-weight:600; font-size:12.5px; cursor:pointer; text-decoration:none; text-align:center; margin-top:auto; transition:.25s var(--ease);}
+  .pkg-table{background:var(--surface); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+  .pkg-table-row{display:grid; grid-template-columns:1.4fr 1fr 0.7fr 2.2fr 1fr; gap:14px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line);}
+  .pkg-table-row:last-child{border-bottom:none;}
+  .pkg-table-row.pkg-table-head{background:var(--surface-2); padding:12px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--mist);}
+  .pkg-td-name{font-weight:600; font-size:14px;}
+  .pkg-td-price{font-family:'Fraunces',serif; font-weight:600; color:var(--sand-deep); font-size:17px;}
+  .pkg-td-discount{font-size:12.5px; color:var(--leaf); font-weight:600;}
+  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:12px; font-weight:600; cursor:pointer; padding:0; text-align:left;}
+  .pkg-desc-text{font-size:12px; color:var(--mist); line-height:1.6; margin-top:8px; max-height:0; overflow:hidden; transition:max-height .3s var(--ease);}
+  .pkg-desc-text.open{max-height:300px;}
+  .pkg-buy-btn{display:inline-block; background:var(--ink); color:#fff; border:none; padding:11px 20px; border-radius:100px; font-weight:600; font-size:12.5px; cursor:pointer; text-decoration:none; text-align:center; transition:.25s var(--ease); white-space:nowrap;}
   .pkg-buy-btn:hover{background:var(--lilac-deep);}
   .pkg-annual-total{color:var(--sand-deep); font-weight:600;}
+  @media(max-width:820px){
+    .pkg-table-row{grid-template-columns:1fr; gap:6px; padding:18px 20px;}
+    .pkg-table-row.pkg-table-head{display:none;}
+    .pkg-td-name{font-size:15px;}
+    .pkg-td-price::before{content:'Цена: '; color:var(--mist); font-weight:500; font-family:'Inter',sans-serif; font-size:12px;}
+    .pkg-td-discount:not(:empty)::before{content:'Попуст: '; color:var(--mist); font-weight:500;}
+    .pkg-buy-btn{width:100%; margin-top:8px; padding:13px;}
+  }
 
   /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
   .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
   .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:22px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
   @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} }
 
-  /* ===== EMPTY BLOG STATE ===== */
-  .empty-blog{text-align:center; max-width:420px; margin:0 auto; padding:60px 20px;}
-  .empty-blog-icon{width:68px; height:68px; margin:0 auto 22px; background:var(--lilac-pale); border-radius:20px; display:flex; align-items:center; justify-content:center;}
-  .empty-blog-icon svg{width:32px; height:32px; stroke:var(--lilac-deep);}
-  .empty-blog h3{font-size:23px; margin-bottom:10px;}
-  .empty-blog p{color:var(--mist); font-size:14.5px;}
-
-  /* ===== BLOG ===== */
-  .blog-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
-  .blog-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; transition:.3s var(--ease);}
-  .blog-card:hover{box-shadow:var(--shadow-sm); transform:translateY(-3px);}
-  .blog-card .thumb{aspect-ratio:16/10; background:var(--surface-2);}
-  .blog-card .body{padding:22px;}
-  .blog-card .tag{font-size:11px; font-weight:700; color:var(--leaf); text-transform:uppercase; letter-spacing:.06em;}
-  .blog-card h4{font-size:16px; margin:10px 0 8px;}
-  .blog-card p{font-size:13.5px; color:var(--mist);}
-  @media(max-width:900px){ .blog-grid{grid-template-columns:1fr;} }
+  /* ===== BLOG — вистински написи, естетски картички ===== */
+  .blog-post-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px;}
+  .blog-post-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; text-decoration:none; color:var(--ink); display:block; transition:.3s var(--ease);}
+  .blog-post-card:hover{box-shadow:var(--shadow); transform:translateY(-5px); border-color:var(--lilac-deep);}
+  .blog-post-thumb{aspect-ratio:16/11; background-size:cover; background-position:center; background-color:var(--surface-2);}
+  .blog-post-body{padding:22px;}
+  .blog-post-date{font-size:11px; font-weight:700; color:var(--sand-deep); text-transform:uppercase; letter-spacing:.05em;}
+  .blog-post-card h4{font-family:'Fraunces',serif; font-size:16.5px; font-weight:500; margin:10px 0 10px; line-height:1.35;}
+  .blog-post-card p{font-size:13px; color:var(--mist); line-height:1.6;}
+  @media(max-width:900px){ .blog-post-grid{grid-template-columns:1fr 1fr; gap:18px;} }
+  @media(max-width:600px){ .blog-post-grid{grid-template-columns:1fr;} }
 
   /* ===== CONTACT ===== */
   .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
@@ -322,32 +326,44 @@
   <a href="contact.html" class="m-link" data-i18n="nav_contact">Контакт</a>
   <a href="/app" class="cta-primary m-cta" data-i18n="nav_cta">Купи/Најави се</a>
 </div>
-
 <div class="page-hero tint-lilac">
   <div class="wrap">
     <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_summer">Летна школа</span></div>
     <h1 data-i18n="summer_title">Летна музичка школа</h1>
+    <p style="color:var(--mist); font-size:16.5px; max-width:600px;">Лето исполнето со музика, радост и креативност — каде детето не само учи, туку расте, се изразува и создава спомени.</p>
   </div>
 </div>
+
 <section>
   <div class="wrap about-grid">
-    <div class="about-media">
-      <svg viewBox="0 0 240 180" width="65%" style="opacity:.85;">
-        <circle cx="120" cy="70" r="34" fill="#F4E4C4" stroke="#A97E33" stroke-width="2"/>
-        <g stroke="#A97E33" stroke-width="2.5" stroke-linecap="round">
-          <line x1="120" y1="18" x2="120" y2="6"/>
-          <line x1="120" y1="122" x2="120" y2="134"/>
-          <line x1="68" y1="70" x2="56" y2="70"/>
-          <line x1="172" y1="70" x2="184" y2="70"/>
-          <line x1="83" y1="33" x2="75" y2="25"/>
-          <line x1="157" y1="33" x2="165" y2="25"/>
-        </g>
-        <ellipse cx="120" cy="150" rx="10" ry="8" fill="#5E8B6B"/><rect x="128" y="112" width="2.5" height="38" fill="#5E8B6B"/>
-      </svg>
-    </div>
     <div>
-      <p style="color:var(--mist);" data-i18n="summer_p1">Детали за термините и активностите на летната програма наскоро — следи нè за да не пропуштиш пријавување.</p>
+      <p style="color:var(--mist); line-height:1.75; margin-bottom:16px;">
+        Летната школа на PianoForte е внимателно осмислена програма што ги спојува музичката едукација и забавата во едно незаборавно искуство. Целта е да ja разбудиме детската љубопитност, да ja поттикнеме нивната креативност, и да им помогнеме да ги откријат сопствените таленти преку музиката.
+      </p>
+      <p style="color:var(--mist); line-height:1.75; margin-bottom:16px;">
+        Децата ce запознаваат со различни инструменти — пијано, виолина, гитара, тапани и пеење — преку интерактивен, индивидуален пристап каде секое дете се чувствува охрабрено и инспирирано да напредува.
+      </p>
+      <div class="contact-card" style="margin-top:24px;">
+        <h4>Термин и цена</h4>
+        <p>Програмата трае 14 работни дена, во попладневните часови.</p>
+        <p style="margin-top:10px; font-weight:600; color:var(--ink);">Пакет од 8 часа — 6.000 денари</p>
+      </div>
     </div>
+    <div class="about-media">
+      <img src="https://pianoforte.edu.mk/wp-content/uploads/2024/03/piano_102-600x400.jpg" alt="Летна школа" style="width:100%; height:100%; object-fit:cover; border-radius:22px;">
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="section-head center" style="margin-left:auto; margin-right:auto;">
+      <h2>Зошто рана музичка едукација?</h2>
+      <p>Марина Чадо, основач и професор по виолина</p>
+    </div>
+    <p style="color:var(--mist); max-width:760px; margin:0 auto; line-height:1.8; text-align:center;">
+      Свирењето инструмент директно влијае на развојот на моториката и концентрацијата кај децата. Преку музиката, децата градат навика на истрајност и посветеност — вредности што остануваат со нив далеку надвор од музичкото образование.
+    </p>
   </div>
 </section>
 
@@ -646,15 +662,26 @@
 
     const buyUrl = '/app/#packages/' + instrument;
     let descCounter = 0;
-    function pkgCard(name, price, discount, desc){
+    function pkgRow(name, price, discount, desc){
       const id = 'pdesc-' + (descCounter++);
-      return `<div class="pkg-card">
-        <div class="pkg-card-name">${name}</div>
-        <div class="pkg-card-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
-        <div class="pkg-card-discount">${discount || '\u00A0'}</div>
-        <button class="pkg-desc-btn" data-target="${id}">ℹ️ ${currentLang==='mk' ? 'Опис на пакет' : 'Package details'}</button>
-        <div class="pkg-card-desc" id="${id}">${desc}</div>
-        <a class="pkg-buy-btn" href="${buyUrl}">${currentLang==='mk' ? 'Купи' : 'Buy'}</a>
+      return `<div class="pkg-table-row">
+        <div class="pkg-td pkg-td-name">${name}</div>
+        <div class="pkg-td pkg-td-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
+        <div class="pkg-td pkg-td-discount">${discount || '—'}</div>
+        <div class="pkg-td pkg-td-desc">
+          <button class="pkg-desc-btn" data-target="${id}">ℹ️ ${currentLang==='mk' ? 'Опис на пакет' : 'Package details'}</button>
+          <div class="pkg-desc-text" id="${id}">${desc}</div>
+        </div>
+        <div class="pkg-td pkg-td-buy"><a class="pkg-buy-btn" href="${buyUrl}">${currentLang==='mk' ? 'Купи' : 'Buy'}</a></div>
+      </div>`;
+    }
+    function pkgTableHead(){
+      return `<div class="pkg-table-row pkg-table-head">
+        <div class="pkg-td">${currentLang==='mk' ? 'Пакети' : 'Packages'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Цена' : 'Price'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Попуст' : 'Discount'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Опис на пакет' : 'Description'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Купи' : 'Buy'}</div>
       </div>`;
     }
 
@@ -673,7 +700,7 @@
 
         if(trial){
           html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Пробен пакет' : 'Trial package'}</h3>
-            <div class="pkg-row-wrap">${pkgCard(trial.name, trial.price_mkd, null, trial.description)}</div></div>`;
+            <div class="pkg-table">${pkgTableHead()}${pkgRow(trial.name, trial.price_mkd, null, trial.description)}</div></div>`;
         }
         if(annual){
           const monthly = Number(annual.price_mkd);
@@ -681,15 +708,16 @@
           const halfPrice = Math.round((annualTotal/2) * (1 - HALF_DISCOUNT));
           const fullPrice = Math.round(annualTotal * (1 - FULL_DISCOUNT));
           html += `<div class="pkg-section"><h3>${annual.name} <span class="pkg-annual-total">— ${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-            <div class="pkg-row-wrap">
-              ${pkgCard(currentLang==='mk' ? 'Рата (1 од 8)' : 'Installment (1 of 8)', monthly, null, annual.description)}
-              ${pkgCard(currentLang==='mk' ? 'Полугодишен пакет' : 'Half-year package', halfPrice, '−3%', annual.description)}
-              ${pkgCard(currentLang==='mk' ? 'Целогодишен пакет' : 'Full-year package', fullPrice, '−5%', annual.description)}
+            <div class="pkg-table">
+              ${pkgTableHead()}
+              ${pkgRow(currentLang==='mk' ? 'Рата (1 од 8)' : 'Installment (1 of 8)', monthly, null, annual.description)}
+              ${pkgRow(currentLang==='mk' ? 'Полугодишен пакет' : 'Half-year package', halfPrice, '−3%', annual.description)}
+              ${pkgRow(currentLang==='mk' ? 'Целогодишен пакет' : 'Full-year package', fullPrice, '−5%', annual.description)}
             </div></div>`;
         }
         if(individual){
           html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Индивидуален час' : 'Individual lesson'}</h3>
-            <div class="pkg-row-wrap">${pkgCard(individual.name, individual.price_mkd, null, individual.description)}</div></div>`;
+            <div class="pkg-table">${pkgTableHead()}${pkgRow(individual.name, individual.price_mkd, null, individual.description)}</div></div>`;
         }
 
         pkgContentEl.innerHTML = html;
@@ -698,7 +726,7 @@
         pkgContentEl.querySelectorAll('.pkg-desc-btn').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             const target = document.getElementById(btn.dataset.target);
-            target.style.display = target.style.display === 'block' ? 'none' : 'block';
+            target.classList.toggle('open');
           });
         });
       })
