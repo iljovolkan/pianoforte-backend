@@ -225,7 +225,7 @@
   .clear-slot-btn{width:100%; background:transparent; color:var(--wine); border:1px solid var(--wine-pale); padding:9px; border-radius:8px; font-size:12.5px; cursor:pointer; margin-top:8px;}
 
   /* ================= PACKAGES PAGE ================= */
-  .pkg-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;}
+  .pkg-grid{display:block;}
   .pkg-card{background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:26px 22px; display:flex; flex-direction:column; transition:.2s;}
   .pkg-card.featured{border-color:var(--lilac); box-shadow:0 20px 40px rgba(107,78,142,0.1);}
   .pkg-badge{align-self:flex-start; font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--lilac-pale); color:var(--lilac-deep); padding:4px 10px; border-radius:20px; margin-bottom:14px;}
@@ -340,7 +340,7 @@
 
   @media(max-width:960px){
     .index-layout, .sched-wrap{grid-template-columns:1fr;}
-    .pkg-grid, .slot-pick-grid, .groups-overview{grid-template-columns:1fr;}
+    .slot-pick-grid, .groups-overview{grid-template-columns:1fr;}
     .cal-grid{min-width:680px;}
     .billing-row{grid-template-columns:1fr; gap:4px;}
     .year-grid{grid-template-columns:1fr;}
