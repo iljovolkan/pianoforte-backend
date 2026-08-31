@@ -393,12 +393,18 @@
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-card">
+    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;">← Назад кон почетна</a>
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="login_tagline">Најави се за да продолжиш</p></div>
 
     <label class="field-label" style="margin-top:20px; display:block;" data-i18n="label_email">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
     <div class="pw-wrap"><input class="login-input" id="loginPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+
+    <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
+      <input type="checkbox" id="rememberMeCheckbox">
+      <span data-i18n="login_remember_me">Запомни ме</span>
+    </label>
 
     <button class="login-btn" id="loginBtn" disabled data-i18n="login_btn">Најави се</button>
     <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
@@ -569,6 +575,7 @@
 <div id="confirmEmailScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:440px; text-align:center;">
+    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;">← Назад кон почетна</a>
     <div style="font-size:40px; margin-bottom:14px;">📧</div>
     <h2 style="font-size:20px; margin-bottom:8px;">Испративме email до тебе</h2>
     <p style="color:var(--mist); font-size:13.5px; margin-bottom:24px;" id="confirmEmailAddress"></p>
@@ -946,7 +953,7 @@
   const translations = {
     mk: {
       login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
-      login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →',
+      login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →', login_remember_me:'Запомни ме',
       login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење', login_privacy_link:'Политика на приватност',
       logout:'Одјави се', refresh_title:'Освежи',
       nav_index:'Почетна', nav_profile:'Профил', nav_schedule:'Распоред', nav_billing:'Наплата', nav_packages:'Пакети', nav_admin:'Админ',
@@ -983,7 +990,7 @@
     },
     en: {
       login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
-      login_btn:'Sign in', login_go_register:"Don't have an account? Register →",
+      login_btn:'Sign in', login_go_register:"Don't have an account? Register →", login_remember_me:'Remember me',
       login_forgot:'Forgot your password?', login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
       logout:'Log out', refresh_title:'Refresh',
       nav_index:'Home', nav_profile:'Profile', nav_schedule:'Schedule', nav_billing:'Billing', nav_packages:'Packages', nav_admin:'Admin',
@@ -1207,17 +1214,26 @@
     }
   }
 
-  /* ---- истрајност на сесијата низ рефреш на страницата ---- */
+  /* ---- истрајност на сесијата низ рефреш на страницата ----
+     Ако е штиклирано "Запомни ме", користиме localStorage (трае и по затворање
+     на browser-от). Инаку sessionStorage (се брише кога ќе се затвори табот). ---- */
+  let rememberMe = (localStorage.getItem('pf_remember_me') === '1');
   function saveSessionToStorage(){
     if(!session) return;
-    try{ sessionStorage.setItem('pf_session', JSON.stringify(session)); } catch(e){}
+    try{
+      const target = rememberMe ? localStorage : sessionStorage;
+      target.setItem('pf_session', JSON.stringify(session));
+      // исчисти од другото складиште, за да нема застарена копија таму
+      (rememberMe ? sessionStorage : localStorage).removeItem('pf_session');
+    } catch(e){}
   }
   function clearSessionStorage(){
-    try{ sessionStorage.removeItem('pf_session'); } catch(e){}
+    try{ sessionStorage.removeItem('pf_session'); }catch(e){}
+    try{ localStorage.removeItem('pf_session'); }catch(e){}
   }
   function loadSessionFromStorage(){
     try{
-      const raw = sessionStorage.getItem('pf_session');
+      const raw = localStorage.getItem('pf_session') || sessionStorage.getItem('pf_session');
       return raw ? JSON.parse(raw) : null;
     } catch(e){ return null; }
   }
@@ -1288,6 +1304,8 @@
       } else {
         session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, token, refreshToken, isRealAccount:true};
       }
+      rememberMe = document.getElementById('rememberMeCheckbox').checked;
+      try{ localStorage.setItem('pf_remember_me', rememberMe ? '1' : '0'); }catch(e){}
       saveSessionToStorage();
       await startApp();
     } catch(err){
@@ -1302,6 +1320,8 @@
     try{ await authApiCall('/auth/logout', { method:'POST' }); } catch(e){}
     session = null;
     clearSessionStorage();
+    try{ localStorage.removeItem('pf_remember_me'); }catch(e){}
+    rememberMe = false;
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   });
