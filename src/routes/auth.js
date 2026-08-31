@@ -12,6 +12,25 @@ const SALT_ROUNDS = 12;
 const APP_URL = process.env.APP_BASE_URL || 'https://app.pianoforte.edu.mk';
 const ACCESS_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '2h';
 const REFRESH_TOKEN_DAYS = 30;
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
+
+// Потврдува дека captcha токенот е вистински, преку Google-овиот siteverify API
+async function verifyRecaptcha(token) {
+  if (!RECAPTCHA_SECRET) return true; // ако не е поставен клучот, не блокирај (development fallback)
+  if (!token) return false;
+  try {
+    const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${RECAPTCHA_SECRET}&response=${token}`
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    console.error('reCAPTCHA verify error:', e);
+    return false;
+  }
+}
 
 // Спречува brute-force обиди за најава/регистрација — макс. 10 обиди на 15 мин по IP
 const loginLimiter = rateLimit({
@@ -48,10 +67,14 @@ function issueTokens(user) {
 
 // POST /auth/register  { email, password, full_name, role }
 router.post('/register', registerLimiter, async (req, res) => {
-  const { email, password, full_name, role, child_name, child_age } = req.body;
+  const { email, password, full_name, role, child_name, child_age, captcha_token } = req.body;
 
   if (!email || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Сите полиња се задолжителни.' });
+  }
+  const captchaOk = await verifyRecaptcha(captcha_token);
+  if (!captchaOk) {
+    return res.status(400).json({ error: 'CAPTCHA потврдата не успеа. Пробај повторно.' });
   }
   if (!['admin', 'professor', 'student'].includes(role)) {
     return res.status(400).json({ error: 'Невалидна улога.' });
