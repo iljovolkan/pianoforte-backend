@@ -1,12 +1,13 @@
 const express = require('express');
 const pool = require('../db');
-const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET /packages — сите пакети, опционално филтрирани по инструмент/тип
 // ?instrument=piano&type=annual
-router.get('/', requireAuth, async (req, res) => {
+// ЈАВНА рута (без најава) — цените се јавна информација, потребни за
+// маркетинг преглед на пакети пред најава/регистрација.
+router.get('/', async (req, res) => {
   const { instrument, type } = req.query;
   let query = 'SELECT * FROM packages WHERE 1=1';
   const params = [];
@@ -18,3 +19,4 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
