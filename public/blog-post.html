@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Блог — PianoForte</title>
+<meta name="description" content="Напис од блогот на PianoForte музичкото училиште.">
+<meta name="theme-color" content="#FBF7F1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg:#FBF7F1; --surface:#FFFFFF; --surface-2:#F4EEE3; --line:#E7DFD1;
+    --ink:#2A2233; --mist:#8A8290;
+    --lilac-deep:#6B4E8E; --lilac-pale:#EEE6F6;
+    --sand-deep:#A97E33; --sand-pale:#F4E4C4;
+    --leaf:#5E8B6B; --leaf-pale:#E4EFE6;
+    --wine:#B3555F; --wine-pale:#F6E4E6;
+    --dark-card:#241E29; --dark-card-2:#3B3142;
+    --shadow-sm:0 8px 24px -12px rgba(42,34,51,0.18);
+    --shadow:0 24px 60px -24px rgba(42,34,51,0.28);
+    --shadow-lg:0 32px 80px -20px rgba(42,34,51,0.35);
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; -webkit-tap-highlight-color:transparent;}
+  h1,h2,h3,h4{font-family:'Fraunces',serif; font-weight:500; margin:0; letter-spacing:-.015em;}
+  p{margin:0; line-height:1.7;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  /* ===== UTILITY TOP BAR ===== */
+  .utility-bar{background:linear-gradient(90deg, var(--lilac-pale), var(--sand-pale)); color:var(--ink); font-size:12.5px; border-bottom:1px solid var(--line);}
+  .utility-bar .wrap{display:flex; justify-content:space-between; align-items:center; height:40px;}
+  .utility-left{display:flex; gap:18px;}
+  .utility-left a{text-decoration:none; opacity:.85; display:flex; align-items:center; gap:5px; color:var(--ink); font-weight:600; transition:opacity .2s var(--ease);}
+  .utility-left a:hover{opacity:1; color:var(--lilac-deep);}
+  .utility-right{display:flex; gap:14px; align-items:center;}
+  .lang-toggle{display:flex; gap:2px; background:rgba(255,255,255,.55); border-radius:6px; padding:2px;}
+  .lang-toggle button{background:none; border:none; color:var(--ink); font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; opacity:.55; transition:.2s var(--ease);}
+  .lang-toggle button.active{background:#fff; opacity:1; color:var(--lilac-deep);}
+
+  /* ===== MAIN NAV ===== */
+  header.main-nav{position:sticky; top:0; z-index:200; background:rgba(251,247,241,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);}
+  .nav-row{display:flex; align-items:center; justify-content:space-between; height:80px;}
+  .brand{font-family:'Fraunces',serif; font-size:24px; font-weight:600; text-decoration:none; color:var(--ink); display:flex; align-items:center;}
+  .brand-logo{height:42px; width:auto; display:block;}
+  nav.links{display:flex; align-items:center; gap:4px;}
+  .nav-item{position:relative;}
+  .nav-item > a, .nav-item > span{display:flex; align-items:center; gap:5px; padding:11px 15px; font-size:14.5px; font-weight:600; text-decoration:none; color:var(--ink); border-radius:8px; cursor:pointer; transition:background .2s var(--ease);}
+  .nav-item > a:hover, .nav-item:hover > span{background:var(--surface-2);}
+  .caret{font-size:10px; opacity:.6; transition:transform .25s var(--ease);}
+  .nav-item:hover .caret{transform:rotate(180deg);}
+  .dropdown{position:absolute; top:100%; left:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:10px; min-width:220px; opacity:0; visibility:hidden; transform:translateY(8px); transition:.25s var(--ease);}
+  .nav-item:hover .dropdown{opacity:1; visibility:visible; transform:translateY(6px);}
+  .dropdown a{display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:9px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500; transition:.15s var(--ease);}
+  .dropdown a:hover{background:var(--lilac-pale); color:var(--lilac-deep);}
+  .dropdown.instruments{min-width:240px; width:420px; display:grid; grid-template-columns:1fr 1fr; gap:2px;}
+  .cta-primary{background:var(--ink); color:#fff !important; padding:13px 24px; border-radius:100px; font-weight:600; font-size:13.5px; letter-spacing:.02em; text-decoration:none; white-space:nowrap; transition:.25s var(--ease); display:inline-flex; align-items:center; gap:8px; box-shadow:var(--shadow-sm);}
+  .cta-primary:hover{background:var(--lilac-deep); transform:translateY(-1px); box-shadow:var(--shadow);}
+  .burger{display:none; background:none; border:none; width:44px; height:44px; align-items:center; justify-content:center; cursor:pointer; position:relative; z-index:210;}
+  .burger span{display:block; width:22px; height:2px; background:var(--ink); position:absolute; transition:.3s var(--ease);}
+  .burger span:nth-child(1){transform:translateY(-6px);}
+  .burger span:nth-child(3){transform:translateY(6px);}
+  .burger.open span:nth-child(1){transform:rotate(45deg);}
+  .burger.open span:nth-child(2){opacity:0;}
+  .burger.open span:nth-child(3){transform:rotate(-45deg);}
+
+  /* ===== MOBILE NAV OVERLAY (luxury full-screen) ===== */
+  .mobile-nav-overlay{position:fixed; inset:0; background:var(--bg); z-index:190; display:flex; flex-direction:column; padding:100px 32px 40px; opacity:0; visibility:hidden; transform:translateY(-12px); transition:.35s var(--ease); overflow-y:auto;}
+  .mobile-nav-overlay.open{opacity:1; visibility:visible; transform:translateY(0);}
+  .mobile-nav-overlay a.m-link{font-family:'Fraunces',serif; font-size:26px; font-weight:500; color:var(--ink); text-decoration:none; padding:14px 0; border-bottom:1px solid var(--line); display:block;}
+  .mobile-nav-overlay .m-group{margin-bottom:6px;}
+  .mobile-nav-overlay .m-sub{padding-left:16px; display:none;}
+  .mobile-nav-overlay .m-group.open .m-sub{display:block;}
+  .mobile-nav-overlay .m-sub a{font-family:'Inter',sans-serif; font-size:15px; font-weight:500; padding:11px 0; border-bottom:none; color:var(--mist);}
+  .mobile-nav-overlay .m-cta{margin-top:24px;}
+  @media(min-width:981px){ .mobile-nav-overlay{display:none !important;} }
+
+  /* ===== HERO SLIDER (вистински слики) ===== */
+  .hero-slider{position:relative; height:620px; overflow:hidden;}
+  .slide{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.2s var(--ease); transform:scale(1.02);}
+  .slide.active{opacity:1;}
+  .slide-overlay{position:absolute; inset:0; background:linear-gradient(180deg, rgba(42,34,51,.35) 0%, rgba(42,34,51,.55) 55%, rgba(42,34,51,.78) 100%); z-index:1;}
+  .slide-content{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; color:#fff; max-width:680px;}
+  .slide-content .eyebrow{background:rgba(255,255,255,.14); backdrop-filter:blur(6px); color:#fff; border:1px solid rgba(255,255,255,.2);}
+  .slide-text{font-size:44px; font-weight:500; line-height:1.22; margin-bottom:32px; color:#fff; text-shadow:0 2px 24px rgba(0,0,0,.15);}
+  .slide-content .cta-primary{padding:15px 30px; font-size:14.5px; background:#fff; color:var(--ink) !important;}
+  .slide-content .cta-primary:hover{background:var(--sand-pale);}
+  .slider-dots{position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:9px;}
+  .dot{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.4); border:none; padding:0; cursor:pointer; transition:.3s var(--ease);}
+  .dot.active{background:#fff; width:26px; border-radius:5px;}
+  @media(max-width:640px){ .hero-slider{height:70vh; min-height:460px;} .slide-text{font-size:28px; margin-bottom:24px;} }
+
+  /* ===== INTRO BAND ===== */
+  .intro-band{padding:56px 0; border-bottom:1px solid var(--line);}
+  .intro-text{font-family:'Fraunces',serif; font-size:24px; font-weight:500; text-align:center; max-width:760px; margin:0 auto; color:var(--ink); line-height:1.55;}
+  @media(max-width:640px){ .intro-text{font-size:19px;} .intro-band{padding:40px 0;} }
+
+  /* ===== TEASER ROW ===== */
+  .teaser-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px; text-decoration:none; color:var(--ink); display:flex; align-items:center; justify-content:space-between; transition:.3s var(--ease);}
+  .teaser-card:hover{border-color:var(--lilac-deep); transform:translateY(-3px); box-shadow:var(--shadow-sm);}
+  .teaser-card h4{font-size:17px; font-weight:600;}
+  .teaser-card .arrow{color:var(--lilac-deep); font-weight:700; font-size:13px; white-space:nowrap;}
+
+  /* ===== SECTION SHELL ===== */
+  section{padding:96px 0;}
+  section.alt{background:var(--surface);}
+  .tint-lilac{background:linear-gradient(180deg, var(--lilac-pale) 0%, var(--bg) 100%);}
+  .tint-sand{background:linear-gradient(180deg, var(--sand-pale) 0%, var(--bg) 100%);}
+  .section-head{max-width:640px; margin-bottom:52px;}
+  .section-head h2{font-size:38px; font-weight:500; margin-bottom:16px;}
+  .section-head p{color:var(--mist); font-size:16.5px;}
+  .section-head.center{margin-left:auto; margin-right:auto; text-align:center;}
+  @media(max-width:640px){
+    section{padding:60px 0;}
+    .section-head{margin-bottom:36px;}
+    .section-head h2{font-size:28px;}
+    .section-head p{font-size:15px;}
+  }
+
+  /* ===== INSTRUMENTS GRID ===== */
+  .instruments-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+  .instrument-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:36px 22px; text-align:center; text-decoration:none; color:var(--ink); transition:.3s var(--ease);}
+  .instrument-card:hover{border-color:var(--lilac-deep); transform:translateY(-6px); box-shadow:var(--shadow);}
+  .instrument-icon{width:60px; height:60px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; background:var(--lilac-pale); border-radius:16px; transition:.3s var(--ease);}
+  .instrument-card:hover .instrument-icon{background:var(--lilac-deep);}
+  .instrument-card:hover .instrument-icon svg{stroke:#fff;}
+  .instrument-icon svg{width:28px; height:28px; stroke:var(--lilac-deep); transition:.3s var(--ease);}
+  .instrument-card h4{font-size:16px; font-weight:600; color:var(--ink);}
+  @media(max-width:820px){ .instruments-grid{grid-template-columns:repeat(2,1fr); gap:14px;} .instrument-card{padding:26px 16px;} }
+
+  /* ===== PACKAGES PREVIEW — табела (вертикална листа, хоризонтално проширена) ===== */
+  .pkg-section{margin-bottom:40px;}
+  .pkg-section h3{font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-bottom:16px;}
+  .pkg-table{background:var(--surface); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+  .pkg-table-row{display:grid; grid-template-columns:1.4fr 1fr 0.7fr 2.2fr 1fr; gap:14px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line);}
+  .pkg-table-row:last-child{border-bottom:none;}
+  .pkg-table-row.pkg-table-head{background:var(--surface-2); padding:12px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--mist);}
+  .pkg-td-name{font-weight:600; font-size:14px;}
+  .pkg-td-price{font-family:'Fraunces',serif; font-weight:600; color:var(--sand-deep); font-size:17px;}
+  .pkg-td-discount{font-size:12.5px; color:var(--leaf); font-weight:600;}
+  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:12px; font-weight:600; cursor:pointer; padding:0; text-align:left;}
+  .pkg-desc-text{font-size:12px; color:var(--mist); line-height:1.6; margin-top:8px; max-height:0; overflow:hidden; transition:max-height .3s var(--ease);}
+  .pkg-desc-text.open{max-height:300px;}
+  .pkg-buy-btn{display:inline-block; background:var(--ink); color:#fff; border:none; padding:11px 20px; border-radius:100px; font-weight:600; font-size:12.5px; cursor:pointer; text-decoration:none; text-align:center; transition:.25s var(--ease); white-space:nowrap;}
+  .pkg-buy-btn:hover{background:var(--lilac-deep);}
+  .pkg-annual-total{color:var(--sand-deep); font-weight:600;}
+  @media(max-width:820px){
+    .pkg-table-row{grid-template-columns:1fr; gap:6px; padding:18px 20px;}
+    .pkg-table-row.pkg-table-head{display:none;}
+    .pkg-td-name{font-size:15px;}
+    .pkg-td-price::before{content:'Цена: '; color:var(--mist); font-weight:500; font-family:'Inter',sans-serif; font-size:12px;}
+    .pkg-td-discount:not(:empty)::before{content:'Попуст: '; color:var(--mist); font-weight:500;}
+    .pkg-buy-btn{width:100%; margin-top:8px; padding:13px;}
+  }
+
+  /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
+  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
+  .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:22px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
+  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} }
+
+  /* ===== BLOG — вистински написи, естетски картички ===== */
+  .blog-post-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px;}
+  .blog-post-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; text-decoration:none; color:var(--ink); display:block; transition:.3s var(--ease);}
+  .blog-post-card:hover{box-shadow:var(--shadow); transform:translateY(-5px); border-color:var(--lilac-deep);}
+  .blog-post-thumb{aspect-ratio:16/11; background-size:cover; background-position:center; background-color:var(--surface-2);}
+  .blog-post-body{padding:22px;}
+  .blog-post-date{font-size:11px; font-weight:700; color:var(--sand-deep); text-transform:uppercase; letter-spacing:.05em;}
+  .blog-post-card h4{font-family:'Fraunces',serif; font-size:16.5px; font-weight:500; margin:10px 0 10px; line-height:1.35;}
+  .blog-post-card p{font-size:13px; color:var(--mist); line-height:1.6;}
+  @media(max-width:900px){ .blog-post-grid{grid-template-columns:1fr 1fr; gap:18px;} }
+  @media(max-width:600px){ .blog-post-grid{grid-template-columns:1fr;} }
+
+  /* ===== BLOG POST DETAILS (blog-post.html) ===== */
+  .back-link{display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none;}
+  .back-link:hover{text-decoration:underline;}
+  .blog-post-article{max-width:760px; margin:0 auto;}
+  .post-title{font-size:32px; font-weight:500; margin:10px 0 26px; line-height:1.3;}
+  .post-hero-img{aspect-ratio:16/9; background-size:cover; background-position:center; border-radius:18px; margin-bottom:28px; background-color:var(--surface-2);}
+  .post-video{position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:18px; margin-bottom:28px;}
+  .post-video iframe{position:absolute; top:0; left:0; width:100%; height:100%; border:none;}
+  .post-body p{color:var(--ink); font-size:15.5px; line-height:1.85; margin-bottom:20px;}
+  .post-original-link{display:inline-block; margin-top:10px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none;}
+  .post-original-link:hover{text-decoration:underline;}
+  @media(max-width:640px){ .post-title{font-size:24px;} }
+
+  /* ===== CONTACT ===== */
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
+  .contact-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px;}
+  .contact-card h4{font-size:14px; margin-bottom:10px; color:var(--sand-deep);}
+  .contact-card p{font-size:14.5px; margin-bottom:4px;}
+  .contact-form .frow{margin-bottom:16px;}
+  .contact-form label{display:block; font-size:12.5px; font-weight:600; margin-bottom:7px;}
+  .contact-form input, .contact-form textarea{width:100%; padding:13px 15px; border-radius:11px; border:1px solid var(--line); font-family:inherit; font-size:15px; background:var(--surface); transition:.2s var(--ease);}
+  .contact-form input:focus, .contact-form textarea:focus{outline:none; border-color:var(--lilac-deep);}
+  .contact-form textarea{min-height:110px; resize:vertical;}
+  .contact-form button{width:100%; background:var(--ink); color:#fff; border:none; padding:15px; border-radius:100px; font-weight:600; font-size:14.5px; transition:.25s var(--ease);}
+  .contact-form button:hover{background:var(--lilac-deep);}
+  @media(max-width:900px){ .contact-grid{grid-template-columns:1fr; gap:32px;} }
+
+  /* ===== FOOTER ===== */
+  footer{background:var(--ink); color:#EFE7DA; padding:64px 0 28px;}
+  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:40px; margin-bottom:44px;}
+  footer h4{font-size:12.5px; color:#C9BBA0; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.06em;}
+  footer p, footer a{font-size:13.5px; color:#EFE7DA; text-decoration:none; opacity:.82; line-height:1.85;}
+  footer a:hover{opacity:1;}
+  .footer-brand{font-family:'Fraunces',serif; font-size:22px; margin-bottom:14px; display:inline-block; background:#fff; padding:9px 16px; border-radius:10px;}
+  .footer-logo{height:34px; width:auto; display:block;}
+  .social-row{display:flex; gap:10px; margin-top:18px;}
+  .social-row a{width:36px; height:36px; border:1px solid rgba(255,255,255,.18); border-radius:50%; display:flex; align-items:center; justify-content:center; transition:.25s var(--ease);}
+  .social-row a:hover{background:rgba(255,255,255,.1); opacity:1;}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,.12); padding-top:22px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:12.5px; opacity:.65;}
+  .footer-bottom .links{display:flex; gap:20px; flex-wrap:wrap;}
+  .footer-bottom a{opacity:1;}
+  @media(max-width:640px){ .footer-grid{grid-template-columns:1fr 1fr; gap:28px;} }
+  @media(max-width:420px){ .footer-grid{grid-template-columns:1fr;} }
+
+  /* ===== NEWSLETTER POPUP ===== */
+  .newsletter-overlay{position:fixed; inset:0; background:rgba(30,24,38,.6); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  .newsletter-overlay.show{display:flex;}
+  .newsletter-modal{background:var(--bg); border-radius:22px; max-width:440px; width:100%; padding:38px 34px; position:relative; text-align:center; box-shadow:var(--shadow-lg);}
+  .newsletter-modal .close-x{position:absolute; top:16px; right:18px; background:none; border:none; font-size:20px; color:var(--mist); width:32px; height:32px;}
+  .newsletter-modal h3{font-size:23px; margin-bottom:26px; line-height:1.3;}
+  .newsletter-form{display:flex; flex-direction:column; gap:14px;}
+  .nl-email-row{display:flex; gap:8px;}
+  .newsletter-form input[type="email"]{flex:1; padding:14px 16px; border-radius:11px; border:1px solid var(--line); font-size:15px;}
+  .newsletter-form input[type="email"]:focus{outline:none; border-color:var(--lilac-deep);}
+  .newsletter-form button[type="submit"]{background:var(--ink); color:#fff; border:none; padding:14px 20px; border-radius:11px; font-weight:600; font-size:13.5px; white-space:nowrap; transition:.25s var(--ease);}
+  .newsletter-form button[type="submit"]:hover{background:var(--lilac-deep);}
+  .nl-consent{display:flex; align-items:flex-start; gap:8px; text-align:left; font-size:11.5px; color:var(--mist); cursor:pointer; line-height:1.55;}
+  .nl-consent input{margin-top:2px; flex-shrink:0;}
+  .nl-consent a{color:var(--lilac-deep); font-weight:600; text-decoration:none;}
+  .newsletter-note{font-size:11px; color:var(--mist); margin-top:14px;}
+
+  /* ===== PAGE HERO (внатрешни страници) ===== */
+  .page-hero{padding:64px 0 48px; border-bottom:1px solid var(--line);}
+  .page-hero .eyebrow{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:7px 15px; border-radius:100px; margin-bottom:18px;}
+  .page-hero h1{font-size:40px; font-weight:500; margin-bottom:14px;}
+  .page-hero p{color:var(--mist); font-size:16.5px; max-width:560px;}
+  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:18px;}
+  .breadcrumb a{color:var(--lilac-deep); text-decoration:none; font-weight:600;}
+  .nav-item.current > a{color:var(--lilac-deep); background:var(--lilac-pale); border-radius:8px;}
+  .teaser-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:820px){ .teaser-grid{grid-template-columns:1fr;} .page-hero h1{font-size:30px;} .page-hero{padding:44px 0 36px;} }
+
+  /* ===== GENERAL MOBILE POLISH ===== */
+  @media(max-width:980px){
+    nav.links, .utility-left{display:none;}
+    .burger{display:flex;}
+    .nav-row{height:68px;}
+    .brand-logo{height:36px;}
+    .nav-row > .cta-primary{display:none;}
+  }
+  @media(max-width:480px){
+    .wrap{padding:0 18px;}
+  }
+
+</style>
+</head>
+<body>
+<div class="utility-bar">
+  <div class="wrap">
+    <div class="utility-left">
+      <a href="tel:+38923066999">☎ +389 2 30 66 999</a>
+      <a href="tel:+38978309692">📱 +389 78 309 692</a>
+    </div>
+    <div class="utility-right">
+      <div class="lang-toggle">
+        <button class="active" data-lang="mk">MK</button>
+        <button data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="main-nav">
+  <div class="wrap nav-row">
+    <a href="index.html" class="brand"><img src="https://pianoforte.edu.mk/wp-content/uploads/2022/08/pf-logo.png" alt="PianoForte" class="brand-logo"></a>
+    <nav class="links">
+      <div class="nav-item"><a href="index.html" data-i18n="nav_home">Почетна</a></div>
+      <div class="nav-item">
+        <span data-i18n="nav_about">За нас <span class="caret">▾</span></span>
+        <div class="dropdown">
+          <a href="about.html" data-i18n="nav_about_us">За нас</a>
+          <a href="projects.html" data-i18n="nav_projects">Проекти</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <span data-i18n="nav_instruments">Инструменти <span class="caret">▾</span></span>
+        <div class="dropdown instruments">
+          <a href="packages.html?instrument=piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
+          <a href="packages.html?instrument=gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
+          <a href="packages.html?instrument=el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
+          <a href="packages.html?instrument=bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
+          <a href="packages.html?instrument=violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
+          <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
+          <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
+          <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+          <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
+        </div>
+      </div>
+      <div class="nav-item current"><a href="blog.html" data-i18n="nav_blog">Блог</a></div>
+      <div class="nav-item"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
+    </nav>
+    <a href="/app" class="cta-primary" data-i18n="nav_cta"><span class="cta-label">Купи/Најави се</span></a>
+    <button class="burger" id="burgerBtn" aria-label="Мени"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav-overlay" id="mobileNavOverlay">
+  <a href="index.html" class="m-link" data-i18n="nav_home">Почетна</a>
+  <div class="m-group" id="mGroupAbout">
+    <a href="#" class="m-link m-toggle"><span data-i18n="nav_about">За нас</span> ▾</a>
+    <div class="m-sub">
+      <a href="about.html" data-i18n="nav_about_us">За нас</a>
+      <a href="projects.html" data-i18n="nav_projects">Проекти</a>
+    </div>
+  </div>
+  <div class="m-group" id="mGroupInstruments">
+    <a href="#" class="m-link m-toggle"><span data-i18n="nav_instruments">Инструменти</span> ▾</a>
+    <div class="m-sub">
+      <a href="packages.html?instrument=piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
+      <a href="packages.html?instrument=gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
+      <a href="packages.html?instrument=el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
+      <a href="packages.html?instrument=bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
+      <a href="packages.html?instrument=violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
+      <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
+      <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
+      <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+      <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
+    </div>
+  </div>
+  <a href="blog.html" class="m-link" data-i18n="nav_blog">Блог</a>
+  <a href="contact.html" class="m-link" data-i18n="nav_contact">Контакт</a>
+  <a href="/app" class="cta-primary m-cta" data-i18n="nav_cta">Купи/Најави се</a>
+</div>
+<div class="page-hero tint-lilac">
+  <div class="wrap">
+    <a href="blog.html" class="back-link">← Назад кон Блог</a>
+  </div>
+</div>
+<section>
+  <div class="wrap">
+    <article class="blog-post-article" id="postArticle">
+      <div style="text-align:center; padding:60px 0; color:var(--mist);">Се вчитува...</div>
+    </article>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><img src="https://pianoforte.edu.mk/wp-content/uploads/2022/08/pf-logo.png" alt="PianoForte" class="footer-logo"></div>
+        <p data-i18n="footer_tag">Музичко училиште за деца и возрасни во Скопје.</p>
+        <div class="social-row">
+          <a href="https://www.instagram.com/pijanoforte/" aria-label="Instagram">📷</a>
+        </div>
+      </div>
+      <div>
+        <h4 data-i18n="footer_address">Адреса</h4>
+        <p>Виенска Бр 1<br>1000, Скопје</p>
+        <p style="margin-top:8px;">Булевар Јане Сандански Бр 79а<br>1000, Скопје</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_hours">Работно време</h4>
+        <p data-i18n="contact_hours_val">Понеделник – Петок: 12:00 – 20:00</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_contact">Контакт</h4>
+        <p><a href="tel:+38978309692">+389 78 309 692</a></p>
+        <p><a href="tel:+38923066999">+389 2 30 66 999</a></p>
+        <p><a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 PianoForte — <span data-i18n="footer_rights">Сите права задржани</span></span>
+      <div class="links">
+        <a href="/app" target="_blank" data-i18n="footer_terms">Услови за користење</a>
+        <a href="/app" target="_blank" data-i18n="footer_privacy">Правила за приватност</a>
+        <a href="#" data-i18n="footer_faq">ЧПП</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="newsletter-overlay" id="newsletterOverlay">
+  <div class="newsletter-modal">
+    <button class="close-x" id="newsletterClose">✕</button>
+    <h3 data-i18n="nl_title">Претплатете се на нашата листа на е-пошта</h3>
+    <form class="newsletter-form" id="newsletterForm">
+      <div class="nl-email-row">
+        <input type="email" placeholder="твoja@email.com" required id="newsletterEmail">
+        <button type="submit" data-i18n="nl_submit">Пријави се</button>
+      </div>
+      <label class="nl-consent">
+        <input type="checkbox" required id="newsletterConsent">
+        <span id="newsletterConsentText"></span>
+      </label>
+    </form>
+    <div class="newsletter-note" data-i18n="nl_note">Можеш да се отпишеш во секое време.</div>
+  </div>
+</div>
+
+<script>
+
+(function(){
+  const translations = {
+    mk: {
+      util_login:'Најави се / Регистрација', util_buy:'Купи час',
+      nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
+      inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
+      inst_bass:'Бас гитара', inst_drums:'Тапани', inst_singing:'Пеење', inst_early:'Ран музички развој', soon:'наскоро',
+      hero_eyebrow:'Музичко училиште · Скопје',
+      slide1_text:'Имаме цел да создадеме личности кои ќе уживаат во музиката',
+      slide2_text:'Имаме задача да создадеме систем кон успех и високи уметнички вредности',
+      slide3_text:'Имаме знаење да ги научиме учениците слободно и самоуверено да музицираат',
+      intro_text:'PianoForte е музичко училиште во Скопје — часови по пијано, гитара, виолина, тапани и пеење, за деца и возрасни, во групи или индивидуално.',
+      hero_title:'Секое дете заслужува своja прва песна',
+      hero_lead:'Часови по пијано, виолина, гитара, тапани и пеење — во групи или индивидуално, за деца и возрасни, во срцето на Скопје.',
+      hero_cta_primary:'Резервирај пробен час', hero_cta_ghost:'Види инструменти',
+      inst_head:'Избери инструмент', inst_sub:'Кликни на инструмент за да ги видиш пакетите и цените, и веднаш да резервираш термин.',
+      about_media:'[Слика — училиште/настава]', pending_marina:'Текст чека — Марина', pending_iskra:'Текст чека — Искра', pending_elena:'Текст чека — Елена',
+      about_title:'За PianoForte',
+      about_p1:'[ПОПОЛНИ] Овде доаѓа приказната на училиштето — кога е основано, филозофијата на учење, зошто родителите го избираат PianoForte.',
+      about_p2:'[ПОПОЛНИ] Дополнителен пасус за наставниот пристап и искуството на професорите.',
+      projects_title:'Проекти', projects_sub:'[ПОПОЛНИ] Концерти, настапи, соработки со други институции.',
+      summer_title:'Летна музичка школа', summer_p1:'[ПОПОЛНИ] Опис на летната програма — термини, активности, возрасни групи.',
+      blog_title:'Блог', blog_sub:'Новости, интервјуа и приказни од нашето училиште.',
+      blog_tag1:'Новост', blog_title1:'[ПОПОЛНИ наслов]', blog_body1:'[ПОПОЛНИ краток опис на текстот...]',
+      blog_tag2:'Интервју', blog_title2:'[ПОПОЛНИ наслов]', blog_body2:'[ПОПОЛНИ краток опис на текстот...]',
+      blog_empty_title:'Наскоро првите објави', blog_empty_body:'Подготвуваме новости, интервјуа и приказни од нашето училиште. Врати се наскоро!',
+      contact_title:'Контакт', contact_sub:'Прашај нè било што — за пакети, термини, или локации.',
+      contact_loc1:'Локација 1', contact_loc2:'Локација 2', contact_hours:'Работно време', contact_hours_val:'Понеделник – Петок: 12:00 – 20:00',
+      form_name:'Име и презиме', form_email:'Email', form_msg:'Порака', form_submit:'Испрати порака',
+      footer_tag:'Музичко училиште за деца и возрасни во Скопје.', footer_address:'Адреса', footer_hours:'Работно време', footer_contact:'Контакт',
+      footer_rights:'Сите права задржани', footer_terms:'Услови за користење', footer_privacy:'Правила за приватност', footer_faq:'ЧПП',
+      pkg_breadcrumb:'Пакети', pkg_title:'Пакети', pkg_sub:'Погледни ги цените и пакетите. Кликни „Купи" за да продолжиш кон најава/регистрација.', pkg_loading:'Се вчитуваат пакетите...', pkg_empty:'Пакетите за овoj инструмент сè уште не се достапни. Контактирај нè за повеќе информации.',
+      nl_title:'Претплатете се на нашата листа на е-пошта', nl_sub:'Пријави се за новости, настани и попусти од PianoForte.', nl_submit:'Пријави се', nl_note:'Можеш да се отпишеш во секое време.',
+      nl_consent_pre:'Се согласувам со', nl_consent_post:' на PianoForte.', reg_terms_and:'и',
+      login_terms_link:'Условите за користење', login_privacy_link:'Политиката на приватност',
+      breadcrumb_home:'Почетна',
+      teaser_about_title:'За нас', teaser_about_body:'Дознај повеќе за нашата филозофија и училиштето.',
+      teaser_projects_title:'Проекти', teaser_projects_body:'Концерти, настапи и соработки.',
+      teaser_summer_title:'Летна школа', teaser_summer_body:'Музичка програма преку летото.',
+      teaser_blog_title:'Блог', teaser_blog_body:'Новости и приказни од нашето училиште.',
+      teaser_contact_title:'Контакт', teaser_contact_body:'Прашај нè било што.',
+      teaser_more:'Дознај повеќе →', explore_head:'Истражи го училиштето',
+      explore_btn:'Истражи →',
+      stat3_lbl:'Инструменти', stat4_num:'2', stat4_lbl:'Локации во Скопје', stat5_num:'Групно и индивидуално', stat5_lbl:'Настава за секое дете',
+      feat1_title:'Лесно закажување', feat1_body:'Резервирај термин онлајн за неколку секунди.',
+      feat2_title:'Флексибилно плаќање', feat2_body:'Месечно, полугодишно или целосно, по твoj избор.',
+      feat3_title:'Персонализирано учење', feat3_body:'Програми прилагодени на секое дете.',
+      feat4_title:'Следи го напредокот', feat4_body:'Гледај материјали и активности во реално време.'
+    },
+    en: {
+      util_login:'Sign in / Register', util_buy:'Buy a lesson',
+      nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
+      inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
+      inst_bass:'Bass guitar', inst_drums:'Drums', inst_singing:'Singing', inst_early:'Early musical development', soon:'coming soon',
+      hero_eyebrow:'Music school · Skopje',
+      slide1_text:'Our goal is to raise people who will enjoy music',
+      slide2_text:'Our task is to build a system geared toward success and high artistic values',
+      slide3_text:'Our knowledge lets students play freely and confidently',
+      intro_text:'PianoForte is a music school in Skopje — piano, guitar, violin, drums, and singing lessons for children and adults, in groups or one-on-one.',
+      hero_title:'Every child deserves their first song',
+      hero_lead:'Piano, violin, guitar, drums, and singing lessons — in groups or one-on-one, for children and adults, in the heart of Skopje.',
+      hero_cta_primary:'Book a trial lesson', hero_cta_ghost:'See instruments',
+      inst_head:'Choose an instrument', inst_sub:'Click an instrument to see packages and pricing, and book a slot right away.',
+      about_media:'[Image — school/lesson]', pending_marina:'Copy pending — Marina', pending_iskra:'Copy pending — Iskra', pending_elena:'Copy pending — Elena',
+      about_title:'About PianoForte',
+      about_p1:'[FILL IN] The school\u2019s story — when it was founded, the teaching philosophy, why parents choose PianoForte.',
+      about_p2:'[FILL IN] Additional paragraph on the teaching approach and instructor experience.',
+      projects_title:'Projects', projects_sub:'[FILL IN] Concerts, performances, collaborations with other institutions.',
+      summer_title:'Summer music school', summer_p1:'[FILL IN] Description of the summer program — dates, activities, age groups.',
+      blog_title:'Blog', blog_sub:'News, interviews, and stories from our school.',
+      blog_tag1:'News', blog_title1:'[FILL IN title]', blog_body1:'[FILL IN short excerpt...]',
+      blog_tag2:'Interview', blog_title2:'[FILL IN title]', blog_body2:'[FILL IN short excerpt...]',
+      blog_empty_title:'First posts coming soon', blog_empty_body:'We\'re preparing news, interviews, and stories from our school. Check back soon!',
+      contact_title:'Contact', contact_sub:'Ask us anything — packages, time slots, or locations.',
+      contact_loc1:'Location 1', contact_loc2:'Location 2', contact_hours:'Working hours', contact_hours_val:'Monday – Friday: 12:00 – 20:00',
+      form_name:'Full name', form_email:'Email', form_msg:'Message', form_submit:'Send message',
+      footer_tag:'Music school for children and adults in Skopje.', footer_address:'Address', footer_hours:'Working hours', footer_contact:'Contact',
+      footer_rights:'All rights reserved', footer_terms:'Terms of Use', footer_privacy:'Privacy Policy', footer_faq:'FAQ',
+      pkg_breadcrumb:'Packages', pkg_title:'Packages', pkg_sub:'See the packages and pricing. Click "Buy" to continue to sign in / registration.', pkg_loading:'Loading packages...', pkg_empty:'Packages for this instrument aren\u2019t available yet. Contact us for more information.',
+      nl_title:'Subscribe to our email list', nl_sub:'Sign up for news, events, and discounts from PianoForte.', nl_submit:'Subscribe', nl_note:'You can unsubscribe anytime.',
+      nl_consent_pre:'I agree to the', nl_consent_post:' of PianoForte.', reg_terms_and:'and',
+      login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
+      breadcrumb_home:'Home',
+      teaser_about_title:'About us', teaser_about_body:'Learn about our philosophy and the school.',
+      teaser_projects_title:'Projects', teaser_projects_body:'Concerts, performances, and collaborations.',
+      teaser_summer_title:'Summer school', teaser_summer_body:'A music program through the summer.',
+      teaser_blog_title:'Blog', teaser_blog_body:'News and stories from our school.',
+      teaser_contact_title:'Contact', teaser_contact_body:'Ask us anything.',
+      teaser_more:'Learn more →', explore_head:'Explore the school',
+      explore_btn:'Explore →',
+      stat3_lbl:'Instruments', stat4_num:'2', stat4_lbl:'Locations in Skopje', stat5_num:'Group & 1-on-1', stat5_lbl:'Teaching for every child',
+      feat1_title:'Easy booking', feat1_body:'Book a lesson online in seconds.',
+      feat2_title:'Flexible payment', feat2_body:'Monthly, half-yearly, or full — your choice.',
+      feat3_title:'Personalized learning', feat3_body:'Programs tailored to every child.',
+      feat4_title:'Track progress', feat4_body:'See materials and activity in real time.'
+    }
+  };
+  let currentLang = 'mk';
+  function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
+  function applyLanguage(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
+    document.documentElement.lang = currentLang;
+    if(typeof renderNlConsentText === 'function') renderNlConsentText();
+  }
+  document.querySelector('.lang-toggle').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    currentLang = btn.dataset.lang;
+    applyLanguage();
+  });
+  applyLanguage();
+
+  // mobile burger -> целосен overlay мени со анимирана икона
+  const burger = document.getElementById('burgerBtn');
+  const mobileOverlay = document.getElementById('mobileNavOverlay');
+  if(burger && mobileOverlay){
+    burger.addEventListener('click', ()=>{
+      const isOpen = mobileOverlay.classList.toggle('open');
+      burger.classList.toggle('open', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+    mobileOverlay.querySelectorAll('.m-link:not(.m-toggle)').forEach(link=>{
+      link.addEventListener('click', ()=>{
+        mobileOverlay.classList.remove('open');
+        burger.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+    mobileOverlay.querySelectorAll('.m-toggle').forEach(toggle=>{
+      toggle.addEventListener('click', e=>{
+        e.preventDefault();
+        toggle.closest('.m-group').classList.toggle('open');
+      });
+    });
+  }
+
+  // hero слајдер (само на почетна страница — ако елементите постојат)
+  const slides = document.querySelectorAll('.hero-slider .slide');
+  const slideTexts = document.querySelectorAll('.slide-text');
+  const dots = document.querySelectorAll('.slider-dots .dot');
+  if(slides.length){
+    let currentSlide = 0;
+    function goToSlide(idx){
+      slides[currentSlide].classList.remove('active');
+      slideTexts[currentSlide].style.display = 'none';
+      dots[currentSlide].classList.remove('active');
+      currentSlide = idx;
+      slides[currentSlide].classList.add('active');
+      slideTexts[currentSlide].style.display = '';
+      dots[currentSlide].classList.add('active');
+    }
+    dots.forEach(dot=>{
+      dot.addEventListener('click', ()=>{ goToSlide(Number(dot.dataset.goto)); resetAutoplay(); });
+    });
+    let autoplayTimer = setInterval(()=>{ goToSlide((currentSlide+1) % slides.length); }, 5000);
+    function resetAutoplay(){ clearInterval(autoplayTimer); autoplayTimer = setInterval(()=>{ goToSlide((currentSlide+1) % slides.length); }, 5000); }
+  }
+
+  // newsletter popup — се појавува само еднаш по прв посета (се памети во browser-от)
+  const nlOverlay = document.getElementById('newsletterOverlay');
+  const NL_DISMISSED_KEY = 'pf_newsletter_dismissed';
+  function nlDismiss(){
+    try{ localStorage.setItem(NL_DISMISSED_KEY, '1'); }catch(e){}
+    nlOverlay.classList.remove('show');
+  }
+  try{
+    if(!localStorage.getItem(NL_DISMISSED_KEY)){
+      setTimeout(()=>{ nlOverlay.classList.add('show'); }, 6000);
+    }
+  }catch(e){
+    // ако localStorage не е достапен (пр. приватен режим), сепак го прикажи еднаш по сесија
+    setTimeout(()=>{ nlOverlay.classList.add('show'); }, 6000);
+  }
+  document.getElementById('newsletterClose').addEventListener('click', nlDismiss);
+  nlOverlay.addEventListener('click', e=>{ if(e.target === nlOverlay) nlDismiss(); });
+
+  function renderNlConsentText(){
+    const el = document.getElementById('newsletterConsentText');
+    if(!el) return;
+    el.innerHTML = t('nl_consent_pre') + ' <a href="https://app.pianoforte.edu.mk" target="_blank">' + t('login_terms_link') + '</a> ' + t('reg_terms_and') + ' <a href="https://app.pianoforte.edu.mk" target="_blank">' + t('login_privacy_link') + '</a>' + t('nl_consent_post');
+  }
+  renderNlConsentText();
+
+  const nlForm = document.getElementById('newsletterForm');
+  if(nlForm) nlForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    if(!document.getElementById('newsletterConsent').checked) return;
+    // TODO: поврзи со вистински backend за собирање email адреси (пр. Brevo листа)
+    const modal = nlForm.closest('.newsletter-modal');
+    modal.innerHTML = '<div style="padding:20px 0;"><div style="font-size:38px; margin-bottom:14px;">✓</div><h3>' +
+      (currentLang==='mk' ? 'Ти благодариме!' : 'Thank you!') + '</h3><p>' +
+      (currentLang==='mk' ? 'Ќе те известиме за новости и попусти.' : 'We\'ll keep you posted on news and discounts.') + '</p></div>';
+    try{ localStorage.setItem(NL_DISMISSED_KEY, '1'); }catch(e){}
+    setTimeout(()=>{ nlOverlay.classList.remove('show'); }, 2200);
+  });
+
+  // contact form — stub, shows inline confirmation for now
+  const cForm = document.getElementById('contactForm');
+  if(cForm) cForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    // TODO: поврзи со вистински backend/email сервис
+    cForm.innerHTML = '<div style="text-align:center; padding:30px 10px;"><div style="font-size:38px; margin-bottom:14px;">✓</div><h4 style="margin-bottom:8px;">' +
+      (currentLang==='mk' ? 'Пораката е испратена!' : 'Message sent!') + '</h4><p style="color:var(--mist); font-size:14px;">' +
+      (currentLang==='mk' ? 'Ќе те контактираме наскоро.' : 'We\'ll get back to you soon.') + '</p></div>';
+  });
+
+  // ===== ПРЕГЛЕД НА ПАКЕТИ (packages.html?instrument=X) — јавно, без најава =====
+  const pkgContentEl = document.getElementById('pkgContent');
+  if(pkgContentEl){
+    const INSTRUMENT_LABELS = {
+      piano:{icon:'🎹', mk:'Пијано', en:'Piano'},
+      gitara:{icon:'🎸', mk:'Гитара', en:'Guitar'},
+      'el-gitara':{icon:'🎸', mk:'Електрична гитара', en:'Electric guitar'},
+      'bas-gitara':{icon:'🎸', mk:'Бас гитара', en:'Bass guitar'},
+      violina:{icon:'🎻', mk:'Виолина', en:'Violin'},
+      tapani:{icon:'🥁', mk:'Тапани', en:'Drums'},
+      peenje:{icon:'🎤', mk:'Пеење', en:'Singing'},
+      'ran-razvoj':{icon:'🌱', mk:'Ран музички развој', en:'Early musical development'}
+    };
+    const HALF_DISCOUNT = 0.03, FULL_DISCOUNT = 0.05;
+    const params = new URLSearchParams(window.location.search);
+    const instrument = params.get('instrument') || 'piano';
+    const instInfo = INSTRUMENT_LABELS[instrument] || {icon:'🎵', mk:instrument, en:instrument};
+
+    function instLabel(){ return currentLang === 'mk' ? instInfo.mk : instInfo.en; }
+    function updatePkgTitles(){
+      const t1 = document.getElementById('pkgPageTitle');
+      const t2 = document.getElementById('pkgBreadcrumbInst');
+      if(t1) t1.textContent = instInfo.icon + ' ' + instLabel();
+      if(t2) t2.textContent = instLabel();
+    }
+    updatePkgTitles();
+    document.querySelector('.lang-toggle').addEventListener('click', updatePkgTitles);
+
+    const buyUrl = '/app/#packages/' + instrument;
+    let descCounter = 0;
+    function pkgRow(name, price, discount, desc){
+      const id = 'pdesc-' + (descCounter++);
+      return `<div class="pkg-table-row">
+        <div class="pkg-td pkg-td-name">${name}</div>
+        <div class="pkg-td pkg-td-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
+        <div class="pkg-td pkg-td-discount">${discount || '—'}</div>
+        <div class="pkg-td pkg-td-desc">
+          <button class="pkg-desc-btn" data-target="${id}">ℹ️ ${currentLang==='mk' ? 'Опис на пакет' : 'Package details'}</button>
+          <div class="pkg-desc-text" id="${id}">${desc}</div>
+        </div>
+        <div class="pkg-td pkg-td-buy"><a class="pkg-buy-btn" href="${buyUrl}">${currentLang==='mk' ? 'Купи' : 'Buy'}</a></div>
+      </div>`;
+    }
+    function pkgTableHead(){
+      return `<div class="pkg-table-row pkg-table-head">
+        <div class="pkg-td">${currentLang==='mk' ? 'Пакети' : 'Packages'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Цена' : 'Price'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Попуст' : 'Discount'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Опис на пакет' : 'Description'}</div>
+        <div class="pkg-td">${currentLang==='mk' ? 'Купи' : 'Buy'}</div>
+      </div>`;
+    }
+
+    fetch('/packages?instrument=' + encodeURIComponent(instrument))
+      .then(r => r.json())
+      .then(packages => {
+        document.getElementById('pkgLoading').style.display = 'none';
+        if(!packages || packages.length === 0){
+          document.getElementById('pkgEmpty').style.display = 'block';
+          return;
+        }
+        const trial = packages.find(p => p.package_type === 'trial');
+        const annual = packages.find(p => p.package_type === 'annual');
+        const individual = packages.find(p => p.package_type === 'individual');
+        let html = '';
+
+        if(trial){
+          html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Пробен пакет' : 'Trial package'}</h3>
+            <div class="pkg-table">${pkgTableHead()}${pkgRow(trial.name, trial.price_mkd, null, trial.description)}</div></div>`;
+        }
+        if(annual){
+          const monthly = Number(annual.price_mkd);
+          const annualTotal = monthly * 8;
+          const halfPrice = Math.round((annualTotal/2) * (1 - HALF_DISCOUNT));
+          const fullPrice = Math.round(annualTotal * (1 - FULL_DISCOUNT));
+          html += `<div class="pkg-section"><h3>${annual.name} <span class="pkg-annual-total">— ${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
+            <div class="pkg-table">
+              ${pkgTableHead()}
+              ${pkgRow(currentLang==='mk' ? 'Рата (1 од 8)' : 'Installment (1 of 8)', monthly, null, annual.description)}
+              ${pkgRow(currentLang==='mk' ? 'Полугодишен пакет' : 'Half-year package', halfPrice, '−3%', annual.description)}
+              ${pkgRow(currentLang==='mk' ? 'Целогодишен пакет' : 'Full-year package', fullPrice, '−5%', annual.description)}
+            </div></div>`;
+        }
+        if(individual){
+          html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Индивидуален час' : 'Individual lesson'}</h3>
+            <div class="pkg-table">${pkgTableHead()}${pkgRow(individual.name, individual.price_mkd, null, individual.description)}</div></div>`;
+        }
+
+        pkgContentEl.innerHTML = html;
+        pkgContentEl.style.display = 'block';
+
+        pkgContentEl.querySelectorAll('.pkg-desc-btn').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const target = document.getElementById(btn.dataset.target);
+            target.classList.toggle('open');
+          });
+        });
+      })
+      .catch(()=>{
+        document.getElementById('pkgLoading').style.display = 'none';
+        document.getElementById('pkgEmpty').style.display = 'block';
+      });
+  }
+
+  // ===== ДЕТАЛИ НА БЛОГ НАПИС (blog-post.html?id=X) =====
+  const postArticleEl = document.getElementById('postArticle');
+  if(postArticleEl){
+    const BLOG_POSTS = [{"id": "klasicna-muzika-slavje", "title_mk": "Класичната музика како прослава на трудот, талентот и посветеноста", "title_en": "Classical Music as a Celebration of Hard Work, Talent, and Dedication", "date": "2026", "img": "https://pianoforte.edu.mk/wp-content/uploads/2024/01/music_and_movement-g-1024x694.jpg", "excerpt_mk": "Осврт на Завршниот класичен концерт со кој ja заокруживме учебната 2025/2026 година — ден исполнет со музика, инспирација и искрени аплаузи.", "excerpt_en": "A look back at our Final Classical Concert, closing the 2025/2026 school year — a day filled with music, inspiration, and heartfelt applause.", "body_mk": "Почитувани родители, пријатели и поддржувачи на Пијанофорте,\n\nИако помина извесно време од нашиот Завршен класичен концерт, спомените и емоциите од тoj посебен ден сè уште живеат меѓу нас. Со благодарност и гордост се навраќаме на еден од најубавите моменти со кои ja заокруживме учебната 2025/2026 година.\n\nВо текот на целиот ден, сцената беше исполнета со музика, инспирација и искрени аплаузи. Големиот број учесници го претворија концертот во вистинска прослава на трудот, талентот и љубовта кон класичната музика – ден кој остави длабока трага кај сите присутни.\n\nНо, она што го прави овoj настан навистина посебен не е само бројот на изведени композиции или часовите поминати на сцена. Вистинската вредност се наоѓа во приказните што стојат зад секој настап – во истрајноста, посветеноста и храброста на секое дете да застане пред публика и да го сподели она што со љубов го создавало во текот на целата година.\n\nВо Пијанофорте отсекогаш сме верувале дека музичкото образование е многу повеќе од совладување на инструмент и учење ноти. Преку музиката, децата учат да бидат трпеливи, дисциплинирани и одговорни. Учат да се соочуваат со предизвици, да веруваат во сопствените способности и да разберат дека вистинските резултати се градат постепено, со труд, посветеност и љубов кон она што го прават.\n\nОсобено место во овоj процес има класичната музика. Во време на брзи промени и минливи содржини, таа претставува простор во кој се негуваат чувствителноста, концентрацијата, креативноста и почитта кон убавината и вистинските вредности. Токму затоа, секој концерт е многу повеќе од музички настан – тоj е дел од едно подлабоко патување во кое се обликуваат личности, се градат карактери и се создаваат спомени што остануваат засекогаш.\n\nНиту еден успех не се создава сам. Им благодариме на нашите ученици, чија љубопитност, посветеност и љубов кон музиката секојдневно нè инспирираат. Им благодариме на нашите наставници, чија професионалност и искрена грижа се вградени во секој детски успех. И, пред сè, ви благодариме вам – родителите, за довербата, поддршката и трпението.\n\nГорди сме на сè што создадовме заедно во текот на оваа учебна година, и благодарни што чекор по чекор градиме заедница во која музиката не е само уметност, туку вредност што ги зближува луѓето и остава трага за цел живот.", "body_en": "Dear parents, friends, and supporters of Pianoforte,\n\nAlthough some time has passed since our Final Classical Concert, the memories and emotions from that special day still live on with us. With gratitude and pride, we look back on one of the most beautiful moments that closed the 2025/2026 school year.\n\nThroughout the day, the stage was filled with music, inspiration, and heartfelt applause. The large number of participants turned the concert into a true celebration of hard work, talent, and love for classical music — a day that left a deep impression on everyone present.\n\nBut what makes this event truly special isn't just the number of pieces performed or the hours spent on stage. The real value lies in the stories behind every performance — in the persistence, dedication, and courage of every child who stood before an audience to share what they had lovingly created throughout the year.\n\nAt Pianoforte, we have always believed that music education is much more than mastering an instrument and learning notes. Through music, children learn to be patient, disciplined, and responsible. They learn to face challenges, believe in their own abilities, and understand that real results are built gradually, through effort, dedication, and love for what they do.\n\nClassical music holds a special place in this process. In a time of rapid change and fleeting content, it offers a space where sensitivity, concentration, creativity, and respect for beauty and true values are nurtured. That is why every concert is far more than a musical event — it is part of a deeper journey in which characters are shaped, personalities are built, and memories are created that last forever.\n\nNo success is created alone. We thank our students, whose curiosity, dedication, and love of music inspire us every day. We thank our teachers, whose professionalism and genuine care are woven into every child's success. And above all, we thank you — the parents — for your trust, support, and patience.\n\nWe are proud of everything we built together this school year, and grateful that, step by step, we are building a community where music is not just an art form, but a value that brings people together and leaves a lifelong mark."}, {"id": "nedela-muzika-prijatelstva", "title_mk": "Една недела исполнета со музика, пријателства и спомени", "title_en": "A Week Filled with Music, Friendships, and Memories", "date": "2026", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/12/open-stage-2-370x254.jpg", "excerpt_mk": "По осми пат, семејството на Пијанофорте беше дел од летната авантура во детскиот спортски камп „Скурас“ во Грција.", "excerpt_en": "For the eighth time, the Pianoforte family joined the summer adventure at the Skouras children's sports camp in Greece.", "body_mk": "Почитувани родители и пријатели на „Пијанофорте“,\n\nНекои лета не се мерат во денови, туку во спомени, пријателства и моменти што остануваат засекогаш.\n\nИ оваа година, по осми пат, семејството на „Пијанофорте“ беше дел од незаборавната летна авантура во детскиот спортски камп „Скурас“ во Грција. Деновите поминати покрај морето беа исполнети со спорт, игра, дружење, нови искуства и, секако, музика – универзалниот јазик што ги поврзува луѓето, инспирира и создава спомени за цел живот.\n\nВо „Пијанофорте“ веруваме дека музичкото образование е многу повеќе од учење ноти и совладување инструмент. Тоа е процес во кој децата ja развиваат својата креативност, дисциплина, одговорност и самодоверба, учат да соработуваат, да слушаат, да се изразуваат и со храброст да го покажат својот талент.\n\nТокму затоа, летниот камп претставува природно продолжение на сè она што го градиме во текот на целата година. Нашите ученици имаа можност да музицираат заедно, да учат едни од други, да создаваат нови пријателства и преку игра, спорт и заеднички активности да откријат нови способности и интереси.\n\nОна што особено нè радува е што децата од кампот не се враќаат само со фотографии и сувенири, туку со поголема самостојност, нови пријателства, поголема самодоверба и искуства кои ги збогатуваат како личности.\n\nОсобено нè радува што и оваа година голем број ученици повторно беа дел од оваа летна приказна. Нивното враќање од година во година е најголемата потврда дека кампот не е само летна програма, туку искуство што остава трајна вредност.\n\nОд срце им благодариме на сите родители за довербата. Со нетрпение го очекуваме следното лето и новите авантури што ќе ги создадеме заедно.", "body_en": "Dear parents and friends of Pianoforte,\n\nSome summers aren't measured in days, but in memories, friendships, and moments that last forever.\n\nThis year, for the eighth time, the Pianoforte family was part of the unforgettable summer adventure at the Skouras children's sports camp in Greece. Days spent by the sea were filled with sports, play, socializing, new experiences, and of course, music — the universal language that connects people, inspires, and creates lifelong memories.\n\nAt Pianoforte, we believe music education is far more than learning notes and mastering an instrument. It's a process where children develop creativity, discipline, responsibility, and confidence, learn to collaborate, listen, express themselves, and courageously showcase their talent.\n\nThat's why the summer camp is a natural continuation of everything we build throughout the year. Our students had the chance to make music together, learn from one another, form new friendships, and discover new abilities and interests through play, sport, and shared activities.\n\nWhat makes us especially happy is that campers don't just return with photos and souvenirs, but with greater independence, new friendships, more confidence, and experiences that enrich them as people.\n\nWe're especially glad that many students returned again this year to be part of this summer story. Their return year after year is the strongest proof that the camp isn't just a summer program, but an experience of lasting value.\n\nFrom the bottom of our hearts, thank you to all the parents for your trust. We look forward to next summer and the new adventures we'll create together."}, {"id": "koga-talentot-ima-temel", "title_mk": "Кога талентот има темел: приказни од Пијанофорте", "title_en": "When Talent Has a Foundation: Stories from Pianoforte", "date": "2026", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/06/3ABDB84C-24CD-4405-BE22-858682FC96B5-scaled-370x254.jpeg", "excerpt_mk": "Успесите на поранешните ученици Гала Нановска, Ана Манчева и Александар Војнески — доказ дека раната музичка едукација прераснува во сериозна кариера.", "excerpt_en": "The successes of former students Gala Nanovska, Ana Mancheva, and Aleksandar Vojneski — proof that early music education can grow into a serious career.", "body_mk": "Почитувани родители и пријатели,\n\nСо особена чест и искрена гордост ja споделуваме приказната за континуитетот на музичката извонредност што се гради во „Пијанофорте“ – место каде што првите чекори во уметноста прераснуваат во животна определба.\n\nСо особена радост ги истакнуваме успесите на младите пијанистки Гала Нановска и Ана Манчева, кои продолжуваат да бележат значајни резултати на меѓународни натпревари во Малта и Софија. Денес, тие успешно го надградуваат својот музички пат под менторство на проф. м-р Даница Стојанова.\n\nВо истиот дух на гордост, го издвојуваме и успехот на Александар Војнески, поранешен ученик кој својот музички пат го продолжи со извонредна посветеност — денес дипломиран виолинист и магистер, со завршени академски и постдипломски студии на престижната Академија за музика во Љубљана.\n\nОвие успешни приказни претставуваат доказ дека „Пијанофорте“ не е само почетна станица, туку цврст столб во уметничкиот развој на младите музичари.", "body_en": "Dear parents and friends,\n\nWith great honor and genuine pride, we share the story of the continuous musical excellence built at Pianoforte — a place where the first steps in art grow into a lifelong calling.\n\nWe're delighted to highlight the achievements of young pianists Gala Nanovska and Ana Mancheva, who continue to earn significant results at international competitions in Malta and Sofia. Today, they are furthering their musical path under the mentorship of Prof. Danica Stojanova, MA.\n\nIn the same spirit of pride, we highlight the success of Aleksandar Vojneski, a former student who continued his musical journey with remarkable dedication — today a graduate violinist and master's degree holder, having completed his academic and postgraduate studies at the prestigious Academy of Music in Ljubljana.\n\nThese success stories are proof that Pianoforte is not just a starting point, but a solid pillar in the artistic development of young musicians."}, {"id": "letna-skola-pianoforte", "title_mk": "Летна школа во Пијанофорте", "title_en": "Summer School at Pianoforte", "date": "2026", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/07/3F6A6108-scaled-370x254.jpg", "excerpt_mk": "Пакет од 8 часа по цена од 6.000 денари — лето исполнето со музика, пријателства и незаборавни моменти, од 11 до 30 јули.", "excerpt_en": "An 8-hour package for 6,000 denars — a summer filled with music, friendship, and unforgettable moments, from July 11 to July 30.", "body_mk": "Почитувани родители и пријатели,\n\nЗамислете лето исполнето со музика, радост и креативност — лето во кое вашето дете не само што учи, туку расте, се изразува и создава спомени што ќе траат засекогаш.\n\nЛетната школа на „Пијанофорте“ е внимателно осмислена програма која ги спojува музичката едукација и забавата во едно незаборавно искуство. Децата ce запознаваат со различни музички инструменти и посетуваат часови по пијано, виолина, гитара, тапани и пеење.\n\nПреку интерактивен и индивидуален пристап, нашите искусни и посветени професори создаваат средина во која секое дете се чувствува охрабрено, прифатено и инспирирано да напредува.\n\nЛетната школа ќе се одржи во периодот од **11 јули до 30 јули** и опфаќа вкупно 14 работни дена, во попладневните часови.\n\nНудиме пакет од **8 часа по цена од 6.000 денари** — инвестиција во радоста, развојот и иднината на вашето дете.\n\nПријавувањето е отворено до крајот на мај. За сите заинтересирани, ве молиме јавете се на 070 247 442 за повеќе информации.", "body_en": "Dear parents and friends,\n\nImagine a summer filled with music, joy, and creativity — a summer where your child doesn't just learn, but grows, expresses themselves, and creates memories that will last forever.\n\nPianoforte's Summer School is a carefully designed program that combines music education and fun into one unforgettable experience. Children get to know different musical instruments and attend lessons in piano, violin, guitar, drums, and singing.\n\nThrough an interactive, individual approach, our experienced and dedicated teachers create an environment where every child feels encouraged, welcomed, and inspired to progress.\n\nThe Summer School will run from **July 11 to July 30**, covering a total of 14 working days, held in the afternoon hours.\n\nWe offer a package of **8 hours for 6,000 denars** — an investment in your child's joy, growth, and future.\n\nRegistration is open until the end of May. For more information, please call 070 247 442."}, {"id": "intervju-marina-chado", "title_mk": "Да се потсетиме на едно убаво интервју со Марина Чадо", "title_en": "Looking Back at a Special Interview with Marina Chado", "date": "2026", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/MG_4063-370x254.jpg", "excerpt_mk": "Виолинист, педагог и ментор — Марина Чадо ги дели своите сеќавања, искуства и љубов кон музиката.", "excerpt_en": "Violinist, educator, and mentor — Marina Chado shares her memories, experiences, and love for music.", "video": "https://youtu.be/CSolA97WN3g", "body_mk": "Со особена радост се навраќаме на едно старо, но драгоцено интервју со нашата сакана Марина Чадо — виолинист, педагог и ментор, посветена на музиката и на генерациите млади музичари кои ги инспирирала низ годините.\n\nМарина Чадо дипломирала на престижниот Конзерваториум „Петар Илич Чајковски“ во Москва, под менторство на светски познатите професори Мељников и Чугаева. Како солист и оркестарски музичар, настапувала во Македонија, Русија, Германија, Србија и Словенија.\n\nНо, нејзината приказна не се раскажува само преку концертните сцени. Како професор по виолина и педагог, Марина со години го пренесува своето знаење, искуство и љубов кон музиката на младите. Нејзините ученици освојувале државни награди, а нејзината посветеност кон музичката педагогија ja однела и до создавање на наставната програма за основните музички училишта во Република Словенија.\n\n🎻 Ajде да се навратиме и да го погледнеме ова драгоцено интервју со нашата драга Марина Чадо.", "body_en": "With great pleasure, we look back at an old but treasured interview with our dear Marina Chado — violinist, educator, and mentor, devoted to music and to the generations of young musicians she has inspired throughout the years.\n\nMarina Chado graduated from the prestigious Tchaikovsky Conservatory in Moscow under the guidance of world-renowned professors Melnikov and Chugaeva. As a soloist and orchestral musician, she has performed across Macedonia, Russia, Germany, Serbia, and Slovenia.\n\nYet her story is not told through concert stages alone. As a violin professor and educator, Marina has spent years sharing her knowledge, experience, and love of music with young musicians. Her students have received numerous national awards, while her dedication to music education also led her to author the curriculum for primary music schools in the Republic of Slovenia.\n\n🎻 Let us take a moment to look back and revisit this treasured interview with our dear Marina Chado."}, {"id": "arhiva-1", "title_mk": "Нешто за сите возрасти!", "title_en": "Нешто за сите возрасти!", "date": "31 January, 2024", "img": "https://pianoforte.edu.mk/wp-content/uploads/2024/01/music_and_movement-g-1-370x254.jpg", "excerpt_mk": "Занималната „Музичко изворче“ покажува како движењето и музиката заедно го поттикнуваат раниот развој кај најмалите.", "excerpt_en": "Занималната „Музичко изворче“ покажува како движењето и музиката заедно го поттикнуваат раниот развој кај најмалите.", "original_url": "https://pianoforte.edu.mk/%d0%bd%d0%b5%d1%88%d1%82%d0%be-%d0%b7%d0%b0-%d1%81%d0%b8%d1%82%d0%b5-%d0%b2%d0%be%d0%b7%d1%80%d0%b0%d1%81%d1%82%d0%b8/"}, {"id": "arhiva-2", "title_mk": "Отворена сцена", "title_en": "Отворена сцена", "date": "12 December, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/12/open-stage-2-370x254.jpg", "excerpt_mk": "Настан на кој сите ученици, од најмали до најискусни, ja запознаваат публиката со инструментите што ги изучуваат.", "excerpt_en": "Настан на кој сите ученици, од најмали до најискусни, ja запознаваат публиката со инструментите што ги изучуваат.", "original_url": "https://pianoforte.edu.mk/%d0%be%d1%82%d0%b2%d0%be%d1%80%d0%b5%d0%bd%d0%b0-%d1%81%d1%86%d0%b5%d0%bd%d0%b0/"}, {"id": "arhiva-3", "title_mk": "Дава цел на практиката", "title_en": "Дава цел на практиката", "date": "9 December, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/12/rock_music_lessons-3-1-370x254.jpg", "excerpt_mk": "Групната настава по бендови за рок/поп им дава на учениците реален контекст зошто вежбаат — заедничко музицирање со врсници.", "excerpt_en": "Групната настава по бендови за рок/поп им дава на учениците реален контекст зошто вежбаат — заедничко музицирање со врсници.", "original_url": "https://pianoforte.edu.mk/%d0%b4%d0%be%d0%b1%d1%80%d0%b5%d0%b4%d0%be%d1%98%d0%b4%d0%be%d0%b2%d1%82%d0%b5-%d0%b2%d0%be-%d0%b3%d1%80%d1%83%d0%bf%d0%bd%d0%b0%d1%82%d0%b0-%d0%bd%d0%b0%d1%81%d1%82%d0%b0%d0%b2%d0%b0-%d0%bf%d0%be-2/"}, {"id": "arhiva-4", "title_mk": "Осврт за гостувањето во Рим", "title_en": "Осврт за гостувањето во Рим", "date": "9 December, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/12/Review-of-PIANO-FORTEs-visit-to-Rome_2-2-370x254.jpg", "excerpt_mk": "Дел од тимот настапи на два концерти во Рим — искуство што ги поврза учениците со богатата музичка традиција на градот.", "excerpt_en": "Дел од тимот настапи на два концерти во Рим — искуство што ги поврза учениците со богатата музичка традиција на градот.", "original_url": "https://pianoforte.edu.mk/%d0%be%d1%81%d0%b2%d1%80%d1%82-%d0%b7%d0%b0-%d0%b3%d0%be%d1%81%d1%82%d1%83%d0%b2%d0%b0%d1%9a%d0%b5%d1%82%d0%be-%d0%bd%d0%b0-%d0%bf%d0%b8%d1%98%d0%b0%d0%bd%d0%be-%d1%84%d0%be%d1%80%d1%82%d0%b5-%d0%b2/"}, {"id": "arhiva-5", "title_mk": "Добредојдовте во групната настава по бендови", "title_en": "Добредојдовте во групната настава по бендови", "date": "22 September, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/09/Picture1-1-370x254.jpg", "excerpt_mk": "Одделот за рок/поп нуди забавно опкружување каде учениците учат да свират заедно, не само индивидуално.", "excerpt_en": "Одделот за рок/поп нуди забавно опкружување каде учениците учат да свират заедно, не само индивидуално.", "original_url": "https://pianoforte.edu.mk/%d0%b4%d0%be%d0%b1%d1%80%d0%b5%d0%b4%d0%be%d1%98%d0%b4%d0%be%d0%b2%d1%82%d0%b5-%d0%b2%d0%be-%d0%b3%d1%80%d1%83%d0%bf%d0%bd%d0%b0%d1%82%d0%b0-%d0%bd%d0%b0%d1%81%d1%82%d0%b0%d0%b2%d0%b0-%d0%bf%d0%be/"}, {"id": "arhiva-6", "title_mk": "Piano-Fun програма - нова димензија", "title_en": "Piano-Fun програма - нова димензија", "date": "11 August, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/08/Screenshot-2023-08-11-130752-370x254.png", "excerpt_mk": "Групните часови по пијано добија нова, поинтерактивна форма, водени од искусни професори.", "excerpt_en": "Групните часови по пијано добија нова, поинтерактивна форма, водени од искусни професори.", "original_url": "https://pianoforte.edu.mk/piano-fun-%d0%bf%d1%80%d0%be%d0%b3%d1%80%d0%b0%d0%bc%d0%b0-%d1%81%d0%be%d0%b7%d0%b4%d0%b0%d0%b2%d0%b0%d1%9a%d0%b5-%d0%bd%d0%be%d0%b2%d0%b0-%d0%b4%d0%b8%d0%bc%d0%b5%d0%bd%d0%b7%d0%b8/"}, {"id": "arhiva-7", "title_mk": "Одмор со призвук на оркестар", "title_en": "Одмор со призвук на оркестар", "date": "11 August, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/08/Screenshot-2023-08-11-125906-370x254.png", "excerpt_mk": "Впечатоци од музичкиот камп „Рамо до рамо“ на Ел Систем, Шведска — соработка и размена меѓу млади музичари.", "excerpt_en": "Впечатоци од музичкиот камп „Рамо до рамо“ на Ел Систем, Шведска — соработка и размена меѓу млади музичари.", "original_url": "https://pianoforte.edu.mk/%d0%be%d0%b4%d0%bc%d0%be%d1%80-%d1%81%d0%be-%d0%bf%d1%80%d0%b8%d0%b7%d0%b2%d1%83%d0%ba-%d0%bd%d0%b0-%d0%be%d1%80%d0%ba%d0%b5%d1%81%d1%82%d0%b0%d1%80/"}, {"id": "arhiva-8", "title_mk": "Ова лето — забава, учење и пријателства", "title_en": "Ова лето — забава, учење и пријателства", "date": "4 July, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/07/3F6A6108-scaled-370x254.jpg", "excerpt_mk": "Летната школа комбинира часови по музика со забавни активности, во опуштена летна атмосфера.", "excerpt_en": "Летната школа комбинира часови по музика со забавни активности, во опуштена летна атмосфера.", "original_url": "https://pianoforte.edu.mk/%d0%be%d0%b2%d0%b0-%d0%bb%d0%b5%d1%82%d0%be-%d0%b2%d0%b0%d1%88%d0%b5%d1%82%d0%be-%d0%be%d0%bc%d0%b8%d0%bb%d0%b5%d0%bd%d0%be-%d0%bc%d1%83%d0%b7%d0%b8%d1%87%d0%ba%d0%be-%d1%83%d1%87%d0%b8%d0%bb%d0%b8/"}, {"id": "arhiva-9", "title_mk": "Успешни музички приказни", "title_en": "Успешни музички приказни", "date": "12 June, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/06/3ABDB84C-24CD-4405-BE22-858682FC96B5-scaled-370x254.jpeg", "excerpt_mk": "Приказни на ученици чиј пат низ музичкото образование покажува колку упорноста носи резултати.", "excerpt_en": "Приказни на ученици чиј пат низ музичкото образование покажува колку упорноста носи резултати.", "original_url": "https://pianoforte.edu.mk/%d1%83%d1%81%d0%bf%d0%b5%d1%88%d0%bd%d0%b8-%d0%bc%d1%83%d0%b7%d0%b8%d1%87%d0%ba%d0%b8-%d0%bf%d1%80%d0%b8%d0%ba%d0%b0%d0%b7%d0%bd%d0%b8/"}, {"id": "arhiva-10", "title_mk": "Интервју со г-ѓа Марина", "title_en": "Интервју со г-ѓа Марина", "date": "26 May, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/05/Screenshot-2023-05-26-170523-370x254.png", "excerpt_mk": "Марина Чадо, ко-основач и извршен директор, гостуваше на телевизиска емисија каде зборуваше за филозофијата на училиштето.", "excerpt_en": "Марина Чадо, ко-основач и извршен директор, гостуваше на телевизиска емисија каде зборуваше за филозофијата на училиштето.", "original_url": "https://pianoforte.edu.mk/%d0%b8%d0%bd%d1%82%d0%b5%d1%80%d0%b2%d1%98%d1%83-%d1%81%d0%be-%d0%b3-%d1%93%d0%b0-%d0%bc%d0%b0%d1%80%d0%b8%d0%bd%d0%b0/"}, {"id": "arhiva-11", "title_mk": "Се ближи лето!", "title_en": "Се ближи лето!", "date": "26 May, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/05/Picture1-370x254.jpg", "excerpt_mk": "Годишна покана за летната програма — веќе петти пат училиштето ja организира летната школа за најмладите.", "excerpt_en": "Годишна покана за летната програма — веќе петти пат училиштето ja организира летната школа за најмладите.", "original_url": "https://pianoforte.edu.mk/%d1%81%d0%b5-%d0%b1%d0%bb%d0%b8%d0%b6%d0%b8-%d0%bb%d0%b5%d1%82%d0%be/"}, {"id": "arhiva-12", "title_mk": "И патиштата водат до Рим", "title_en": "И патиштата водат до Рим", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/DRA_5769-scaled-370x254.jpg", "excerpt_mk": "Заеднички музички проект на професори и ученици, што resultira во настап во Рим.", "excerpt_en": "Заеднички музички проект на професори и ученици, што resultira во настап во Рим.", "original_url": "https://pianoforte.edu.mk/%d0%b8-%d0%bf%d0%b0%d1%82%d0%b8%d1%88%d1%82%d0%b0%d1%82%d0%b0-%d0%bd%d0%b0-%d0%bf%d0%b8%d1%98%d0%b0%d0%bd%d0%be%d1%84%d0%be%d1%80%d1%82%d0%b5-%d0%b2%d0%be%d0%b4%d0%b0%d1%82-%d0%b4%d0%be-%d1%80%d0%b8/"}, {"id": "arhiva-13", "title_mk": "Интервју со г-ѓа Марина Чадо", "title_en": "Интервју со г-ѓа Марина Чадо", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/MG_4063-370x254.jpg", "excerpt_mk": "Основач и раководител на Одделот за гудачки инструменти, со над 30 години педагошко искуство.", "excerpt_en": "Основач и раководител на Одделот за гудачки инструменти, со над 30 години педагошко искуство.", "original_url": "https://pianoforte.edu.mk/%d0%b8%d0%bd%d1%82%d0%b5%d1%80%d0%b2%d1%98%d1%83-%d1%81%d0%be-%d0%b3-%d1%93%d0%b0-%d0%bc%d0%b0%d1%80%d0%b8%d0%bd%d0%b0-%d1%87%d0%b0%d0%b4%d0%be/"}, {"id": "arhiva-14", "title_mk": "Децата што сонуваат за година исполнета со концерти", "title_en": "Децата што сонуваат за година исполнета со концерти", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/DRA_5168-scaled-370x254.jpg", "excerpt_mk": "Крајот на годината и музиката оддамна се поврзани — приказна за тоа како учениците ja доживуваат таa магија.", "excerpt_en": "Крајот на годината и музиката оддамна се поврзани — приказна за тоа како учениците ja доживуваат таa магија.", "original_url": "https://pianoforte.edu.mk/%d0%b4%d0%b5%d1%86%d0%b0%d1%82%d0%b0-%d1%88%d1%82%d0%be-%d1%81%d0%be%d0%bd%d1%83%d0%b2%d0%b0%d0%b0%d1%82-%d0%b7%d0%b0-%d0%b3%d0%be%d0%b4%d0%b8%d0%bd%d0%b0-%d0%b8%d1%81%d0%bf%d0%be%d0%bb%d0%bd%d0%b5/"}, {"id": "arhiva-15", "title_mk": "Фантастичен тим од музичари", "title_en": "Фантастичен тим од музичари", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/MG_3872-370x254.jpg", "excerpt_mk": "Тимот на училиштето е составен од музичари од светска класа, целосно посветени на успехот на учениците.", "excerpt_en": "Тимот на училиштето е составен од музичари од светска класа, целосно посветени на успехот на учениците.", "original_url": "https://pianoforte.edu.mk/%d1%84%d0%b0%d0%bd%d1%82%d0%b0%d1%81%d1%82%d0%b8%d1%87%d0%b5%d0%bd-%d1%82%d0%b8%d0%bc-%d0%be%d0%b4-%d0%bc%d1%83%d0%b7%d0%b8%d1%87%d0%b0%d1%80%d0%b8/"}, {"id": "arhiva-16", "title_mk": "Групни часови", "title_en": "Групни часови", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/IMG_2013-scaled-370x254.jpg", "excerpt_mk": "Мали групи за секаков возраст — од најмалите до возрасни — овозможуваат учење во пријателска атмосфера.", "excerpt_en": "Мали групи за секаков возраст — од најмалите до возрасни — овозможуваат учење во пријателска атмосфера.", "original_url": "https://pianoforte.edu.mk/%d0%b3%d1%80%d1%83%d0%bf%d0%bd%d0%b8-%d1%87%d0%b0%d1%81%d0%be%d0%b2%d0%b8/"}, {"id": "arhiva-17", "title_mk": "Музиката во развојот на децата", "title_en": "Музиката во развојот на децата", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/IMG_4459-370x254.jpeg", "excerpt_mk": "Свирењето инструмент позитивно влијае на концентрацијата, моториката и интелектуалниот развој кај децата.", "excerpt_en": "Свирењето инструмент позитивно влијае на концентрацијата, моториката и интелектуалниот развој кај децата.", "original_url": "https://pianoforte.edu.mk/%d0%bc%d1%83%d0%b7%d0%b8%d0%ba%d0%b0%d1%82%d0%b0-%d0%b2%d0%be-%d1%80%d0%b0%d0%b7%d0%b2%d0%be%d1%98%d0%be%d1%82-%d0%bd%d0%b0-%d0%b4%d0%b5%d1%86%d0%b0%d1%82%d0%b0/"}, {"id": "arhiva-18", "title_mk": "Уште една успешна приказна", "title_en": "Уште една успешна приказна", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/1-3111-1-370x254.jpg", "excerpt_mk": "Патот на еден млад виолинист — од првите часови до сериозни музички достигнувања.", "excerpt_en": "Патот на еден млад виолинист — од првите часови до сериозни музички достигнувања.", "original_url": "https://pianoforte.edu.mk/%d1%83%d1%88%d1%82%d0%b5-%d0%b5%d0%b4%d0%bd%d0%b0-%d1%83%d1%81%d0%bf%d0%b5%d1%88%d0%bd%d0%b0-%d0%bf%d1%80%d0%b8%d0%ba%d0%b0%d0%b7%d0%bd%d0%b0-%d0%bd%d0%b0-%d0%bc%d1%83%d0%b7%d0%b8%d1%87%d0%ba%d0%be-2/"}, {"id": "arhiva-19", "title_mk": "Како се станува пијанист", "title_en": "Како се станува пијанист", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/a_MG_4468-scaled-370x254.jpg", "excerpt_mk": "Интервју со лауреат на училиштето, за патот кон совладување на инструментот и постигнатите успеси.", "excerpt_en": "Интервју со лауреат на училиштето, за патот кон совладување на инструментот и постигнатите успеси.", "original_url": "https://pianoforte.edu.mk/%d0%ba%d0%b0%d0%ba%d0%be-%d1%81%d0%b5-%d1%81%d1%82%d0%b0%d0%bd%d1%83%d0%b2%d0%b0-%d0%bf%d0%b8%d1%98%d0%b0%d0%bd%d0%b8%d1%81%d1%82/"}, {"id": "arhiva-20", "title_mk": "Уживај во летото со летната школа", "title_en": "Уживај во летото со летната школа", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/IMG_1985-scaled-370x254.jpg", "excerpt_mk": "Разговор со професорките и сопственички на училиштето за филозофијата зад летната програма.", "excerpt_en": "Разговор со професорките и сопственички на училиштето за филозофијата зад летната програма.", "original_url": "https://pianoforte.edu.mk/%d1%83%d0%b6%d0%b8%d0%b2%d0%b0%d1%98-%d0%b2%d0%be-%d0%bb%d0%b5%d1%82%d0%be%d1%82%d0%be-%d1%81%d0%be-%d0%bb%d0%b5%d1%82%d0%bd%d0%b0%d1%82%d0%b0-%d1%88%d0%ba%d0%be%d0%bb%d0%b0-%d0%b2%d0%be/"}, {"id": "arhiva-21", "title_mk": "Успешно бизнис дуо", "title_en": "Успешно бизнис дуо", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/5CD11A29-B3F4-4F84-852C-81548DAB8738_L0_001-27_01_2023-17-13-14-370x254.png", "excerpt_mk": "Двете сопственички споделуваат од своето искуство како музичари, педагози и претприемачки.", "excerpt_en": "Двете сопственички споделуваат од своето искуство како музичари, педагози и претприемачки.", "original_url": "https://pianoforte.edu.mk/%d1%83%d1%81%d0%bf%d0%b5%d1%88%d0%bd%d0%be-%d0%b1%d0%b8%d0%b7%d0%bd%d0%b8%d1%81-%d0%b4%d1%83%d0%be/"}, {"id": "arhiva-22", "title_mk": "Порака до генерација Z: во дигиталниот свет", "title_en": "Порака до генерација Z: во дигиталниот свет", "date": "9 March, 2023", "img": "https://pianoforte.edu.mk/wp-content/uploads/2023/03/tereza.park_MG_3205-1-370x254.jpg", "excerpt_mk": "Како музичкото образование се адаптира кон новите генерации и дигиталните алатки.", "excerpt_en": "Како музичкото образование се адаптира кон новите генерации и дигиталните алатки.", "original_url": "https://pianoforte.edu.mk/%d0%bf%d0%be%d1%80%d0%b0%d0%ba%d0%b0-%d0%be%d0%b4-%d0%b3%d0%b5%d0%bd%d0%b5%d1%80%d0%b0%d1%86%d0%b8%d1%98%d0%b0-%d0%b8%d0%ba%d1%81-%d0%b4%d0%be-%d0%b3%d0%b5%d0%bd%d0%b5%d1%80%d0%b0%d1%86%d0%b8%d1%98/"}, {"id": "arhiva-23", "title_mk": "Летни активности во училиштето", "title_en": "Летни активности во училиштето", "date": "20 September, 2022", "img": "https://pianoforte.edu.mk/wp-content/uploads/2022/09/IMG_6349-scaled-e1667393077677-370x254.jpeg", "excerpt_mk": "Крајот на учебната година носи попуштање, но и продолжување на музичките активности во летниот период.", "excerpt_en": "Крајот на учебната година носи попуштање, но и продолжување на музичките активности во летниот период.", "original_url": "https://pianoforte.edu.mk/%d0%bb%d0%b5%d1%82%d0%bd%d0%b8-%d0%b0%d0%ba%d1%82%d0%b8%d0%b2%d0%bd%d0%be%d1%81%d1%82%d0%b8-%d0%b2%d0%be-%d0%bf%d1%80%d0%b8%d0%b2%d0%b0%d1%82%d0%bd%d0%be%d1%82%d0%be-%d0%bc%d1%83%d0%b7%d0%b8%d1%87/"}, {"id": "arhiva-24", "title_mk": "Забава за сите генерации од бендовите", "title_en": "Забава за сите генерации од бендовите", "date": "20 September, 2022", "img": "https://pianoforte.edu.mk/wp-content/uploads/2022/09/novost2_1-370x254.png", "excerpt_mk": "Настап во паркот „Ибни Пајко“ во организација на училиштето — музика на отворено за целото семејство.", "excerpt_en": "Настап во паркот „Ибни Пајко“ во организација на училиштето — музика на отворено за целото семејство.", "original_url": "https://pianoforte.edu.mk/%d0%b7%d0%b0%d0%b1%d0%b0%d0%b2%d0%b0-%d0%b7%d0%b0-%d1%81%d0%b8%d1%82%d0%b5-%d0%b3%d0%b5%d0%bd%d0%b5%d1%80%d0%b0%d1%86%d0%b8%d0%b8-%d0%be%d0%b4-%d0%b1%d0%b5%d0%bd%d0%b4%d0%be%d0%b2%d0%b8%d1%82%d0%b5/"}, {"id": "arhiva-25", "title_mk": "Пијано Форте Стрингс во Љубљана", "title_en": "Пијано Форте Стрингс во Љубљана", "date": "20 September, 2022", "img": "https://pianoforte.edu.mk/wp-content/uploads/2021/11/rsz_1j_mg_5010-370x254.jpg", "excerpt_mk": "Гостување во Словенија, резултат на долгогодишна соработка меѓу две братски музички училишта.", "excerpt_en": "Гостување во Словенија, резултат на долгогодишна соработка меѓу две братски музички училишта.", "original_url": "https://pianoforte.edu.mk/%d0%bf%d0%b8%d1%98%d0%b0%d0%bd%d0%be-%d1%84%d0%be%d1%80%d1%82%d0%b5-%d1%81%d1%82%d1%80%d0%b8%d0%bd%d0%b3%d1%81-%d0%b2%d0%be-%d1%99%d1%83%d0%b1%d1%9a%d0%b0%d0%bd%d0%b0-%d1%80-%d1%81%d0%bb%d0%be%d0%b2/"}];
+    const postId = new URLSearchParams(window.location.search).get('id');
+    const post = BLOG_POSTS.find(p => p.id === postId);
+
+    function mdToHtml(text){
+      return text.split('\n\n').map(para => {
+        const withBold = para.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        return `<p>${withBold}</p>`;
+      }).join('');
+    }
+
+    function renderPost(){
+      if(!post){
+        postArticleEl.innerHTML = '<div style="text-align:center; padding:60px 0; color:var(--mist);">' + (currentLang==='mk' ? 'Написот не е пронајден.' : 'Post not found.') + '</div>';
+        return;
+      }
+      const title = currentLang === 'mk' ? post.title_mk : post.title_en;
+      const body = currentLang === 'mk' ? (post.body_mk || post.excerpt_mk) : (post.body_en || post.excerpt_en);
+      document.title = title + ' — PianoForte';
+
+      let videoHtml = '';
+      if(post.video){
+        const ytId = post.video.split('/').pop().split('?')[0];
+        videoHtml = `<div class="post-video"><iframe src="https://www.youtube.com/embed/${ytId}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+      }
+
+      let readMoreHtml = '';
+      if(post.original_url){
+        readMoreHtml = `<a class="post-original-link" href="${post.original_url}" target="_blank" rel="noopener">${currentLang==='mk' ? 'Прочитај го целосниот напис на pianoforte.edu.mk →' : 'Read the full article on pianoforte.edu.mk →'}</a>`;
+      }
+
+      postArticleEl.innerHTML = `
+        <span class="blog-post-date">${post.date}</span>
+        <h1 class="post-title">${title}</h1>
+        <div class="post-hero-img" style="background-image:url('${post.img}')"></div>
+        ${videoHtml}
+        <div class="post-body">${mdToHtml(body)}</div>
+        ${readMoreHtml}
+      `;
+    }
+    renderPost();
+    document.querySelector('.lang-toggle').addEventListener('click', renderPost);
+  }
+
+})();
+
+</script>
+</body>
+</html>
