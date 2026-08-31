@@ -51,6 +51,10 @@
   .field-label{font-size:12.5px; color:var(--mist); display:block; margin-bottom:6px;}
   .login-input, .login-select{width:100%; border:1px solid var(--line); background:var(--surface); padding:12px 14px; border-radius:8px; font-size:14.5px; margin-bottom:16px; color:var(--ink);}
   .login-input:focus, .login-select:focus{outline:none; border-color:var(--sand);}
+  .pw-wrap{position:relative;}
+  .pw-wrap .login-input{padding-right:44px;}
+  .pw-toggle{position:absolute; right:2px; top:0; height:100%; padding:0 12px; background:none; border:none; cursor:pointer; font-size:16px; opacity:.55; display:flex; align-items:center; margin-bottom:16px;}
+  .pw-toggle:hover{opacity:.9;}
   .login-btn{width:100%; border:none; padding:14px; border-radius:8px; font-weight:600; font-size:15px; cursor:pointer; color:#fff; transition:.2s; background:linear-gradient(135deg, var(--sand-deep), var(--lilac-deep));}
   .login-btn:hover{transform:translateY(-1px); box-shadow:0 10px 22px rgba(107,78,142,0.25);}
   .login-btn:disabled{opacity:.5; cursor:default; transform:none; box-shadow:none;}
@@ -376,6 +380,7 @@
     .groups-overview{grid-template-columns:1fr;}
   }
 </style>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
 
@@ -387,7 +392,7 @@
     <label class="field-label" style="margin-top:20px; display:block;" data-i18n="label_email">Email</label>
     <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
-    <input class="login-input" id="loginPassword" type="password" placeholder="••••••••">
+    <div class="pw-wrap"><input class="login-input" id="loginPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Прикажи лозинка">👁</button></div>
 
     <button class="login-btn" id="loginBtn" disabled data-i18n="login_btn">Најави се</button>
     <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
@@ -429,9 +434,9 @@
   <div class="login-card">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Постави нова лозинка</p></div>
     <label class="field-label" style="margin-top:20px; display:block;">Нова лозинка</label>
-    <input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери">
+    <div class="pw-wrap"><input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери"><button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Прикажи лозинка">👁</button></div>
     <label class="field-label">Потврди ja лозинката</label>
-    <input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja">
+    <div class="pw-wrap"><input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja"><button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Прикажи лозинка">👁</button></div>
     <button class="login-btn" id="resetSubmitBtn">Зачувај ja новата лозинка</button>
     <div id="resetError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div id="resetSuccess" style="display:none; color:var(--leaf); font-size:13px; text-align:center; margin-top:10px;"></div>
@@ -521,6 +526,7 @@
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:480px;">
+    <a href="#" id="backToLoginFromRegisterLink" style="display:inline-block; color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none; margin-bottom:14px;">← Назад кон најава</a>
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reg_tagline">Креирај профил за ученик</p></div>
 
     <label class="field-label" data-i18n="reg_parent_name_label">Твоето име и презиме (родител/старател)</label>
@@ -528,7 +534,7 @@
     <label class="field-label" data-i18n="label_email">Email</label>
     <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
-    <input class="login-input" id="regPassword" type="password" placeholder="••••••••">
+    <div class="pw-wrap"><input class="login-input" id="regPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="regPassword" aria-label="Прикажи лозинка">👁</button></div>
 
     <div style="border-top:1px solid var(--line); margin:18px 0 14px; padding-top:14px;">
       <div style="font-size:11px; color:var(--mist); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em;" data-i18n="reg_child_section">Прво дете (можеш да додадеш уште подоцна)</div>
@@ -538,8 +544,7 @@
       <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
     </div>
 
-    <label class="field-label" data-i18n="reg_instrument_label">Инструмент</label>
-    <div class="type-toggle" id="regInstrumentToggle" style="flex-wrap:wrap; margin-bottom:18px;"></div>
+    <div class="g-recaptcha" data-sitekey="YOUR_RECAPTCHA_SITE_KEY_HERE" style="margin-bottom:16px;"></div>
 
     <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;" id="regTermsLabel">
       <input type="checkbox" id="regTermsCheckbox" style="margin-top:2px;">
@@ -559,17 +564,11 @@
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:440px; text-align:center;">
     <div style="font-size:40px; margin-bottom:14px;">📧</div>
-    <h2 style="font-size:20px; margin-bottom:8px;">Испративме вистински email до тебе</h2>
+    <h2 style="font-size:20px; margin-bottom:8px;">Испративме email до тебе</h2>
     <p style="color:var(--mist); font-size:13.5px; margin-bottom:24px;" id="confirmEmailAddress"></p>
-
-    <div style="background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:18px; text-align:left; margin-bottom:22px;">
-      <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">ОД: PianoForte &lt;info@pianoforte.edu.mk&gt;</div>
-      <div style="font-weight:600; font-size:14px; margin-bottom:8px;">Потврди го твojot профил на PianoForte</div>
-      <div style="font-size:13px; color:var(--ink); opacity:.8; line-height:1.5;">Отвори го твojot inbox (провери и spam папка) и кликни на копчето во email-от — дури тогаш ќе можеш да се најавиш.</div>
-    </div>
+    <p style="color:var(--mist); font-size:13px; margin-bottom:22px;">провери го inbox или spam</p>
 
     <button class="login-btn" id="confirmEmailBtn">Разбрав, одам на најава</button>
-    <div class="login-hint">Најавата нема да работи додека не го потврдиш email-от преку линкот.</div>
   </div>
 </div>
 
@@ -732,17 +731,17 @@
         <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_password_title">Смени лозинка</h3>
         <div class="form-row">
           <label data-i18n="profile_current_pw">Тековна лозинка</label>
-          <input type="password" id="profileCurrentPw" class="login-input" style="margin-bottom:0;">
+          <div class="pw-wrap"><input type="password" id="profileCurrentPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileCurrentPw" aria-label="Прикажи лозинка">👁</button></div>
         </div>
         <div style="height:14px;"></div>
         <div class="form-row">
           <label data-i18n="profile_new_pw">Нова лозинка</label>
-          <input type="password" id="profileNewPw" class="login-input" style="margin-bottom:0;">
+          <div class="pw-wrap"><input type="password" id="profileNewPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileNewPw" aria-label="Прикажи лозинка">👁</button></div>
         </div>
         <div style="height:14px;"></div>
         <div class="form-row">
           <label data-i18n="profile_confirm_pw">Потврди ja новата лозинка</label>
-          <input type="password" id="profileConfirmPw" class="login-input" style="margin-bottom:0;">
+          <div class="pw-wrap"><input type="password" id="profileConfirmPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileConfirmPw" aria-label="Прикажи лозинка">👁</button></div>
         </div>
         <button class="send-btn" id="profilePwBtn" style="margin-top:16px;" data-i18n="profile_pw_btn">Смени лозинка</button>
         <div id="profilePwMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
@@ -1302,21 +1301,6 @@
   });
 
   /* ===================== REGISTRATION ===================== */
-  let regInstrument = null;
-  const regInstrumentToggle = document.getElementById('regInstrumentToggle');
-  INSTRUMENTS.forEach(inst=>{
-    const btn = document.createElement('div');
-    btn.className = 'type-btn';
-    btn.style.flex = '1 1 30%';
-    btn.textContent = `${inst.icon} ${inst.label}`;
-    btn.addEventListener('click', ()=>{
-      regInstrument = inst.id;
-      regInstrumentToggle.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-    regInstrumentToggle.appendChild(btn);
-  });
-
   document.getElementById('goToRegisterLink').addEventListener('click', (e)=>{
     e.preventDefault();
     document.getElementById('loginScreen').style.display = 'none';
@@ -1382,6 +1366,12 @@
   document.getElementById('backToLoginFromForgotLink').addEventListener('click', (e)=>{
     e.preventDefault();
     document.getElementById('forgotPasswordScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  });
+
+  document.getElementById('backToLoginFromRegisterLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    document.getElementById('registerScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   });
 
@@ -1454,6 +1444,17 @@
   });
 
   let pendingRegistration = null;
+  // Копче за прикажување/скривање лозинка — работи за сите pw-toggle копчиња насекаде
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('.pw-toggle');
+    if(!btn) return;
+    const input = document.getElementById(btn.dataset.target);
+    if(!input) return;
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.textContent = isHidden ? '🙈' : '👁';
+  });
+
   document.getElementById('registerBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('regName').value.trim();
     const childName = document.getElementById('regChildName').value.trim();
@@ -1463,8 +1464,14 @@
     const errBox = document.getElementById('registerError');
     errBox.style.display = 'none';
 
-    if(!name || !childName || !email || !password || !age || !regInstrument){
-      errBox.textContent = 'Пополни ги сите полиња и избери инструмент.';
+    if(!name || !childName || !email || !password || !age){
+      errBox.textContent = 'Пополни ги сите полиња.';
+      errBox.style.display = 'block';
+      return;
+    }
+    const captchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
+    if(!captchaToken){
+      errBox.textContent = 'Потврди дека не си робот (CAPTCHA).';
       errBox.style.display = 'block';
       return;
     }
@@ -1486,16 +1493,17 @@
       // Вистински повик кон живиот backend — ова реално креира ред во MySQL базата
       await apiCall('/auth/register', {
         method:'POST',
-        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age })
+        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age, captcha_token:captchaToken })
       });
 
-      pendingRegistration = {name, childName, email, password, age, instrument: regInstrument};
-      document.getElementById('confirmEmailAddress').textContent = `Испративме потврда до ${email}`;
+      pendingRegistration = {name, childName, email, password, age};
+      document.getElementById('confirmEmailAddress').textContent = `на ${email}`;
       document.getElementById('registerScreen').style.display = 'none';
       document.getElementById('confirmEmailScreen').style.display = 'flex';
     } catch(err){
       errBox.textContent = err.message || 'Настана грешка. Пробај повторно.';
       errBox.style.display = 'block';
+      if(typeof grecaptcha !== 'undefined') grecaptcha.reset();
     } finally {
       btn.disabled = false; btn.textContent = 'Креирај профил';
     }
