@@ -2,202 +2,246 @@
 <html lang="mk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PianoForte — Музичко училиште во Скопје</title>
 <meta name="description" content="PianoForte — часови по пијано, виолина, гитара, тапани и пеење за деца и возрасни во Скопје.">
+<meta name="theme-color" content="#FBF7F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 
   :root{
     --bg:#FBF7F1; --surface:#FFFFFF; --surface-2:#F4EEE3; --line:#E7DFD1;
-    --ink:#3B3142; --mist:#8A8290;
+    --ink:#2A2233; --mist:#8A8290;
     --lilac-deep:#6B4E8E; --lilac-pale:#EEE6F6;
     --sand-deep:#A97E33; --sand-pale:#F4E4C4;
     --leaf:#5E8B6B; --leaf-pale:#E4EFE6;
     --wine:#B3555F; --wine-pale:#F6E4E6;
     --dark-card:#241E29; --dark-card-2:#3B3142;
-    --shadow:0 20px 50px -20px rgba(59,49,66,0.22);
+    --shadow-sm:0 8px 24px -12px rgba(42,34,51,0.18);
+    --shadow:0 24px 60px -24px rgba(42,34,51,0.28);
+    --shadow-lg:0 32px 80px -20px rgba(42,34,51,0.35);
+    --ease:cubic-bezier(.4,0,.2,1);
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
-  h1,h2,h3,h4{font-family:'Fraunces',serif; font-weight:500; margin:0; letter-spacing:-.01em;}
-  p{margin:0; line-height:1.65;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; -webkit-tap-highlight-color:transparent;}
+  h1,h2,h3,h4{font-family:'Fraunces',serif; font-weight:500; margin:0; letter-spacing:-.015em;}
+  p{margin:0; line-height:1.7;}
   a{color:inherit;}
   button{font-family:inherit; cursor:pointer;}
-  .wrap{max-width:1200px; margin:0 auto; padding:0 28px;}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 24px;}
   img{max-width:100%; display:block;}
 
   /* ===== UTILITY TOP BAR ===== */
   .utility-bar{background:linear-gradient(90deg, var(--lilac-pale), var(--sand-pale)); color:var(--ink); font-size:12.5px; border-bottom:1px solid var(--line);}
   .utility-bar .wrap{display:flex; justify-content:space-between; align-items:center; height:40px;}
   .utility-left{display:flex; gap:18px;}
-  .utility-left a{text-decoration:none; opacity:.85; display:flex; align-items:center; gap:5px; color:var(--ink); font-weight:600;}
+  .utility-left a{text-decoration:none; opacity:.85; display:flex; align-items:center; gap:5px; color:var(--ink); font-weight:600; transition:opacity .2s var(--ease);}
   .utility-left a:hover{opacity:1; color:var(--lilac-deep);}
   .utility-right{display:flex; gap:14px; align-items:center;}
-  .utility-right a{text-decoration:none; opacity:.9; font-weight:700; color:var(--lilac-deep);}
   .lang-toggle{display:flex; gap:2px; background:rgba(255,255,255,.55); border-radius:6px; padding:2px;}
-  .lang-toggle button{background:none; border:none; color:var(--ink); font-size:11px; font-weight:700; padding:3px 7px; border-radius:4px; opacity:.55;}
+  .lang-toggle button{background:none; border:none; color:var(--ink); font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; opacity:.55; transition:.2s var(--ease);}
   .lang-toggle button.active{background:#fff; opacity:1; color:var(--lilac-deep);}
-  .cta-mini{background:var(--wine); color:#fff !important; padding:5px 12px; border-radius:20px;}
 
   /* ===== MAIN NAV ===== */
-  header.main-nav{position:sticky; top:0; z-index:100; background:rgba(251,246,237,.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line);}
-  .nav-row{display:flex; align-items:center; justify-content:space-between; height:76px;}
+  header.main-nav{position:sticky; top:0; z-index:200; background:rgba(251,247,241,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);}
+  .nav-row{display:flex; align-items:center; justify-content:space-between; height:80px;}
   .brand{font-family:'Fraunces',serif; font-size:24px; font-weight:600; text-decoration:none; color:var(--ink); display:flex; align-items:center;}
-  .brand-logo{height:44px; width:auto; display:block;}
-  .brand span{color:var(--sand-deep);}
-  nav.links{display:flex; align-items:center; gap:6px;}
+  .brand-logo{height:42px; width:auto; display:block;}
+  nav.links{display:flex; align-items:center; gap:4px;}
   .nav-item{position:relative;}
-  .nav-item > a, .nav-item > span{display:flex; align-items:center; gap:4px; padding:10px 14px; font-size:14.5px; font-weight:600; text-decoration:none; color:var(--ink); border-radius:8px; cursor:pointer;}
+  .nav-item > a, .nav-item > span{display:flex; align-items:center; gap:5px; padding:11px 15px; font-size:14.5px; font-weight:600; text-decoration:none; color:var(--ink); border-radius:8px; cursor:pointer; transition:background .2s var(--ease);}
   .nav-item > a:hover, .nav-item:hover > span{background:var(--surface-2);}
-  .caret{font-size:10px; opacity:.6; transition:transform .2s;}
+  .caret{font-size:10px; opacity:.6; transition:transform .25s var(--ease);}
   .nav-item:hover .caret{transform:rotate(180deg);}
-  .dropdown{position:absolute; top:100%; left:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:10px; min-width:220px; opacity:0; visibility:hidden; transform:translateY(6px); transition:.18s;}
-  .nav-item:hover .dropdown{opacity:1; visibility:visible; transform:translateY(4px);}
-  .dropdown a{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500;}
+  .dropdown{position:absolute; top:100%; left:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:10px; min-width:220px; opacity:0; visibility:hidden; transform:translateY(8px); transition:.25s var(--ease);}
+  .nav-item:hover .dropdown{opacity:1; visibility:visible; transform:translateY(6px);}
+  .dropdown a{display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:9px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500; transition:.15s var(--ease);}
   .dropdown a:hover{background:var(--lilac-pale); color:var(--lilac-deep);}
   .dropdown.instruments{min-width:240px; width:420px; display:grid; grid-template-columns:1fr 1fr; gap:2px;}
-  .cta-primary{background:var(--lilac-deep); color:#fff !important; padding:11px 20px; border-radius:24px; font-weight:700; font-size:14px; text-decoration:none; white-space:nowrap;}
-  .cta-primary:hover{background:#5a4184;}
-  .burger{display:none; background:none; border:none; font-size:26px; color:var(--ink);}
+  .cta-primary{background:var(--ink); color:#fff !important; padding:13px 24px; border-radius:100px; font-weight:600; font-size:13.5px; letter-spacing:.02em; text-decoration:none; white-space:nowrap; transition:.25s var(--ease); display:inline-flex; align-items:center; gap:8px; box-shadow:var(--shadow-sm);}
+  .cta-primary:hover{background:var(--lilac-deep); transform:translateY(-1px); box-shadow:var(--shadow);}
+  .burger{display:none; background:none; border:none; width:44px; height:44px; align-items:center; justify-content:center; cursor:pointer; position:relative; z-index:210;}
+  .burger span{display:block; width:22px; height:2px; background:var(--ink); position:absolute; transition:.3s var(--ease);}
+  .burger span:nth-child(1){transform:translateY(-6px);}
+  .burger span:nth-child(3){transform:translateY(6px);}
+  .burger.open span:nth-child(1){transform:rotate(45deg);}
+  .burger.open span:nth-child(2){opacity:0;}
+  .burger.open span:nth-child(3){transform:rotate(-45deg);}
+
+  /* ===== MOBILE NAV OVERLAY (luxury full-screen) ===== */
+  .mobile-nav-overlay{position:fixed; inset:0; background:var(--bg); z-index:190; display:flex; flex-direction:column; padding:100px 32px 40px; opacity:0; visibility:hidden; transform:translateY(-12px); transition:.35s var(--ease); overflow-y:auto;}
+  .mobile-nav-overlay.open{opacity:1; visibility:visible; transform:translateY(0);}
+  .mobile-nav-overlay a.m-link{font-family:'Fraunces',serif; font-size:26px; font-weight:500; color:var(--ink); text-decoration:none; padding:14px 0; border-bottom:1px solid var(--line); display:block;}
+  .mobile-nav-overlay .m-group{margin-bottom:6px;}
+  .mobile-nav-overlay .m-sub{padding-left:16px; display:none;}
+  .mobile-nav-overlay .m-group.open .m-sub{display:block;}
+  .mobile-nav-overlay .m-sub a{font-family:'Inter',sans-serif; font-size:15px; font-weight:500; padding:11px 0; border-bottom:none; color:var(--mist);}
+  .mobile-nav-overlay .m-cta{margin-top:24px;}
+  @media(min-width:981px){ .mobile-nav-overlay{display:none !important;} }
 
   /* ===== HERO SLIDER (вистински слики) ===== */
-  .hero-slider{position:relative; height:560px; overflow:hidden;}
-  .slide{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1s ease;}
+  .hero-slider{position:relative; height:620px; overflow:hidden;}
+  .slide{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.2s var(--ease); transform:scale(1.02);}
   .slide.active{opacity:1;}
-  .slide-overlay{position:absolute; inset:0; background:linear-gradient(180deg, rgba(59,49,66,.55), rgba(59,49,66,.7)); z-index:1;}
-  .slide-content{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; color:#fff;}
-  .slide-content .eyebrow{background:rgba(255,255,255,.16); color:#fff;}
-  .slide-text{font-size:38px; font-weight:500; line-height:1.25; max-width:640px; margin-bottom:28px; color:#fff;}
-  .slide-content .cta-primary{padding:13px 26px; font-size:14.5px;}
-  .slider-dots{position:absolute; bottom:24px; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:8px;}
-  .dot{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.4); border:none; padding:0; cursor:pointer; transition:.2s;}
-  .dot.active{background:#fff; width:22px; border-radius:5px;}
-  @media(max-width:640px){ .hero-slider{height:480px;} .slide-text{font-size:26px;} }
+  .slide-overlay{position:absolute; inset:0; background:linear-gradient(180deg, rgba(42,34,51,.35) 0%, rgba(42,34,51,.55) 55%, rgba(42,34,51,.78) 100%); z-index:1;}
+  .slide-content{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; color:#fff; max-width:680px;}
+  .slide-content .eyebrow{background:rgba(255,255,255,.14); backdrop-filter:blur(6px); color:#fff; border:1px solid rgba(255,255,255,.2);}
+  .slide-text{font-size:44px; font-weight:500; line-height:1.22; margin-bottom:32px; color:#fff; text-shadow:0 2px 24px rgba(0,0,0,.15);}
+  .slide-content .cta-primary{padding:15px 30px; font-size:14.5px; background:#fff; color:var(--ink) !important;}
+  .slide-content .cta-primary:hover{background:var(--sand-pale);}
+  .slider-dots{position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:9px;}
+  .dot{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.4); border:none; padding:0; cursor:pointer; transition:.3s var(--ease);}
+  .dot.active{background:#fff; width:26px; border-radius:5px;}
+  @media(max-width:640px){ .hero-slider{height:70vh; min-height:460px;} .slide-text{font-size:28px; margin-bottom:24px;} }
 
-  /* ===== INTRO BAND (кратко, јасно) ===== */
-  .intro-band{padding:44px 0; border-bottom:1px solid var(--line);}
-  .intro-text{font-family:'Fraunces',serif; font-size:22px; font-weight:500; text-align:center; max-width:760px; margin:0 auto; color:var(--ink); line-height:1.5;}
+  /* ===== INTRO BAND ===== */
+  .intro-band{padding:56px 0; border-bottom:1px solid var(--line);}
+  .intro-text{font-family:'Fraunces',serif; font-size:24px; font-weight:500; text-align:center; max-width:760px; margin:0 auto; color:var(--ink); line-height:1.55;}
+  @media(max-width:640px){ .intro-text{font-size:19px;} .intro-band{padding:40px 0;} }
 
-  /* ===== TEASER ROW (едноставни линкови) ===== */
-  .teaser-card{background:var(--surface); border:1.5px solid var(--line); border-radius:14px; padding:24px; text-decoration:none; color:var(--ink); display:flex; align-items:center; justify-content:space-between; transition:.2s;}
-  .teaser-card:hover{border-color:var(--lilac-deep);}
-  .teaser-card h4{font-size:16px; font-weight:600;}
+  /* ===== TEASER ROW ===== */
+  .teaser-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px; text-decoration:none; color:var(--ink); display:flex; align-items:center; justify-content:space-between; transition:.3s var(--ease);}
+  .teaser-card:hover{border-color:var(--lilac-deep); transform:translateY(-3px); box-shadow:var(--shadow-sm);}
+  .teaser-card h4{font-size:17px; font-weight:600;}
   .teaser-card .arrow{color:var(--lilac-deep); font-weight:700; font-size:13px; white-space:nowrap;}
 
   /* ===== SECTION SHELL ===== */
-  section{padding:88px 0;}
+  section{padding:96px 0;}
   section.alt{background:var(--surface);}
   .tint-lilac{background:linear-gradient(180deg, var(--lilac-pale) 0%, var(--bg) 100%);}
   .tint-sand{background:linear-gradient(180deg, var(--sand-pale) 0%, var(--bg) 100%);}
-  .section-head{max-width:640px; margin-bottom:48px;}
-  .section-head h2{font-size:34px; font-weight:600; margin-bottom:14px;}
-  .section-head p{color:var(--mist); font-size:16px;}
+  .section-head{max-width:640px; margin-bottom:52px;}
+  .section-head h2{font-size:38px; font-weight:500; margin-bottom:16px;}
+  .section-head p{color:var(--mist); font-size:16.5px;}
   .section-head.center{margin-left:auto; margin-right:auto; text-align:center;}
+  @media(max-width:640px){
+    section{padding:60px 0;}
+    .section-head{margin-bottom:36px;}
+    .section-head h2{font-size:28px;}
+    .section-head p{font-size:15px;}
+  }
 
   /* ===== INSTRUMENTS GRID ===== */
   .instruments-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
-  .instrument-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:32px 20px; text-align:center; text-decoration:none; color:var(--ink); transition:.2s;}
-  .instrument-card:hover{border-color:var(--lilac-deep); transform:translateY(-4px); box-shadow:var(--shadow);}
-  .instrument-icon{width:60px; height:60px; margin:0 auto 16px; display:flex; align-items:center; justify-content:center; background:var(--lilac-pale); border-radius:16px;}
-  .instrument-icon svg{width:28px; height:28px; stroke:var(--lilac-deep);}
+  .instrument-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:36px 22px; text-align:center; text-decoration:none; color:var(--ink); transition:.3s var(--ease);}
+  .instrument-card:hover{border-color:var(--lilac-deep); transform:translateY(-6px); box-shadow:var(--shadow);}
+  .instrument-icon{width:60px; height:60px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; background:var(--lilac-pale); border-radius:16px; transition:.3s var(--ease);}
+  .instrument-card:hover .instrument-icon{background:var(--lilac-deep);}
+  .instrument-card:hover .instrument-icon svg{stroke:#fff;}
+  .instrument-icon svg{width:28px; height:28px; stroke:var(--lilac-deep); transition:.3s var(--ease);}
   .instrument-card h4{font-size:16px; font-weight:600; color:var(--ink);}
-  @media(max-width:820px){ .instruments-grid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:820px){ .instruments-grid{grid-template-columns:repeat(2,1fr); gap:14px;} .instrument-card{padding:26px 16px;} }
+
+  /* ===== PACKAGES PREVIEW ===== */
+  .pkg-section{margin-bottom:40px;}
+  .pkg-section h3{font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-bottom:16px;}
+  .pkg-row-wrap{display:flex; gap:16px; overflow-x:auto; padding-bottom:12px; -webkit-overflow-scrolling:touch;}
+  .pkg-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px; flex:0 0 250px; display:flex; flex-direction:column; transition:.3s var(--ease);}
+  .pkg-card:hover{box-shadow:var(--shadow-sm);}
+  .pkg-card-name{font-weight:600; font-size:14px; margin-bottom:8px;}
+  .pkg-card-price{font-family:'Fraunces',serif; font-weight:600; color:var(--sand-deep); font-size:22px;}
+  .pkg-card-discount{font-size:12px; color:var(--leaf); font-weight:600; min-height:16px; margin:2px 0 12px;}
+  .pkg-desc-btn{background:none; border:none; color:var(--lilac-deep); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-align:left; margin-bottom:8px;}
+  .pkg-card-desc{font-size:11.5px; color:var(--mist); line-height:1.6; background:var(--surface-2); border-radius:9px; padding:11px 13px; margin-bottom:14px; display:none;}
+  .pkg-buy-btn{background:var(--ink); color:#fff; border:none; padding:12px 16px; border-radius:100px; font-weight:600; font-size:12.5px; cursor:pointer; text-decoration:none; text-align:center; margin-top:auto; transition:.25s var(--ease);}
+  .pkg-buy-btn:hover{background:var(--lilac-deep);}
+  .pkg-annual-total{color:var(--sand-deep); font-weight:600;}
 
   /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
-  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;}
-  .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:20px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
-  .placeholder-tag{display:inline-block; font-size:11px; font-weight:700; color:var(--wine); background:var(--wine-pale); padding:4px 10px; border-radius:8px; margin-bottom:14px;}
+  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
+  .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:22px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
+  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} }
 
   /* ===== EMPTY BLOG STATE ===== */
   .empty-blog{text-align:center; max-width:420px; margin:0 auto; padding:60px 20px;}
-  .empty-blog-icon{width:64px; height:64px; margin:0 auto 20px; background:var(--lilac-pale); border-radius:18px; display:flex; align-items:center; justify-content:center;}
-  .empty-blog-icon svg{width:30px; height:30px; stroke:var(--lilac-deep);}
-  .empty-blog h3{font-size:22px; margin-bottom:10px;}
+  .empty-blog-icon{width:68px; height:68px; margin:0 auto 22px; background:var(--lilac-pale); border-radius:20px; display:flex; align-items:center; justify-content:center;}
+  .empty-blog-icon svg{width:32px; height:32px; stroke:var(--lilac-deep);}
+  .empty-blog h3{font-size:23px; margin-bottom:10px;}
   .empty-blog p{color:var(--mist); font-size:14.5px;}
 
   /* ===== BLOG ===== */
   .blog-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
-  .blog-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; overflow:hidden;}
+  .blog-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; transition:.3s var(--ease);}
+  .blog-card:hover{box-shadow:var(--shadow-sm); transform:translateY(-3px);}
   .blog-card .thumb{aspect-ratio:16/10; background:var(--surface-2);}
-  .blog-card .body{padding:20px;}
-  .blog-card .tag{font-size:11px; font-weight:700; color:var(--leaf); text-transform:uppercase; letter-spacing:.04em;}
+  .blog-card .body{padding:22px;}
+  .blog-card .tag{font-size:11px; font-weight:700; color:var(--leaf); text-transform:uppercase; letter-spacing:.06em;}
   .blog-card h4{font-size:16px; margin:10px 0 8px;}
   .blog-card p{font-size:13.5px; color:var(--mist);}
+  @media(max-width:900px){ .blog-grid{grid-template-columns:1fr;} }
 
   /* ===== CONTACT ===== */
-  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:50px;}
-  .contact-card{background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:24px;}
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
+  .contact-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px;}
   .contact-card h4{font-size:14px; margin-bottom:10px; color:var(--sand-deep);}
   .contact-card p{font-size:14.5px; margin-bottom:4px;}
-  .contact-form .frow{margin-bottom:14px;}
-  .contact-form label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px;}
-  .contact-form input, .contact-form textarea{width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14px; background:var(--surface);}
-  .contact-form textarea{min-height:100px; resize:vertical;}
-  .contact-form button{width:100%; background:var(--lilac-deep); color:#fff; border:none; padding:14px; border-radius:10px; font-weight:700; font-size:14.5px;}
+  .contact-form .frow{margin-bottom:16px;}
+  .contact-form label{display:block; font-size:12.5px; font-weight:600; margin-bottom:7px;}
+  .contact-form input, .contact-form textarea{width:100%; padding:13px 15px; border-radius:11px; border:1px solid var(--line); font-family:inherit; font-size:15px; background:var(--surface); transition:.2s var(--ease);}
+  .contact-form input:focus, .contact-form textarea:focus{outline:none; border-color:var(--lilac-deep);}
+  .contact-form textarea{min-height:110px; resize:vertical;}
+  .contact-form button{width:100%; background:var(--ink); color:#fff; border:none; padding:15px; border-radius:100px; font-weight:600; font-size:14.5px; transition:.25s var(--ease);}
+  .contact-form button:hover{background:var(--lilac-deep);}
+  @media(max-width:900px){ .contact-grid{grid-template-columns:1fr; gap:32px;} }
 
   /* ===== FOOTER ===== */
-  footer{background:var(--ink); color:#EFE7DA; padding:60px 0 24px;}
-  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px;}
-  footer h4{font-size:13px; color:#C9BBA0; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
-  footer p, footer a{font-size:13.5px; color:#EFE7DA; text-decoration:none; opacity:.85; line-height:1.8;}
-  footer a:hover{opacity:1; text-decoration:underline;}
-  .footer-brand{font-family:'Fraunces',serif; font-size:22px; margin-bottom:12px; display:inline-block; background:#fff; padding:8px 14px; border-radius:10px;}
-  .footer-logo{height:36px; width:auto; display:block;}
-  .footer-brand span{color:var(--sand-deep);}
-  .social-row{display:flex; gap:10px; margin-top:16px;}
-  .social-row a{width:34px; height:34px; border:1px solid rgba(255,255,255,.2); border-radius:50%; display:flex; align-items:center; justify-content:center;}
-  .footer-bottom{border-top:1px solid rgba(255,255,255,.12); padding-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:12.5px; opacity:.7;}
-  .footer-bottom .links{display:flex; gap:18px;}
+  footer{background:var(--ink); color:#EFE7DA; padding:64px 0 28px;}
+  .footer-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:40px; margin-bottom:44px;}
+  footer h4{font-size:12.5px; color:#C9BBA0; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.06em;}
+  footer p, footer a{font-size:13.5px; color:#EFE7DA; text-decoration:none; opacity:.82; line-height:1.85;}
+  footer a:hover{opacity:1;}
+  .footer-brand{font-family:'Fraunces',serif; font-size:22px; margin-bottom:14px; display:inline-block; background:#fff; padding:9px 16px; border-radius:10px;}
+  .footer-logo{height:34px; width:auto; display:block;}
+  .social-row{display:flex; gap:10px; margin-top:18px;}
+  .social-row a{width:36px; height:36px; border:1px solid rgba(255,255,255,.18); border-radius:50%; display:flex; align-items:center; justify-content:center; transition:.25s var(--ease);}
+  .social-row a:hover{background:rgba(255,255,255,.1); opacity:1;}
+  .footer-bottom{border-top:1px solid rgba(255,255,255,.12); padding-top:22px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:12.5px; opacity:.65;}
+  .footer-bottom .links{display:flex; gap:20px; flex-wrap:wrap;}
   .footer-bottom a{opacity:1;}
+  @media(max-width:640px){ .footer-grid{grid-template-columns:1fr 1fr; gap:28px;} }
+  @media(max-width:420px){ .footer-grid{grid-template-columns:1fr;} }
 
   /* ===== NEWSLETTER POPUP ===== */
-  .newsletter-overlay{position:fixed; inset:0; background:rgba(42,32,24,.55); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  .newsletter-overlay{position:fixed; inset:0; background:rgba(30,24,38,.6); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px;}
   .newsletter-overlay.show{display:flex;}
-  .newsletter-modal{background:var(--bg); border-radius:20px; max-width:440px; width:100%; padding:36px; position:relative; text-align:center; box-shadow:var(--shadow);}
-  .newsletter-modal .close-x{position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:var(--mist);}
-  .newsletter-modal h3{font-size:22px; margin-bottom:26px; line-height:1.25;}
-  .newsletter-modal p{color:var(--mist); font-size:14px; margin-bottom:22px;}
+  .newsletter-modal{background:var(--bg); border-radius:22px; max-width:440px; width:100%; padding:38px 34px; position:relative; text-align:center; box-shadow:var(--shadow-lg);}
+  .newsletter-modal .close-x{position:absolute; top:16px; right:18px; background:none; border:none; font-size:20px; color:var(--mist); width:32px; height:32px;}
+  .newsletter-modal h3{font-size:23px; margin-bottom:26px; line-height:1.3;}
   .newsletter-form{display:flex; flex-direction:column; gap:14px;}
   .nl-email-row{display:flex; gap:8px;}
-  .newsletter-form input[type="email"]{flex:1; padding:13px 14px; border-radius:10px; border:1.5px solid var(--line); font-size:14px;}
-  .newsletter-form button[type="submit"]{background:var(--sand-deep); color:#fff; border:none; padding:13px 18px; border-radius:10px; font-weight:700; font-size:13.5px; white-space:nowrap;}
-  .nl-consent{display:flex; align-items:flex-start; gap:8px; text-align:left; font-size:11.5px; color:var(--mist); cursor:pointer; line-height:1.5;}
+  .newsletter-form input[type="email"]{flex:1; padding:14px 16px; border-radius:11px; border:1px solid var(--line); font-size:15px;}
+  .newsletter-form input[type="email"]:focus{outline:none; border-color:var(--lilac-deep);}
+  .newsletter-form button[type="submit"]{background:var(--ink); color:#fff; border:none; padding:14px 20px; border-radius:11px; font-weight:600; font-size:13.5px; white-space:nowrap; transition:.25s var(--ease);}
+  .newsletter-form button[type="submit"]:hover{background:var(--lilac-deep);}
+  .nl-consent{display:flex; align-items:flex-start; gap:8px; text-align:left; font-size:11.5px; color:var(--mist); cursor:pointer; line-height:1.55;}
   .nl-consent input{margin-top:2px; flex-shrink:0;}
   .nl-consent a{color:var(--lilac-deep); font-weight:600; text-decoration:none;}
-  .nl-consent a:hover{text-decoration:underline;}
-  .newsletter-note{font-size:11px; color:var(--mist); margin-top:12px;}
+  .newsletter-note{font-size:11px; color:var(--mist); margin-top:14px;}
 
-  /* ===== RESPONSIVE ===== */
-  @media(max-width:980px){
-    nav.links, .utility-left{display:none;}
-    .burger{display:block;}
-    .hero-grid{grid-template-columns:1fr;}
-    .staff-wrap{height:200px; order:-1;}
-    .hero h1{font-size:38px;}
-    .about-grid, .contact-grid{grid-template-columns:1fr;}
-    .instruments-grid{grid-template-columns:repeat(2,1fr);}
-    .blog-grid{grid-template-columns:1fr;}
-    .footer-grid{grid-template-columns:1fr 1fr;}
-  }
-  @media(max-width:560px){
-    .instruments-grid{grid-template-columns:repeat(2,1fr);}
-    .footer-grid{grid-template-columns:1fr;}
-    .hero{padding:50px 0 40px;}
-  }
-
-  .page-hero{padding:56px 0 44px; border-bottom:1px solid var(--line);}
-  .page-hero .eyebrow{display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:6px 14px; border-radius:20px; margin-bottom:16px;}
-  .page-hero h1{font-size:38px; font-weight:600; margin-bottom:12px;}
-  .page-hero p{color:var(--mist); font-size:16px; max-width:560px;}
-  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:16px;}
+  /* ===== PAGE HERO (внатрешни страници) ===== */
+  .page-hero{padding:64px 0 48px; border-bottom:1px solid var(--line);}
+  .page-hero .eyebrow{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:7px 15px; border-radius:100px; margin-bottom:18px;}
+  .page-hero h1{font-size:40px; font-weight:500; margin-bottom:14px;}
+  .page-hero p{color:var(--mist); font-size:16.5px; max-width:560px;}
+  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:18px;}
   .breadcrumb a{color:var(--lilac-deep); text-decoration:none; font-weight:600;}
   .nav-item.current > a{color:var(--lilac-deep); background:var(--lilac-pale); border-radius:8px;}
   .teaser-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-  @media(max-width:980px){ .teaser-grid{grid-template-columns:1fr;} }
+  @media(max-width:820px){ .teaser-grid{grid-template-columns:1fr;} .page-hero h1{font-size:30px;} .page-hero{padding:44px 0 36px;} }
 
+  /* ===== GENERAL MOBILE POLISH ===== */
+  @media(max-width:980px){
+    nav.links, .utility-left{display:none;}
+    .burger{display:flex;}
+    .nav-row{height:68px;}
+    .brand-logo{height:36px;}
+    .nav-row > .cta-primary{display:none;}
+  }
+  @media(max-width:480px){
+    .wrap{padding:0 18px;}
+  }
 
 </style>
 </head>
@@ -209,8 +253,6 @@
       <a href="tel:+38978309692">📱 +389 78 309 692</a>
     </div>
     <div class="utility-right">
-      <a href="/app" data-i18n="util_login">Најави се / Регистрација</a>
-      <a href="/app" class="cta-mini" data-i18n="util_buy">Купи час</a>
       <div class="lang-toggle">
         <button class="active" data-lang="mk">MK</button>
         <button data-lang="en">EN</button>
@@ -229,29 +271,57 @@
         <div class="dropdown">
           <a href="about.html" data-i18n="nav_about_us">За нас</a>
           <a href="projects.html" data-i18n="nav_projects">Проекти</a>
-          <a href="summer-school.html" data-i18n="nav_summer">Летна школа</a>
         </div>
       </div>
       <div class="nav-item">
         <span data-i18n="nav_instruments">Инструменти <span class="caret">▾</span></span>
         <div class="dropdown instruments">
-          <a href="/app/#packages/piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
-          <a href="/app/#packages/gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
-          <a href="/app/#packages/el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
-          <a href="/app/#packages/bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
-          <a href="/app/#packages/violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
-          <a href="/app/#packages/tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
-          <a href="/app/#packages/peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
-          <a href="/app/#packages/ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+          <a href="packages.html?instrument=piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
+          <a href="packages.html?instrument=gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
+          <a href="packages.html?instrument=el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
+          <a href="packages.html?instrument=bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
+          <a href="packages.html?instrument=violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
+          <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
+          <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
+          <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+          <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
         </div>
       </div>
       <div class="nav-item"><a href="blog.html" data-i18n="nav_blog">Блог</a></div>
       <div class="nav-item"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
     </nav>
-    <a href="/app" class="cta-primary" data-i18n="nav_cta">Купи/Најави се</a>
-    <button class="burger" id="burgerBtn">☰</button>
+    <a href="/app" class="cta-primary" data-i18n="nav_cta"><span class="cta-label">Купи/Најави се</span></a>
+    <button class="burger" id="burgerBtn" aria-label="Мени"><span></span><span></span><span></span></button>
   </div>
 </header>
+
+<div class="mobile-nav-overlay" id="mobileNavOverlay">
+  <a href="index.html" class="m-link" data-i18n="nav_home">Почетна</a>
+  <div class="m-group" id="mGroupAbout">
+    <a href="#" class="m-link m-toggle"><span data-i18n="nav_about">За нас</span> ▾</a>
+    <div class="m-sub">
+      <a href="about.html" data-i18n="nav_about_us">За нас</a>
+      <a href="projects.html" data-i18n="nav_projects">Проекти</a>
+    </div>
+  </div>
+  <div class="m-group" id="mGroupInstruments">
+    <a href="#" class="m-link m-toggle"><span data-i18n="nav_instruments">Инструменти</span> ▾</a>
+    <div class="m-sub">
+      <a href="packages.html?instrument=piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
+      <a href="packages.html?instrument=gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
+      <a href="packages.html?instrument=el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
+      <a href="packages.html?instrument=bas-gitara">🎸 <span data-i18n="inst_bass">Бас гитара</span></a>
+      <a href="packages.html?instrument=violina">🎻 <span data-i18n="inst_violin">Виолина</span></a>
+      <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
+      <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
+      <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
+      <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
+    </div>
+  </div>
+  <a href="blog.html" class="m-link" data-i18n="nav_blog">Блог</a>
+  <a href="contact.html" class="m-link" data-i18n="nav_contact">Контакт</a>
+  <a href="/app" class="cta-primary m-cta" data-i18n="nav_cta">Купи/Најави се</a>
+</div>
 
 <!-- ===== HERO SLIDER (вистински слики) ===== -->
 <section class="hero-slider" id="home">
@@ -288,35 +358,35 @@
       <p data-i18n="inst_sub">Кликни на инструмент за да ги видиш пакетите и цените.</p>
     </div>
     <div class="instruments-grid">
-      <a class="instrument-card" href="/app/#packages/piano">
+      <a class="instrument-card" href="packages.html?instrument=piano">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 6v8M11 6v8M15 6v8M19 6v8"/></svg></div>
         <h4 data-i18n="inst_piano">Пијано</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/gitara">
+      <a class="instrument-card" href="packages.html?instrument=gitara">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="9" cy="16" r="5"/><path d="M11 12 18 4M18 4l2 1-2 2"/></svg></div>
         <h4 data-i18n="inst_guitar">Гитара</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/el-gitara">
+      <a class="instrument-card" href="packages.html?instrument=el-gitara">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 15c-3 0-4-2-3-5s4-4 6-2M8 15l9-9M17 6l2 1-2 2"/></svg></div>
         <h4 data-i18n="inst_elguitar">Ел. гитара</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/bas-gitara">
+      <a class="instrument-card" href="packages.html?instrument=bas-gitara">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="9" cy="16" r="5"/><path d="M11 12 18 4M18 4l2 1-2 2"/></svg></div>
         <h4 data-i18n="inst_bass">Бас гитара</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/violina">
+      <a class="instrument-card" href="packages.html?instrument=violina">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 3c1 2 1 3 0 5-1 2-3 2-3 4 0 3 2 5 2 8 0 1.5 1.5 1.5 1.5 0M15 3c-1 2-1 3 0 5"/><circle cx="17" cy="19" r="2"/></svg></div>
         <h4 data-i18n="inst_violin">Виолина</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/tapani">
+      <a class="instrument-card" href="packages.html?instrument=tapani">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v9c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/></svg></div>
         <h4 data-i18n="inst_drums">Тапани</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/peenje">
+      <a class="instrument-card" href="packages.html?instrument=peenje">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></svg></div>
         <h4 data-i18n="inst_singing">Пеење</h4>
       </a>
-      <a class="instrument-card" href="/app/#packages/ran-razvoj">
+      <a class="instrument-card" href="packages.html?instrument=ran-razvoj">
         <div class="instrument-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z"/></svg></div>
         <h4 data-i18n="inst_early">Ран музички развој</h4>
       </a>
@@ -433,6 +503,7 @@
       form_name:'Име и презиме', form_email:'Email', form_msg:'Порака', form_submit:'Испрати порака',
       footer_tag:'Музичко училиште за деца и возрасни во Скопје.', footer_address:'Адреса', footer_hours:'Работно време', footer_contact:'Контакт',
       footer_rights:'Сите права задржани', footer_terms:'Услови за користење', footer_privacy:'Правила за приватност', footer_faq:'ЧПП',
+      pkg_breadcrumb:'Пакети', pkg_title:'Пакети', pkg_sub:'Погледни ги цените и пакетите. Кликни „Купи" за да продолжиш кон најава/регистрација.', pkg_loading:'Се вчитуваат пакетите...', pkg_empty:'Пакетите за овoj инструмент сè уште не се достапни. Контактирај нè за повеќе информации.',
       nl_title:'Претплатете се на нашата листа на е-пошта', nl_sub:'Пријави се за новости, настани и попусти од PianoForte.', nl_submit:'Пријави се', nl_note:'Можеш да се отпишеш во секое време.',
       nl_consent_pre:'Се согласувам со', nl_consent_post:' на PianoForte.', reg_terms_and:'и',
       login_terms_link:'Условите за користење', login_privacy_link:'Политиката на приватност',
@@ -480,6 +551,7 @@
       form_name:'Full name', form_email:'Email', form_msg:'Message', form_submit:'Send message',
       footer_tag:'Music school for children and adults in Skopje.', footer_address:'Address', footer_hours:'Working hours', footer_contact:'Contact',
       footer_rights:'All rights reserved', footer_terms:'Terms of Use', footer_privacy:'Privacy Policy', footer_faq:'FAQ',
+      pkg_breadcrumb:'Packages', pkg_title:'Packages', pkg_sub:'See the packages and pricing. Click "Buy" to continue to sign in / registration.', pkg_loading:'Loading packages...', pkg_empty:'Packages for this instrument aren\u2019t available yet. Contact us for more information.',
       nl_title:'Subscribe to our email list', nl_sub:'Sign up for news, events, and discounts from PianoForte.', nl_submit:'Subscribe', nl_note:'You can unsubscribe anytime.',
       nl_consent_pre:'I agree to the', nl_consent_post:' of PianoForte.', reg_terms_and:'and',
       login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
@@ -513,13 +585,29 @@
   });
   applyLanguage();
 
-  // mobile burger -> simple toggle of nav links visibility
+  // mobile burger -> целосен overlay мени со анимирана икона
   const burger = document.getElementById('burgerBtn');
-  const links = document.querySelector('nav.links');
-  burger.addEventListener('click', ()=>{
-    const isOpen = links.style.display === 'flex';
-    links.style.cssText = isOpen ? '' : 'display:flex; flex-direction:column; position:absolute; top:76px; left:0; right:0; background:var(--surface); padding:16px 28px; border-bottom:1px solid var(--line);';
-  });
+  const mobileOverlay = document.getElementById('mobileNavOverlay');
+  if(burger && mobileOverlay){
+    burger.addEventListener('click', ()=>{
+      const isOpen = mobileOverlay.classList.toggle('open');
+      burger.classList.toggle('open', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+    mobileOverlay.querySelectorAll('.m-link:not(.m-toggle)').forEach(link=>{
+      link.addEventListener('click', ()=>{
+        mobileOverlay.classList.remove('open');
+        burger.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+    mobileOverlay.querySelectorAll('.m-toggle').forEach(toggle=>{
+      toggle.addEventListener('click', e=>{
+        e.preventDefault();
+        toggle.closest('.m-group').classList.toggle('open');
+      });
+    });
+  }
 
   // hero слајдер (само на почетна страница — ако елементите постојат)
   const slides = document.querySelectorAll('.hero-slider .slide');
@@ -591,8 +679,101 @@
       (currentLang==='mk' ? 'Ќе те контактираме наскоро.' : 'We\'ll get back to you soon.') + '</p></div>';
   });
 
+  // ===== ПРЕГЛЕД НА ПАКЕТИ (packages.html?instrument=X) — јавно, без најава =====
+  const pkgContentEl = document.getElementById('pkgContent');
+  if(pkgContentEl){
+    const INSTRUMENT_LABELS = {
+      piano:{icon:'🎹', mk:'Пијано', en:'Piano'},
+      gitara:{icon:'🎸', mk:'Гитара', en:'Guitar'},
+      'el-gitara':{icon:'🎸', mk:'Електрична гитара', en:'Electric guitar'},
+      'bas-gitara':{icon:'🎸', mk:'Бас гитара', en:'Bass guitar'},
+      violina:{icon:'🎻', mk:'Виолина', en:'Violin'},
+      tapani:{icon:'🥁', mk:'Тапани', en:'Drums'},
+      peenje:{icon:'🎤', mk:'Пеење', en:'Singing'},
+      'ran-razvoj':{icon:'🌱', mk:'Ран музички развој', en:'Early musical development'}
+    };
+    const HALF_DISCOUNT = 0.03, FULL_DISCOUNT = 0.05;
+    const params = new URLSearchParams(window.location.search);
+    const instrument = params.get('instrument') || 'piano';
+    const instInfo = INSTRUMENT_LABELS[instrument] || {icon:'🎵', mk:instrument, en:instrument};
+
+    function instLabel(){ return currentLang === 'mk' ? instInfo.mk : instInfo.en; }
+    function updatePkgTitles(){
+      const t1 = document.getElementById('pkgPageTitle');
+      const t2 = document.getElementById('pkgBreadcrumbInst');
+      if(t1) t1.textContent = instInfo.icon + ' ' + instLabel();
+      if(t2) t2.textContent = instLabel();
+    }
+    updatePkgTitles();
+    document.querySelector('.lang-toggle').addEventListener('click', updatePkgTitles);
+
+    const buyUrl = '/app/#packages/' + instrument;
+    let descCounter = 0;
+    function pkgCard(name, price, discount, desc){
+      const id = 'pdesc-' + (descCounter++);
+      return `<div class="pkg-card">
+        <div class="pkg-card-name">${name}</div>
+        <div class="pkg-card-price">${Number(price).toLocaleString('mk-MK')} ден.</div>
+        <div class="pkg-card-discount">${discount || '\u00A0'}</div>
+        <button class="pkg-desc-btn" data-target="${id}">ℹ️ ${currentLang==='mk' ? 'Опис на пакет' : 'Package details'}</button>
+        <div class="pkg-card-desc" id="${id}">${desc}</div>
+        <a class="pkg-buy-btn" href="${buyUrl}">${currentLang==='mk' ? 'Купи' : 'Buy'}</a>
+      </div>`;
+    }
+
+    fetch('/packages?instrument=' + encodeURIComponent(instrument))
+      .then(r => r.json())
+      .then(packages => {
+        document.getElementById('pkgLoading').style.display = 'none';
+        if(!packages || packages.length === 0){
+          document.getElementById('pkgEmpty').style.display = 'block';
+          return;
+        }
+        const trial = packages.find(p => p.package_type === 'trial');
+        const annual = packages.find(p => p.package_type === 'annual');
+        const individual = packages.find(p => p.package_type === 'individual');
+        let html = '';
+
+        if(trial){
+          html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Пробен пакет' : 'Trial package'}</h3>
+            <div class="pkg-row-wrap">${pkgCard(trial.name, trial.price_mkd, null, trial.description)}</div></div>`;
+        }
+        if(annual){
+          const monthly = Number(annual.price_mkd);
+          const annualTotal = monthly * 8;
+          const halfPrice = Math.round((annualTotal/2) * (1 - HALF_DISCOUNT));
+          const fullPrice = Math.round(annualTotal * (1 - FULL_DISCOUNT));
+          html += `<div class="pkg-section"><h3>${annual.name} <span class="pkg-annual-total">— ${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
+            <div class="pkg-row-wrap">
+              ${pkgCard(currentLang==='mk' ? 'Рата (1 од 8)' : 'Installment (1 of 8)', monthly, null, annual.description)}
+              ${pkgCard(currentLang==='mk' ? 'Полугодишен пакет' : 'Half-year package', halfPrice, '−3%', annual.description)}
+              ${pkgCard(currentLang==='mk' ? 'Целогодишен пакет' : 'Full-year package', fullPrice, '−5%', annual.description)}
+            </div></div>`;
+        }
+        if(individual){
+          html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Индивидуален час' : 'Individual lesson'}</h3>
+            <div class="pkg-row-wrap">${pkgCard(individual.name, individual.price_mkd, null, individual.description)}</div></div>`;
+        }
+
+        pkgContentEl.innerHTML = html;
+        pkgContentEl.style.display = 'block';
+
+        pkgContentEl.querySelectorAll('.pkg-desc-btn').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const target = document.getElementById(btn.dataset.target);
+            target.style.display = target.style.display === 'block' ? 'none' : 'block';
+          });
+        });
+      })
+      .catch(()=>{
+        document.getElementById('pkgLoading').style.display = 'none';
+        document.getElementById('pkgEmpty').style.display = 'block';
+      });
+  }
+
 })();
 
 </script>
 </body>
 </html>
+
