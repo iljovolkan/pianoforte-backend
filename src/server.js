@@ -25,6 +25,18 @@ const app = express();
 // што го прави rate limiting-от неточен/неактивен.
 app.set('trust proxy', 1);
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // потребно за cPay callback (испраќа form-urlencoded)
+
+// /payments рутите се РЕГИСТРИРАНИ ПРЕД CORS — cPay го повикува
+// /payments/cpay-ok и /payments/cpay-fail директно од cpay.com.mk
+// (redirect на browser-от НА КОРИСНИКОТ и/или server-to-server push),
+// што CORS проверката инаку ja блокираше (cpay.com.mk не е во ALLOWED_ORIGINS
+// и никогаш не треба да биде, бидejќи тoj домен не е наш frontend).
+// /payments/init-* рутите не страдаат од ова бидejќи и онака се повикуваат
+// од истиот домен (app.pianoforte.edu.mk), па CORS не им е ниту потребен.
+app.use('/payments', paymentsRoutes);
+
 // CORS — дозволени се само нашите вистински домени (не "било кој сајт")
 const ALLOWED_ORIGINS = [
   'https://app.pianoforte.edu.mk',
@@ -41,8 +53,6 @@ app.use(cors({
     }
   }
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // потребно за cPay callback (испраќа form-urlencoded)
 
 // Маркетинг страниците (Почетна/За нас/Инструменти/Блог/Контакт) — на root
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -67,7 +77,6 @@ app.use('/installments', installmentsRoutes);
 app.use('/individual-bookings', individualBookingsRoutes);
 app.use('/children', childrenRoutes);
 app.use('/finance', financeRoutes);
-app.use('/payments', paymentsRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
