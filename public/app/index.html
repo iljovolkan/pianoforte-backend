@@ -1046,12 +1046,9 @@
     </div>
     <div id="planSummary" style="font-size:12.5px; color:var(--mist); margin:8px 0 18px;"></div>
 
-    <div class="card-only-badge">💳 Само онлајн плаќање со картичка</div>
-    <div class="form-row"><label>Име на картичка</label><input type="text" id="cardName" placeholder="како на картичката"></div>
-    <div class="form-row"><label>Број на картичка</label><input type="text" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19"></div>
-    <div class="pm-row2">
-      <div class="form-row"><label>Истек</label><input type="text" id="cardExpiry" placeholder="MM/ГГ" maxlength="5"></div>
-      <div class="form-row"><label>CVV</label><input type="text" id="cardCvv" placeholder="123" maxlength="3"></div>
+    <div class="card-only-badge">💳 Плаќање со картичка — безбедно преку cPay</div>
+    <div style="background:var(--surface-2); border-radius:10px; padding:14px; font-size:12.5px; color:var(--mist); margin-bottom:16px;">
+      По кликот на „Плати" ќе бидеш пренасочен кон cPay (сигурна, банкарска страница) каде ги внесуваш податоците за картичка. Ние никогаш не ги гледаме и не ги чуваме твоите податоци за картичка.
     </div>
     <label id="payTermsLabel" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
       <input type="checkbox" id="payTermsCheckbox" style="margin-top:2px;">
@@ -1916,6 +1913,26 @@
       renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage();
     }
     handleDeepLink();
+    handlePaymentReturn();
+  }
+
+  // Browser-от се враќа овде откако cPay го обработил плаќањето (redirect
+  // кон /app/#payment-success, #payment-failed, или #payment-error).
+  async function handlePaymentReturn(){
+    const hash = window.location.hash;
+    if(!['#payment-success', '#payment-failed', '#payment-error'].includes(hash)) return;
+    history.replaceState(null, '', window.location.pathname);
+
+    if(hash === '#payment-success'){
+      await Promise.all([loadGroups(), loadSubscriptions(), loadInstallments(), loadIndividualBookings()]);
+      renderBillingPage(); renderSchedulePage();
+      showPage('billing');
+      alert('Плаќањето е успешно! Испративме потврда на твojot email.');
+    } else if(hash === '#payment-failed'){
+      alert('Плаќањето не беше завршено (откажано или одбиено). Пробај повторно.');
+    } else {
+      alert('Настана грешка при обработка на плаќањето. Ако парите се симнати од твojata сметка, контактирај нè на info@pianoforte.edu.mk.');
+    }
   }
 
   // Ако URL-от е #packages/<instrument> (пр. дојден од маркетинг сајтот),
@@ -3543,8 +3560,6 @@
   });
 
   function openPaymentModal(){
-    document.getElementById('cardName').value=''; document.getElementById('cardNumber').value='';
-    document.getElementById('cardExpiry').value=''; document.getElementById('cardCvv').value='';
     document.getElementById('payTermsCheckbox').checked = false;
 
     const childRow = document.getElementById('payChildSelectorRow');
@@ -3596,15 +3611,10 @@
   });
 
   document.getElementById('payConfirmBtn').addEventListener('click', async ()=>{
-    const name = document.getElementById('cardName').value.trim();
-    const num = document.getElementById('cardNumber').value.trim();
-    const exp = document.getElementById('cardExpiry').value.trim();
-    const cvv = document.getElementById('cardCvv').value.trim();
-    if(!name || !num || !exp || !cvv){
-      document.getElementById('paymentSub').style.color = 'var(--wine)';
-      setTimeout(()=>{ document.getElementById('paymentSub').style.color=''; }, 900);
-      return;
-    }
+    // Забелешка: card полињата (број/датум/CVV) веќе не се потребни овде —
+    // вистинските податоци за картичка сега се внесуваат на cPay-овата
+    // сопствена, безбедна страница (не кај нас). Го задржуваме checkbox-от
+    // за Условите, но не веќе бараме card полиња.
     if(!document.getElementById('payTermsCheckbox').checked){
       const label = document.getElementById('payTermsLabel');
       label.style.color = 'var(--wine)';
@@ -3612,12 +3622,26 @@
       return;
     }
     const payBtn = document.getElementById('payConfirmBtn');
-    payBtn.disabled = true; payBtn.textContent = 'Се обработува...';
+    payBtn.disabled = true; payBtn.textContent = 'Те носиме кон cPay...';
+
+    // ja поднесуваме формата кон cPay (browser-от целосно ja напушта страницава)
+    function redirectToCpay(initResult){
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = initResult.cpay_url;
+      Object.entries(initResult.fields).forEach(([key, value])=>{
+        if(value === null || value === undefined) return;
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = key; input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    }
 
     try{
       if(pendingIndividualBooking){
-        const p = packages.find(x=>x.id===chosenPackage);
-        await authApiCall('/individual-bookings', {
+        const initResult = await authApiCall('/payments/init-individual-booking', {
           method:'POST',
           body: JSON.stringify({
             package_id: chosenPackage,
@@ -3625,49 +3649,24 @@
             instrument: pendingIndividualBooking.instrument,
             booking_date: pendingIndividualBooking.booking_date,
             start_time: pendingIndividualBooking.start_time,
-            payment_method_id: 'SIMULATED-' + Date.now(),
             child_id: activeChildId
           })
         });
-
-        overlay.classList.remove('show');
-        document.getElementById('pkgConfirmTitle').textContent = `Часот е закажан — ${p.name}`;
-        document.getElementById('pkgConfirmSub').innerHTML = `Датум: <strong>${pendingIndividualBooking.booking_date}</strong> во <strong>${pendingIndividualBooking.start_time}</strong>.<br><br>📧 Испративме потврда на твojot email.`;
-        document.getElementById('pkgConfirm').classList.add('show');
-        document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
-        pendingIndividualBooking = null;
+        redirectToCpay(initResult);
         return;
       }
 
-      // "payment_method_id" тука е само симулирана референца — вистинскиот Stripe/CPay
-      // token ќе дојде од нивна JS библиотека кога ќе се интегрира платежниот процесор.
-      const result = await authApiCall('/purchases', {
+      const initResult = await authApiCall('/payments/init-subscription', {
         method:'POST',
         body: JSON.stringify({
           package_id: chosenPackage,
           group_id: pendingBooking.groupId,
-          payment_method_id: 'SIMULATED-' + Date.now(),
           payment_plan: selectedPlan,
           child_id: activeChildId
         })
       });
-
-      await loadGroups();
-      await loadSubscriptions();
-      await loadInstallments();
-
-      const g = pendingBooking.groupId ? groups.find(x=>x.id===pendingBooking.groupId) : null;
-      const p = packages.find(x=>x.id===chosenPackage);
-      const planLabel = {full:'целосно, во 1 уплата', two:'на 2 полугодишни рати', eight:'на 8 месечни рати', trial:'еднократно (пробен пакет)'}[selectedPlan];
-
-      overlay.classList.remove('show');
-      document.getElementById('pkgConfirmTitle').textContent = `Плаќањето е успешно — ${p.name}`;
-      if(g){
-        document.getElementById('pkgConfirmSub').innerHTML = `Резервирано место во ${g.name}, термини <strong>${slotsLabel(g.id)}</strong> — секоја недела, низ целата учебна година. Избра да плаќаш <strong>${planLabel}</strong>.${result.next_due_date ? ` Следна рата доспева на ${fmtDate(result.next_due_date)}.` : ' Целиот пакет е платен.'}<br><br>📧 Испративме потврда за уплатата на твojot email.`;
-      } else {
-        document.getElementById('pkgConfirmSub').innerHTML = `Уплатата е примена (${planLabel}). Сега треба да избереш термин — оди во <strong>Наплата</strong> и кликни „Избери термин" до овoj пакет. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.<br><br>📧 Испративме потврда за уплатата на твojot email.`;
-      }
-      document.getElementById('pkgConfirm').classList.add('show');
+      redirectToCpay(initResult);
+      return;
       document.getElementById('pkgConfirm').scrollIntoView({behavior:'smooth', block:'center'});
 
       renderBookingStep();
