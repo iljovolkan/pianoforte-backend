@@ -98,6 +98,25 @@
   .page-head p{color:var(--mist); font-size:14px; margin-top:6px; max-width:560px;}
   .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px;}
   .admin-stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;}
+
+  /* ===== ФИНАНСИСКИ ТАБЕЛИ (прецизни, со колони) ===== */
+  .fin-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px;}
+  .fin-table{width:100%; border-collapse:collapse; font-size:13px; min-width:560px;}
+  .fin-table thead th{background:var(--surface-2); color:var(--mist); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; text-align:left; padding:11px 14px; white-space:nowrap; border-bottom:1px solid var(--line);}
+  .fin-table tbody td{padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  .fin-table tbody tr:last-child td{border-bottom:none;}
+  .fin-table tbody tr:hover{background:var(--surface-2);}
+  .fin-table .num{font-weight:700; color:var(--sand-deep); white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .fin-table .num.neg{color:var(--wine);}
+  .fin-table .tag-cat{display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px;}
+  .fin-table .tag-cat.marketing{background:var(--lilac-pale); color:var(--lilac-deep);}
+  .fin-table .tag-cat.trosok{background:var(--wine-pale); color:var(--wine);}
+  .fin-table .del-btn{background:none; border:1px solid var(--line); color:var(--wine); font-size:11px; padding:5px 11px; border-radius:20px; cursor:pointer; white-space:nowrap;}
+  .fin-table .del-btn:hover{border-color:var(--wine); background:var(--wine-pale);}
+  .fin-table-empty{padding:24px; text-align:center; color:var(--mist); font-size:13px;}
+  .fin-section-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .fin-section-title h3{font-size:15px; margin:0;}
+  .fin-section-total{font-size:13px; font-weight:700; color:var(--sand-deep);}
   .admin-stat-card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
   .admin-stat-card .num{font-family:'Fraunces',serif; font-size:26px; font-weight:600; color:var(--lilac-deep); line-height:1.1;}
   .admin-stat-card .num.warn{color:#B3555F;}
@@ -825,7 +844,7 @@
       <div class="page-head">
         <span class="eyebrow">Финансии</span>
         <h2>Финансиски преглед</h2>
-        <p>Приход, плати, трошоци и остаток — по месец.</p>
+        <p>Приход, плати, трошоци и остаток — прецизен табеларен приказ, сè на едно место.</p>
       </div>
 
       <div class="card" style="margin-bottom:20px;">
@@ -833,18 +852,20 @@
         <input type="month" id="financeMonth" class="login-select" style="max-width:220px; margin-bottom:0;">
       </div>
 
-      <div id="financeAccessCard" style="display:none;" class="card">
+      <div id="financeAccessCard" style="display:none;" class="card" style="margin-bottom:20px;">
         <h3 style="font-size:15px; margin-bottom:6px;">Персонал со финансиски пристап</h3>
         <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Максимум 3 членови од персоналот (покрај admin) можат да имаат пристап до овoj дел.</p>
         <div id="financeStaffList"></div>
       </div>
 
+      <!-- РЕЗИМЕ — приход/плати/трошоци/остаток, сите заедно -->
       <div class="admin-stats-grid" id="financeSummaryGrid" style="margin-top:20px;"></div>
 
+      <!-- ПЛАТИ И ХОНОРАРИ -->
       <div class="card" style="margin-top:20px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Плати и хонорари по професор</h3>
-        <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px;">
-          <div style="flex:1;">
+        <div class="fin-section-title"><h3>Плати и хонорари по професор</h3><span class="fin-section-total" id="financeSalaryTotal"></span></div>
+        <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:160px;">
             <label>Професор</label>
             <select id="financeSalaryProf" class="login-select" style="margin-bottom:0;"></select>
           </div>
@@ -854,11 +875,17 @@
           </div>
           <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;">Зачувај</button>
         </div>
-        <div id="financeSalaryList"></div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Професор</th><th>Инструмент</th><th>Износ</th><th>Белешка</th><th></th></tr></thead>
+            <tbody id="financeSalaryTbody"></tbody>
+          </table>
+        </div>
       </div>
 
+      <!-- ТРОШОЦИ И МАРКЕТИНГ -->
       <div class="card" style="margin-top:20px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Трошоци и маркетинг</h3>
+        <div class="fin-section-title"><h3>Трошоци и маркетинг</h3><span class="fin-section-total" id="financeExpenseTotal"></span></div>
         <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
           <div style="flex:2; min-width:160px;">
             <label>Опис</label>
@@ -881,17 +908,34 @@
           </div>
           <button class="send-btn" id="financeExpenseSaveBtn" style="width:auto; padding:0 20px;">Додади</button>
         </div>
-        <div id="financeExpenseList"></div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Опис</th><th>Категорија</th><th>Датум</th><th>Износ</th><th></th></tr></thead>
+            <tbody id="financeExpenseTbody"></tbody>
+          </table>
+        </div>
       </div>
 
+      <!-- НЕПЛАТЕНИ ШКОЛАРИНИ -->
       <div class="card" style="margin-top:20px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Неплатени школарини</h3>
-        <div id="financeUnpaidList"></div>
+        <div class="fin-section-title"><h3>Неплатени школарини</h3><span class="fin-section-total" id="financeUnpaidTotal"></span></div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Ученик</th><th>Родител</th><th>Пакет</th><th>Рата</th><th>Доспева</th><th>Износ</th></tr></thead>
+            <tbody id="financeUnpaidTbody"></tbody>
+          </table>
+        </div>
       </div>
 
+      <!-- ПРИХОД ПО ПРОФЕСОР -->
       <div class="card" style="margin-top:20px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Приход по професор</h3>
-        <div id="financeProfRevenueList"></div>
+        <div class="fin-section-title"><h3>Приход по професор</h3><span class="fin-section-total" id="financeRevenueTotal"></span></div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Професор</th><th>Инструмент</th><th>Ученици</th><th>Вкупен приход</th></tr></thead>
+            <tbody id="financeRevenueTbody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
     <section class="page" id="page-billing">
@@ -2855,17 +2899,21 @@
       sel.innerHTML = profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
 
       const salaries = await authApiCall('/finance/salaries?month=' + month);
-      const salBox = document.getElementById('financeSalaryList');
-      salBox.innerHTML = salaries.length === 0
-        ? '<div class="empty-state">Сè уште нема внесени плати за овoj месец.</div>'
-        : salaries.map(s => `
-          <div class="sent-item">
-            <div class="sent-icon">${s.instrument ? instrumentInfo(s.instrument).icon : '🎵'}</div>
-            <div class="sent-meta"><div class="t">${escapeHtml(s.professor_name)}</div><div class="sub">${fmtMoney(s.amount)}</div></div>
-            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-sal-id="${s.id}">Избриши</button>
-          </div>
-        `).join('');
-      salBox.querySelectorAll('button[data-sal-id]').forEach(btn=>{
+      const salBody = document.getElementById('financeSalaryTbody');
+      let salTotal = 0;
+      salBody.innerHTML = salaries.length === 0
+        ? `<tr><td colspan="5" class="fin-table-empty">Сè уште нема внесени плати за овoj месец.</td></tr>`
+        : salaries.map(s => { salTotal += Number(s.amount);
+          return `<tr>
+            <td>${escapeHtml(s.professor_name)}</td>
+            <td>${s.instrument ? instrumentLabel(s.instrument) : '—'}</td>
+            <td class="num">${fmtMoney(s.amount)}</td>
+            <td>${escapeHtml(s.notes || '—')}</td>
+            <td><button class="del-btn" data-sal-id="${s.id}">Избриши</button></td>
+          </tr>`;
+        }).join('');
+      document.getElementById('financeSalaryTotal').textContent = salaries.length ? 'Вкупно: ' + fmtMoney(salTotal) : '';
+      salBody.querySelectorAll('button[data-sal-id]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           await authApiCall('/finance/salaries/' + btn.dataset.salId, { method:'DELETE' });
           renderFinancePage();
@@ -2876,17 +2924,21 @@
     // --- трошоци и маркетинг ---
     try{
       const expenses = await authApiCall('/finance/expenses?month=' + month);
-      const expBox = document.getElementById('financeExpenseList');
-      expBox.innerHTML = expenses.length === 0
-        ? '<div class="empty-state">Сè уште нема внесени трошоци за овoj месец.</div>'
-        : expenses.map(e => `
-          <div class="sent-item">
-            <div class="sent-icon">${e.category==='marketing' ? '📣' : '🧾'}</div>
-            <div class="sent-meta"><div class="t">${escapeHtml(e.description)}</div><div class="sub">${e.category==='marketing'?'Маркетинг':'Трошок'} · ${new Date(e.expense_date).toLocaleDateString('mk-MK')} · ${fmtMoney(e.amount)}</div></div>
-            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-exp-id="${e.id}">Избриши</button>
-          </div>
-        `).join('');
-      expBox.querySelectorAll('button[data-exp-id]').forEach(btn=>{
+      const expBody = document.getElementById('financeExpenseTbody');
+      let expTotal = 0;
+      expBody.innerHTML = expenses.length === 0
+        ? `<tr><td colspan="5" class="fin-table-empty">Сè уште нема внесени трошоци за овoj месец.</td></tr>`
+        : expenses.map(e => { expTotal += Number(e.amount);
+          return `<tr>
+            <td>${escapeHtml(e.description)}</td>
+            <td><span class="tag-cat ${e.category}">${e.category==='marketing'?'Маркетинг':'Трошок'}</span></td>
+            <td>${new Date(e.expense_date).toLocaleDateString('mk-MK')}</td>
+            <td class="num">${fmtMoney(e.amount)}</td>
+            <td><button class="del-btn" data-exp-id="${e.id}">Избриши</button></td>
+          </tr>`;
+        }).join('');
+      document.getElementById('financeExpenseTotal').textContent = expenses.length ? 'Вкупно: ' + fmtMoney(expTotal) : '';
+      expBody.querySelectorAll('button[data-exp-id]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           await authApiCall('/finance/expenses/' + btn.dataset.expId, { method:'DELETE' });
           renderFinancePage();
@@ -2897,32 +2949,39 @@
     // --- неплатени школарини ---
     try{
       const unpaid = await authApiCall('/finance/unpaid?month=' + month);
-      const unpaidBox = document.getElementById('financeUnpaidList');
-      unpaidBox.innerHTML = unpaid.length === 0
-        ? '<div class="empty-state">Нема неплатени школарини за овoj месец. 🎉</div>'
-        : unpaid.map(u => `
-          <div class="sent-item">
-            <div class="sent-icon">⏳</div>
-            <div class="sent-meta">
-              <div class="t">${escapeHtml(u.student_name)} · ${fmtMoney(u.amount)}</div>
-              <div class="sub">Родител: ${escapeHtml(u.parent_email)} · ${escapeHtml(u.package_name)} · рата ${u.installment_number}/${u.total_installments} · доспева ${new Date(u.due_date).toLocaleDateString('mk-MK')}</div>
-            </div>
-          </div>
-        `).join('');
+      const unpaidBody = document.getElementById('financeUnpaidTbody');
+      let unpaidTotal = 0;
+      unpaidBody.innerHTML = unpaid.length === 0
+        ? `<tr><td colspan="6" class="fin-table-empty">Нема неплатени школарини за овoj месец. 🎉</td></tr>`
+        : unpaid.map(u => { unpaidTotal += Number(u.amount);
+          return `<tr>
+            <td>${escapeHtml(u.student_name)}</td>
+            <td>${escapeHtml(u.parent_email)}</td>
+            <td>${escapeHtml(u.package_name)}</td>
+            <td>${u.installment_number}/${u.total_installments}</td>
+            <td>${new Date(u.due_date).toLocaleDateString('mk-MK')}</td>
+            <td class="num neg">${fmtMoney(u.amount)}</td>
+          </tr>`;
+        }).join('');
+      document.getElementById('financeUnpaidTotal').textContent = unpaid.length ? 'Вкупно неплатено: ' + fmtMoney(unpaidTotal) : '';
     } catch(err){ console.error(err); }
 
     // --- приход по професор ---
     try{
       const revenue = await authApiCall('/finance/professor-revenue');
-      const revBox = document.getElementById('financeProfRevenueList');
-      revBox.innerHTML = revenue.length === 0
-        ? '<div class="empty-state">Сè уште нема податоци.</div>'
-        : revenue.map(r => `
-          <div class="sent-item">
-            <div class="sent-icon">${r.instrument ? instrumentInfo(r.instrument).icon : '🎵'}</div>
-            <div class="sent-meta"><div class="t">${escapeHtml(r.professor_name)}</div><div class="sub">${r.student_count} ученици · вкупен приход ${fmtMoney(r.total_revenue)}</div></div>
-          </div>
-        `).join('');
+      const revBody = document.getElementById('financeRevenueTbody');
+      let revTotal = 0;
+      revBody.innerHTML = revenue.length === 0
+        ? `<tr><td colspan="4" class="fin-table-empty">Сè уште нема податоци.</td></tr>`
+        : revenue.map(r => { revTotal += Number(r.total_revenue);
+          return `<tr>
+            <td>${escapeHtml(r.professor_name)}</td>
+            <td>${r.instrument ? instrumentLabel(r.instrument) : '—'}</td>
+            <td>${r.student_count}</td>
+            <td class="num">${fmtMoney(r.total_revenue)}</td>
+          </tr>`;
+        }).join('');
+      document.getElementById('financeRevenueTotal').textContent = revenue.length ? 'Вкупно: ' + fmtMoney(revTotal) : '';
     } catch(err){ console.error(err); }
   }
 
