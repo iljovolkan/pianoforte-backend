@@ -15,6 +15,7 @@ const installmentsRoutes = require('./routes/installments');
 const individualBookingsRoutes = require('./routes/individual-bookings');
 const childrenRoutes = require('./routes/children');
 const financeRoutes = require('./routes/finance');
+const paymentsRoutes = require('./routes/payments');
 const { startCronJobs } = require('./cron');
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(cors({
   }
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // потребно за cPay callback (испраќа form-urlencoded)
 
 // Маркетинг страниците (Почетна/За нас/Инструменти/Блог/Контакт) — на root
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -65,6 +67,7 @@ app.use('/installments', installmentsRoutes);
 app.use('/individual-bookings', individualBookingsRoutes);
 app.use('/children', childrenRoutes);
 app.use('/finance', financeRoutes);
+app.use('/payments', paymentsRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
