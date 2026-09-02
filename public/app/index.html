@@ -2265,6 +2265,15 @@
       <div class="form-row"><select id="newGroupLevel" class="login-select" style="margin-bottom:0;">
         ${LEVELS.filter(l=>l.id!=='all').map(l=>`<option value="${l.id}">${l.label}</option>`).join('')}
       </select></div>
+      <div style="height:8px;"></div>
+      <div class="form-row">
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Капацитет (макс. деца во групата)</label>
+        <select id="newGroupCapacity" class="login-select" style="margin-bottom:0;">
+          <option value="4">4 деца</option>
+          <option value="5">5 деца</option>
+          <option value="6" selected>6 деца</option>
+        </select>
+      </div>
       <button class="send-btn" id="newGroupBtn" style="margin-top:6px;">Создади група</button>
     `;
     wrap.appendChild(createCard);
@@ -2273,8 +2282,9 @@
       if(!name){ alert('Внеси име на групата.'); return; }
       const age_range = document.getElementById('newGroupAge').value;
       const level = document.getElementById('newGroupLevel').value;
+      const capacity = Number(document.getElementById('newGroupCapacity').value);
       try{
-        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity:6, age_range, level }) });
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level }) });
         await loadGroups();
         renderSchedulePage();
       } catch(err){ alert('Грешка: ' + err.message); }
@@ -2288,7 +2298,7 @@
       const card = document.createElement('div'); card.className='group-ov-card';
       const needsSlots = slots.length < 2;
       card.innerHTML = `
-        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span></div>
+        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span><button class="del-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Избриши група" style="background:none; border:1px solid var(--wine-pale); color:var(--wine); font-size:11px; padding:4px 9px; border-radius:20px; cursor:pointer; margin-left:6px;">✕</button></div>
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
           <span class="tag age">${ageLabel(g.age_range)}</span>
@@ -2317,6 +2327,21 @@
         </div>` : ''}
       `;
       wrap.appendChild(card);
+
+      // --- бришење група (по грешка формирана) ---
+      const delGroupBtn = card.querySelector('.del-group-btn');
+      if(delGroupBtn){
+        delGroupBtn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const gName = delGroupBtn.dataset.groupName;
+          if(!confirm(`Дали сигурно сакаш да ja избришеш групата „${gName}"? Ова не може да се врати.`)) return;
+          try{
+            await authApiCall('/groups/' + delGroupBtn.dataset.groupId, { method:'DELETE' });
+            await loadGroups();
+            renderSchedulePage();
+          } catch(err){ alert('Грешка: ' + err.message); }
+        });
+      }
 
       // --- рачно додавање ученик во групата ---
       const toggleBtn = card.querySelector('.add-student-toggle');
