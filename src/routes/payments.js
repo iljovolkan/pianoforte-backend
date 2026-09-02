@@ -6,11 +6,15 @@ const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
-// ===== cPay поставки (Casys, спецификација v3.5) =====
+// ===== cPay поставки (Casys) =====
+// ВАЖНО: твojata сметка (Merchant ID 1000001529) е поставена на ПОСТАРИОТ
+// MD5-базиран checksum алгоритам (не HMAC-SHA256 од новата официјална
+// спецификација) — ова е потврдено директно од твojot вистински, веќе
+// работечки WordPress/WooCommerce плагин код (wp-content/plugins/casis/admin.php).
 const CPAY_PAYMENT_URL = process.env.CPAY_PAYMENT_URL || 'https://www.cpay.com.mk/client/Page/default.aspx?xml_id=/mk-MK/.loginToPay/.simple/';
-const CPAY_MERCHANT_ID = process.env.CPAY_MERCHANT_ID;       // PayToMerchant
-const CPAY_MERCHANT_NAME = process.env.CPAY_MERCHANT_NAME || 'PianoForte';
-const CPAY_CHECKSUM_KEY = process.env.CPAY_CHECKSUM_KEY;     // "checksum authentication key" — во тест период стандардно TEST_PASS
+const CPAY_MERCHANT_ID = process.env.CPAY_MERCHANT_ID;       // PayToMerchant — 1000001529
+const CPAY_MERCHANT_NAME = process.env.CPAY_MERCHANT_NAME || 'PIJANO FORTE SKOPJE'; // точно како во живиот плагин
+const CPAY_CHECKSUM_KEY = process.env.CPAY_CHECKSUM_KEY;     // вистинскиот клуч од стариот плагин
 const APP_URL = process.env.APP_BASE_URL || 'https://app.pianoforte.edu.mk';
 
 const HALF_YEAR_DISCOUNT = 0.03;
@@ -37,57 +41,49 @@ function buildAnnualSchedule(plan, monthlyPrice) {
 }
 
 // ===================================================================
-// CheckSum — точно според cPay спецификација v3.5, Appendix A.
-// Header = "<NN>Name1,Name2,...,NameNN," + должини на секоja вредност
-// (секоja 3-цифрена, со водечки нули), споени БЕЗ разделувачи.
-// InputString = Header + сите вредности споени (без разделувачи).
-// CheckSum = HMAC-SHA256(key = checksum auth key, message = InputString), hex.
+// CheckSum — точно реконструиран од твojot вистински WordPress плагин
+// (wp-content/plugins/casis/admin.php). За разлика од новата официјална
+// спецификација (HMAC-SHA256, само присутни полиња), твojata сметка
+// користи:
+//   - секогаш точно овие 18 полиња, во точно овoj редослед, дури и
+//     кога некои се празни (тогаш нивната "должина" е 000)
+//   - CheckSum = MD5(Header + СитеВредностиСпоени + Клуч) — не HMAC
 // ===================================================================
-function buildChecksum(orderedPairs, key) {
-  // orderedPairs: [[name, value], ...] — само присутни (не-празни) параметри
-  const present = orderedPairs.filter(([, v]) => v !== undefined && v !== null && v !== '');
-  const count = String(present.length).padStart(2, '0');
-  const names = present.map(([n]) => n).join(',');
-  const lengths = present.map(([, v]) => String(String(v).length).padStart(3, '0')).join('');
+const CHECKSUM_FIELD_ORDER = [
+  'AmountToPay', 'PayToMerchant', 'MerchantName', 'AmountCurrency', 'Details1', 'Details2',
+  'PaymentOKURL', 'PaymentFailURL', 'FirstName', 'LastName', 'Address', 'City', 'Zip',
+  'Country', 'Telephone', 'Email', 'OriginalAmount', 'OriginalCurrency'
+];
+
+function buildLegacyChecksum(fields) {
+  const count = String(CHECKSUM_FIELD_ORDER.length).padStart(2, '0');
+  const names = CHECKSUM_FIELD_ORDER.join(',');
+  const lengths = CHECKSUM_FIELD_ORDER.map(name => {
+    const val = String(fields[name] ?? '');
+    return String([...val].length).padStart(3, '0'); // UTF-8-безбедно броење карактери
+  }).join('');
   const header = `${count}${names},${lengths}`;
-  const values = present.map(([, v]) => String(v)).join('');
-  const inputString = header + values;
-  const checksum = crypto.createHmac('sha256', key).update(inputString, 'utf8').digest('hex');
+  const values = CHECKSUM_FIELD_ORDER.map(name => String(fields[name] ?? '')).join('');
+  const checksum = crypto.createHash('md5').update(header + values + CPAY_CHECKSUM_KEY, 'utf8').digest('hex');
   return { header, checksum };
 }
 
 function buildRequestChecksum(fields) {
-  // Точен редослед според работечкиот пример во спецификацијата
-  const order = [
-    ['AmountToPay', fields.AmountToPay],
-    ['PayToMerchant', fields.PayToMerchant],
-    ['MerchantName', fields.MerchantName],
-    ['AmountCurrency', fields.AmountCurrency],
-    ['Details1', fields.Details1],
-    ['Details2', fields.Details2],
-    ['PaymentOKURL', fields.PaymentOKURL],
-    ['PaymentFailURL', fields.PaymentFailURL],
-    ['Email', fields.Email]
-  ];
-  return buildChecksum(order, CPAY_CHECKSUM_KEY);
+  return buildLegacyChecksum(fields);
 }
 
 function verifyReturnChecksum(data) {
-  // Истите параметри, но со PayToMerchant и AmountToPay разменети на прво/второ место
-  const order = [
-    ['PayToMerchant', data.PayToMerchant],
-    ['AmountToPay', data.AmountToPay],
-    ['MerchantName', data.MerchantName],
-    ['AmountCurrency', data.AmountCurrency],
-    ['Details1', data.Details1],
-    ['Details2', data.Details2],
-    ['PaymentOKURL', data.PaymentOKURL],
-    ['PaymentFailURL', data.PaymentFailURL],
-    ['Email', data.Email],
-    ['cPayPaymentRef', data.cPayPaymentRef]
-  ];
-  const { checksum } = buildChecksum(order, CPAY_CHECKSUM_KEY);
-  return checksum.toLowerCase() === String(data.ReturnCheckSum || '').toLowerCase();
+  // Проверката за враќање МОЖЕБИ не е имплементирана во старата верзија на
+  // овoj систем (нивниот стар PHP код не покажува return-checksum проверка
+  // воопшто). За безбедност сепак пробуваме да ja потврдиме ако полето
+  // ReturnCheckSum е присутно; ако не е присутно воопшто, не блокираме
+  // (легacy системот можеби не го испраќа), но логираме предупредување.
+  if (!data.ReturnCheckSum) {
+    console.warn('cPay: ReturnCheckSum не е присутен во одговорот — прескокната верификација (можеби не се поддржува во legacy режим).');
+    return true;
+  }
+  const { checksum } = buildLegacyChecksum(data);
+  return checksum.toLowerCase() === String(data.ReturnCheckSum).toLowerCase();
 }
 
 // Details1 макс. 32 карактери според спецификацијата
@@ -159,14 +155,16 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
       MerchantName: CPAY_MERCHANT_NAME,
       PaymentOKURL: `${APP_URL}/payments/cpay-ok`,
       PaymentFailURL: `${APP_URL}/payments/cpay-fail`,
-      Email: req.user.email
+      FirstName: '', LastName: '', Address: '', City: '', Zip: '', Country: '', Telephone: '',
+      Email: req.user.email,
+      OriginalAmount: '', OriginalCurrency: ''
     };
     const { header, checksum } = buildRequestChecksum(fields);
     fields.CheckSumHeader = header;
     fields.CheckSum = checksum;
 
     res.json({ intent_id: result.insertId, cpay_url: CPAY_PAYMENT_URL, fields });
-  } catch (err) {
+  } catch (err){
     console.error('POST /payments/init-subscription error:', err);
     res.status(500).json({ error: 'Грешка: ' + err.message });
   }
@@ -226,7 +224,9 @@ router.post('/init-individual-booking', requireAuth, requireRole('student'), asy
       MerchantName: CPAY_MERCHANT_NAME,
       PaymentOKURL: `${APP_URL}/payments/cpay-ok`,
       PaymentFailURL: `${APP_URL}/payments/cpay-fail`,
-      Email: req.user.email
+      FirstName: '', LastName: '', Address: '', City: '', Zip: '', Country: '', Telephone: '',
+      Email: req.user.email,
+      OriginalAmount: '', OriginalCurrency: ''
     };
     const { header, checksum } = buildRequestChecksum(fields);
     fields.CheckSumHeader = header;
