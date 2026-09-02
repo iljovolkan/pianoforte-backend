@@ -91,19 +91,27 @@
   @media(min-width:981px){ .mobile-nav-overlay{display:none !important;} }
 
   /* ===== HERO SLIDER (вистински слики) ===== */
-  .hero-slider{position:relative; height:620px; overflow:hidden;}
-  .slide{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.2s var(--ease); transform:scale(1.02);}
+  .hero-slider{position:relative; height:660px; overflow:hidden;}
+  .slide{position:absolute; inset:0; z-index:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.2s var(--ease); transform:scale(1.02);}
   .slide.active{opacity:1;}
   .slide-overlay{position:absolute; inset:0; background:linear-gradient(180deg, rgba(42,34,51,.35) 0%, rgba(42,34,51,.55) 55%, rgba(42,34,51,.78) 100%); z-index:1;}
-  .slide-content{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; color:#fff; max-width:680px;}
-  .slide-content .eyebrow{background:rgba(255,255,255,.14); backdrop-filter:blur(6px); color:#fff; border:1px solid rgba(255,255,255,.2);}
-  .slide-text{font-size:44px; font-weight:500; line-height:1.22; margin-bottom:32px; color:#fff; text-shadow:0 2px 24px rgba(0,0,0,.15);}
-  .slide-content .cta-primary{padding:15px 30px; font-size:14.5px; background:#fff; color:var(--ink) !important;}
-  .slide-content .cta-primary:hover{background:var(--sand-pale);}
-  .slider-dots{position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:9px;}
+  .slider-dots{position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:9px;}
   .dot{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.4); border:none; padding:0; cursor:pointer; transition:.3s var(--ease);}
   .dot.active{background:#fff; width:26px; border-radius:5px;}
-  @media(max-width:640px){ .hero-slider{height:70vh; min-height:460px;} .slide-text{font-size:28px; margin-bottom:24px;} }
+
+  /* ===== ЕДИНСТВЕН hero блок — текст + инструменти + копче во ЕДЕН кохерентен панел ===== */
+  .hero-block{position:relative; z-index:2; height:100%; display:flex; align-items:center; justify-content:center;}
+  .hero-block-panel{width:100%; max-width:760px; background:rgba(255,255,255,.12); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.22); border-radius:24px; padding:32px 32px 28px; display:flex; flex-direction:column; align-items:center; text-align:center; box-shadow:0 24px 60px -20px rgba(0,0,0,.3);}
+  .hero-block-panel .eyebrow{background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.24); margin-bottom:14px;}
+  .hero-block-panel .slide-text{font-size:30px; font-weight:500; line-height:1.28; margin-bottom:22px; color:#fff; text-shadow:0 2px 20px rgba(0,0,0,.2);}
+  .hero-block-panel .inst-scroll-row{width:100%; margin-bottom:22px;}
+  .hero-block-panel .cta-primary{background:#fff; color:var(--ink) !important; padding:14px 30px; font-size:14.5px;}
+  .hero-block-panel .cta-primary:hover{background:var(--sand-pale);}
+  @media(max-width:640px){
+    .hero-slider{height:78vh; min-height:560px;}
+    .hero-block-panel{padding:24px 18px 22px; border-radius:20px; margin:0 4px;}
+    .hero-block-panel .slide-text{font-size:22px; margin-bottom:16px;}
+  }
 
   /* ===== INTRO BAND ===== */
   .intro-band{padding:56px 0; border-bottom:1px solid var(--line);}
@@ -132,7 +140,7 @@
     .section-head p{font-size:15px;}
   }
 
-  /* ===== INSTRUMENTS GRID ===== */
+  /* ===== INSTRUMENTS GRID (сè уште достапно, ако е потребно на друго место) ===== */
   .instruments-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
   .instrument-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:36px 22px; text-align:center; text-decoration:none; color:var(--ink); transition:.3s var(--ease);}
   .instrument-card:hover{border-color:var(--lilac-deep); transform:translateY(-6px); box-shadow:var(--shadow);}
@@ -142,6 +150,19 @@
   .instrument-icon svg{width:28px; height:28px; stroke:var(--lilac-deep); transition:.3s var(--ease);}
   .instrument-card h4{font-size:16px; font-weight:600; color:var(--ink);}
   @media(max-width:820px){ .instruments-grid{grid-template-columns:repeat(2,1fr); gap:14px;} .instrument-card{padding:26px 16px;} }
+
+  /* ===== инструмент scroll картички (се користат внатре во hero-block-panel) ===== */
+  .inst-scroll-row{display:flex; align-items:center; gap:8px;}
+  .inst-scroll-arrow{flex-shrink:0; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); color:#fff; font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.2s var(--ease);}
+  .inst-scroll-arrow:hover{background:rgba(255,255,255,.32);}
+  .inst-scroll-wrap{display:flex; gap:10px; overflow-x:auto; padding:0 0 6px; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; scroll-behavior:smooth;}
+  .inst-scroll-wrap::-webkit-scrollbar{display:none;}
+  .inst-scroll-card{flex:0 0 100px; scroll-snap-align:start; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); border-radius:14px; padding:12px 8px; text-align:center; text-decoration:none; color:#fff; transition:.25s var(--ease);}
+  .inst-scroll-card:hover{background:rgba(255,255,255,.26); transform:translateY(-3px);}
+  .inst-scroll-card .instrument-icon{width:34px; height:34px; margin:0 auto 7px; background:rgba(255,255,255,.18);}
+  .inst-scroll-card .instrument-icon svg{width:16px; height:16px; stroke:#fff;}
+  .inst-scroll-card h4{font-size:11.5px; font-weight:600; line-height:1.3; color:#fff;}
+  @media(max-width:640px){ .inst-scroll-card{flex:0 0 88px; padding:10px 6px;} }
 
   /* ===== PACKAGES PREVIEW — табела (вертикална листа, хоризонтално проширена) ===== */
   .pkg-section{margin-bottom:40px;}
@@ -186,7 +207,7 @@
   @media(max-width:600px){ .blog-post-grid{grid-template-columns:1fr;} }
 
   /* ===== BLOG POST DETAILS (blog-post.html) ===== */
-  .back-link{display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none; margin-bottom:16px;}
+  .back-link{display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none; margin-bottom:10px;}
   .back-link:hover{text-decoration:underline;}
   .blog-post-article{max-width:760px; margin:0 auto;}
   .post-title{font-size:32px; font-weight:500; margin:10px 0 26px; line-height:1.3;}
@@ -247,15 +268,15 @@
   .newsletter-note{font-size:11px; color:var(--mist); margin-top:14px;}
 
   /* ===== PAGE HERO (внатрешни страници) ===== */
-  .page-hero{padding:64px 0 48px; border-bottom:1px solid var(--line);}
+  .page-hero{padding:32px 0 40px; border-bottom:1px solid var(--line);}
   .page-hero .eyebrow{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--lilac-deep); background:var(--lilac-pale); padding:7px 15px; border-radius:100px; margin-bottom:18px;}
   .page-hero h1{font-size:40px; font-weight:500; margin-bottom:14px;}
   .page-hero p{color:var(--mist); font-size:16.5px; max-width:560px;}
-  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:18px;}
+  .breadcrumb{font-size:12.5px; color:var(--mist); margin-bottom:10px;}
   .breadcrumb a{color:var(--lilac-deep); text-decoration:none; font-weight:600;}
   .nav-item.current > a{color:var(--lilac-deep); background:var(--lilac-pale); border-radius:8px;}
   .teaser-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-  @media(max-width:820px){ .teaser-grid{grid-template-columns:1fr;} .page-hero h1{font-size:30px;} .page-hero{padding:44px 0 36px;} }
+  @media(max-width:820px){ .teaser-grid{grid-template-columns:1fr;} .page-hero h1{font-size:30px;} .page-hero{padding:24px 0 30px;} }
 
   /* ===== GENERAL MOBILE POLISH ===== */
   @media(max-width:980px){
@@ -479,7 +500,7 @@
       about_title:'За PianoForte',
       about_p1:'[ПОПОЛНИ] Овде доаѓа приказната на училиштето — кога е основано, филозофијата на учење, зошто родителите го избираат PianoForte.',
       about_p2:'[ПОПОЛНИ] Дополнителен пасус за наставниот пристап и искуството на професорите.',
-      projects_title:'Проекти', projects_sub:'[ПОПОЛНИ] Концерти, настапи, соработки со други институции.',
+      projects_title:'Проекти', projects_sub:'Концерти, настапи и соработки со други музички институции.',
       summer_title:'Летна музичка школа', summer_p1:'[ПОПОЛНИ] Опис на летната програма — термини, активности, возрасни групи.',
       blog_title:'Блог', blog_sub:'Новости, интервјуа и приказни од нашето училиште.',
       blog_tag1:'Новост', blog_title1:'[ПОПОЛНИ наслов]', blog_body1:'[ПОПОЛНИ краток опис на текстот...]',
@@ -528,7 +549,7 @@
       about_title:'About PianoForte',
       about_p1:'[FILL IN] The school\u2019s story — when it was founded, the teaching philosophy, why parents choose PianoForte.',
       about_p2:'[FILL IN] Additional paragraph on the teaching approach and instructor experience.',
-      projects_title:'Projects', projects_sub:'[FILL IN] Concerts, performances, collaborations with other institutions.',
+      projects_title:'Projects', projects_sub:'Concerts, performances, and collaborations with other music institutions.',
       summer_title:'Summer music school', summer_p1:'[FILL IN] Description of the summer program — dates, activities, age groups.',
       blog_title:'Blog', blog_sub:'News, interviews, and stories from our school.',
       blog_tag1:'News', blog_title1:'[FILL IN title]', blog_body1:'[FILL IN short excerpt...]',
@@ -595,6 +616,15 @@
         toggle.closest('.m-group').classList.toggle('open');
       });
     });
+  }
+
+  // копчиња лево/десно за инструмент лентата (за компјутер, без допир)
+  const instWrap = document.getElementById('instScrollWrap');
+  const instLeftBtn = document.getElementById('instScrollLeft');
+  const instRightBtn = document.getElementById('instScrollRight');
+  if(instWrap && instLeftBtn && instRightBtn){
+    instLeftBtn.addEventListener('click', ()=>{ instWrap.scrollBy({left:-220, behavior:'smooth'}); });
+    instRightBtn.addEventListener('click', ()=>{ instWrap.scrollBy({left:220, behavior:'smooth'}); });
   }
 
   // hero слајдер (само на почетна страница — ако елементите постојат)
