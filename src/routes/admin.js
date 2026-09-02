@@ -146,4 +146,37 @@ router.get('/purchases', requireAuth, requireRole('admin'), async (req, res) => 
   res.json(rows);
 });
 
+// GET /admin/staff-list — сите professor/admin сметки, со тековен finance_access статус
+// (за да admin избере на кого да ja довери дозволата)
+router.get('/staff-list', requireAuth, requireRole('admin'), async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT id, full_name, email, role, instrument, finance_access
+     FROM users WHERE role IN ('professor','admin') ORDER BY full_name ASC`
+  );
+  res.json(rows);
+});
+
+// PUT /admin/staff/:id/finance-access — доделува/отповикува пристап до финансиите.
+// Ограничено на МАКСИМУМ 3 членови на персоналот (покрај admin сметките, кои секогаш имаат пристап).
+router.put('/staff/:id/finance-access', requireAuth, requireRole('admin'), async (req, res) => {
+  const { grant } = req.body; // true/false
+  const staffId = Number(req.params.id);
+
+  if (grant) {
+    const [[{ cnt }]] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM users WHERE finance_access = 1 AND role != 'admin'`
+    );
+    if (cnt >= 3) {
+      return res.status(409).json({ error: 'Веќе имаш доделено финансиски пристап на 3 членови од персоналот (максимум).' });
+    }
+  }
+
+  const [result] = await pool.query(
+    'UPDATE users SET finance_access = ? WHERE id = ? AND role IN ("professor","admin")',
+    [grant ? 1 : 0, staffId]
+  );
+  if (result.affectedRows === 0) return res.status(404).json({ error: 'Корисникот не е пронајден.' });
+  res.json({ ok: true });
+});
+
 module.exports = router;
