@@ -2296,6 +2296,14 @@
         </div>
         <div class="group-ov-slot">🕐 ${slotLabel}</div>
         <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        ${!full ? `
+        <div class="add-student-box" style="margin-top:10px;">
+          <button class="add-student-toggle" data-group="${g.id}" style="background:none; border:1px dashed var(--line); color:var(--lilac-deep); font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%;">+ Додади ученик</button>
+          <div class="add-student-panel" data-group="${g.id}" style="display:none; margin-top:8px;">
+            <input type="text" class="login-input add-student-search" placeholder="Пребарaj по име..." style="margin-bottom:6px; font-size:13px; padding:8px 10px;">
+            <div class="add-student-results" style="max-height:160px; overflow-y:auto;"></div>
+          </div>
+        </div>` : ''}
         ${needsSlots ? `
         <div class="assign-slot-box" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
           <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Секој пакет е 2 часа неделно — избери ги двата дена одеднаш:</div>
@@ -2309,6 +2317,51 @@
         </div>` : ''}
       `;
       wrap.appendChild(card);
+
+      // --- рачно додавање ученик во групата ---
+      const toggleBtn = card.querySelector('.add-student-toggle');
+      if(toggleBtn){
+        const panel = card.querySelector('.add-student-panel');
+        const searchInput = card.querySelector('.add-student-search');
+        const resultsBox = card.querySelector('.add-student-results');
+        toggleBtn.addEventListener('click', ()=>{
+          const isOpen = panel.style.display !== 'none';
+          panel.style.display = isOpen ? 'none' : 'block';
+          if(!isOpen) searchInput.focus();
+        });
+        let searchTimer;
+        searchInput.addEventListener('input', ()=>{
+          clearTimeout(searchTimer);
+          const q = searchInput.value.trim();
+          if(q.length < 2){ resultsBox.innerHTML = ''; return; }
+          searchTimer = setTimeout(async ()=>{
+            try{
+              const results = await authApiCall('/groups/search-students?q=' + encodeURIComponent(q));
+              resultsBox.innerHTML = results.length === 0
+                ? '<div style="font-size:12px; color:var(--mist); padding:8px 4px;">Нема резултати.</div>'
+                : results.map(r => `
+                  <div class="add-student-result" data-child-id="${r.id}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px;">
+                    <span>${escapeHtml(r.full_name)} ${r.age ? `(${r.age} год.)` : ''}<br><span style="font-size:11px; color:var(--mist);">${escapeHtml(r.parent_email)}</span></span>
+                    <span style="color:var(--lilac-deep); font-weight:700; font-size:12px;">Додади</span>
+                  </div>
+                `).join('');
+              resultsBox.querySelectorAll('.add-student-result').forEach(el=>{
+                el.addEventListener('mouseenter', ()=>{ el.style.background = 'var(--surface-2)'; });
+                el.addEventListener('mouseleave', ()=>{ el.style.background = ''; });
+                el.addEventListener('click', async ()=>{
+                  try{
+                    await authApiCall(`/groups/${g.id}/members`, {
+                      method:'POST', body: JSON.stringify({ student_id: el.dataset.childId })
+                    });
+                    await loadGroups();
+                    renderSchedulePage();
+                  } catch(err){ alert(err.message || 'Грешка при додавање.'); }
+                });
+              });
+            } catch(err){ console.error(err); }
+          }, 300);
+        });
+      }
 
       if(needsSlots){
         const saveBtn = card.querySelector('.pair-save-btn');
