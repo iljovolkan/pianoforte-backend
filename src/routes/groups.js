@@ -13,8 +13,10 @@ router.get('/', requireAuth, async (req, res) => {
 
   for (const g of groups) {
     const [members] = await pool.query(
-      `SELECT u.id, u.full_name FROM group_members gm
-       JOIN users u ON u.id = gm.student_id
+      `SELECT c.id, c.full_name, c.age, u.full_name AS parent_name
+       FROM group_members gm
+       JOIN children c ON c.id = gm.student_id
+       JOIN users u ON u.id = c.parent_id
        WHERE gm.group_id = ?`,
       [g.id]
     );
@@ -52,13 +54,21 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
   res.status(201).json({ id: result.insertId, name, capacity: cap, instrument, age_range, level });
 });
 
-// POST /groups/:id/members  { student_id }  — додава дете во група, проверува капацитет
+// POST /groups/:id/members  { student_id }  — рачно додава дете во група (без купување),
+// проверува капацитет и дека детето постои. Professor може да додава само во сопствени групи.
 router.post('/:id/members', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const groupId = req.params.id;
   const { student_id } = req.body;
+  if (!student_id) return res.status(400).json({ error: 'student_id е задолжителен.' });
 
   const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [groupId]);
   if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+  if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Можеш да додаваш ученици само во сопствените групи.' });
+  }
+
+  const [[child]] = await pool.query('SELECT id, full_name FROM children WHERE id = ?', [student_id]);
+  if (!child) return res.status(404).json({ error: 'Ученикот не постои.' });
 
   const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [groupId]);
   if (members.length >= group.capacity) {
@@ -69,13 +79,27 @@ router.post('/:id/members', requireAuth, requireRole('professor', 'admin'), asyn
   }
 
   await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [groupId, student_id]);
-  res.status(201).json({ ok: true });
+  res.status(201).json({ ok: true, student_name: child.full_name });
 });
 
 // DELETE /groups/:id/members/:studentId
 router.delete('/:id/members/:studentId', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [req.params.id, req.params.studentId]);
   res.json({ ok: true });
+});
+
+// GET /groups/search-students?q=име — пребарува деца по име (за рачно додавање во група).
+// Достапно и за professor и за admin — professor мора да може да најде ученик за да го додаде.
+router.get('/search-students', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json([]);
+  const [rows] = await pool.query(
+    `SELECT c.id, c.full_name, c.age, u.email AS parent_email
+     FROM children c JOIN users u ON u.id = c.parent_id
+     WHERE c.full_name LIKE ? LIMIT 15`,
+    [`%${q}%`]
+  );
+  res.json(rows);
 });
 
 module.exports = router;
