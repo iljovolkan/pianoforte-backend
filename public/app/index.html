@@ -662,7 +662,7 @@
       <div class="page-head">
         <span class="eyebrow" data-i18n="eyebrow_schedule">Распоред</span>
         <h2 data-i18n="schedule_title">Календар по групи</h2>
-        <p data-i18n="schedule_sub">Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.</p>
+        <p data-i18n="schedule_sub">Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Црвените денови се неработни.</p>
       </div>
 
       <div class="groups-overview" id="groupsOverview"></div>
@@ -686,7 +686,7 @@
           <div id="yearViewWrap" style="display:none;"></div>
         </div>
         <div class="card sched-panel" id="schedPanel">
-          <h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>
+          <h3>Избери термин</h3><span class="slot-tag">Кликни на прозорче од календарот</span>
         </div>
       </div>
     </section>
@@ -820,7 +820,80 @@
       </div>
     </section>
 
-    <!-- ---- BILLING PAGE ---- -->
+    <!-- ---- FINANCE PAGE ---- -->
+    <section class="page" id="page-finance">
+      <div class="page-head">
+        <span class="eyebrow">Финансии</span>
+        <h2>Финансиски преглед</h2>
+        <p>Приход, плати, трошоци и остаток — по месец.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <label style="font-size:12.5px; font-weight:600; display:block; margin-bottom:8px;">Месец</label>
+        <input type="month" id="financeMonth" class="login-select" style="max-width:220px; margin-bottom:0;">
+      </div>
+
+      <div id="financeAccessCard" style="display:none;" class="card">
+        <h3 style="font-size:15px; margin-bottom:6px;">Персонал со финансиски пристап</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Максимум 3 членови од персоналот (покрај admin) можат да имаат пристап до овoj дел.</p>
+        <div id="financeStaffList"></div>
+      </div>
+
+      <div class="admin-stats-grid" id="financeSummaryGrid" style="margin-top:20px;"></div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Плати и хонорари по професор</h3>
+        <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label>Професор</label>
+            <select id="financeSalaryProf" class="login-select" style="margin-bottom:0;"></select>
+          </div>
+          <div style="width:160px;">
+            <label>Износ (ден.)</label>
+            <input type="number" id="financeSalaryAmount" class="login-input" style="margin-bottom:0;">
+          </div>
+          <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;">Зачувај</button>
+        </div>
+        <div id="financeSalaryList"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Трошоци и маркетинг</h3>
+        <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+          <div style="flex:2; min-width:160px;">
+            <label>Опис</label>
+            <input type="text" id="financeExpenseDesc" class="login-input" style="margin-bottom:0;">
+          </div>
+          <div style="width:140px;">
+            <label>Категорија</label>
+            <select id="financeExpenseCategory" class="login-select" style="margin-bottom:0;">
+              <option value="trosok">Трошок</option>
+              <option value="marketing">Маркетинг</option>
+            </select>
+          </div>
+          <div style="width:130px;">
+            <label>Износ (ден.)</label>
+            <input type="number" id="financeExpenseAmount" class="login-input" style="margin-bottom:0;">
+          </div>
+          <div style="width:150px;">
+            <label>Датум</label>
+            <input type="date" id="financeExpenseDate" class="login-input" style="margin-bottom:0;">
+          </div>
+          <button class="send-btn" id="financeExpenseSaveBtn" style="width:auto; padding:0 20px;">Додади</button>
+        </div>
+        <div id="financeExpenseList"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Неплатени школарини</h3>
+        <div id="financeUnpaidList"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Приход по професор</h3>
+        <div id="financeProfRevenueList"></div>
+      </div>
+    </section>
     <section class="page" id="page-billing">
       <div class="billing-subtabs" id="billingSubtabs" style="display:none;">
         <button class="billing-subtab active" data-subtarget="billing" data-i18n="subtab_payments">Вашите уплати</button>
@@ -961,7 +1034,7 @@
       role_student:'Ученик', role_professor:'Професор', role_admin:'Админ',
       eyebrow_index:'Почетна', eyebrow_schedule:'Распоред', eyebrow_billing:'Наплата', eyebrow_packages:'Пакети',
       schedule_title:'Календар по групи',
-      schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Сивите денови се неработни.',
+      schedule_sub:'Секој термин е група од 4–6 деца. Кликни на термин за да видиш кои деца се во групата или да си водиш белешка. Црвените денови се неработни.',
       profile_eyebrow:'Поставки', profile_title:'Поставки на сметката', profile_sub:'Ажурирај ги твоите лични податоци и лозинката.',
       profile_info_title:'Лични податоци', profile_name_label:'Име и презиме', profile_email_label:'Email',
       profile_email_hint:'Ако го смениш email-от, можеби ќе треба повторно да го потврдиш.',
@@ -978,7 +1051,7 @@
       reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
       pay_terms_post:' за оваа уплата.',
 
-      index_title_student:'Твоите материјали', index_title_professor:'Материјали',
+      index_title_student:'Училница', index_title_professor:'Училница',
       index_sub_student:'Материјалите се појавуваат откако ќе влезеш во училница.',
       index_sub_professor:'Материјалот се појавува на таблетот откако ученикот ќе влезе во училница.',
       view_week:'Недела', view_month:'Месец', view_year:'Година',
@@ -998,7 +1071,7 @@
       role_student:'Student', role_professor:'Professor', role_admin:'Admin',
       eyebrow_index:'Home', eyebrow_schedule:'Schedule', eyebrow_billing:'Billing', eyebrow_packages:'Packages',
       schedule_title:'Group Calendar',
-      schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Grey days are non-working.',
+      schedule_sub:'Each slot is a group of 4–6 children. Click a slot to see who\u2019s in the group or leave a note. Red days are non-working.',
       profile_eyebrow:'Settings', profile_title:'Account settings', profile_sub:'Update your personal details and password.',
       profile_info_title:'Personal details', profile_name_label:'Full name', profile_email_label:'Email',
       profile_email_hint:'If you change your email, you may need to verify it again.',
@@ -1015,7 +1088,7 @@
       reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
       pay_terms_post:' for this payment.',
 
-      index_title_student:'Your materials', index_title_professor:'Materials',
+      index_title_student:'Classroom', index_title_professor:'Classroom',
       index_sub_student:'Materials appear once you enter the classroom.',
       index_sub_professor:'Materials appear on the tablet once the student enters the classroom.',
       view_week:'Week', view_month:'Month', view_year:'Year',
@@ -1302,7 +1375,7 @@
       } else if(user.role === 'admin'){
         session = {role:'admin', name:user.full_name, email:user.email, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else {
-        session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, token, refreshToken, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, financeAccess:!!user.finance_access, token, refreshToken, isRealAccount:true};
       }
       rememberMe = document.getElementById('rememberMeCheckbox').checked;
       try{ localStorage.setItem('pf_remember_me', rememberMe ? '1' : '0'); }catch(e){}
@@ -1827,6 +1900,7 @@
     if(session.role==='professor') tabs.push({id:'schedule', label:t('nav_schedule')});
     tabs.push({id:'billing', label:t('nav_billing')});
     if(session.role !== 'student') tabs.push({id:'packages', label:t('nav_packages')});
+    if(session.role==='admin' || session.financeAccess) tabs.push({id:'finance', label:'Финансии'});
     tabs.forEach(tab=>{
       const btn = document.createElement('button'); btn.textContent = tab.label; btn.dataset.page = tab.id;
       btn.addEventListener('click', ()=>{
@@ -1834,6 +1908,7 @@
         if(tab.id==='billing') renderBillingPage();
         if(tab.id==='schedule') renderSchedulePage();
         if(tab.id==='admin') renderAdminPage();
+        if(tab.id==='finance') renderFinancePage();
       });
       nav.appendChild(btn);
     });
@@ -2399,7 +2474,7 @@
       panel.innerHTML = `<h3>Распоред</h3><span class="slot-tag">Само професор може да менува термини</span>`;
       return;
     }
-    if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на клетка од календарот</span>`; return; }
+    if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на прозорче од календарот</span>`; return; }
     const [day, hour] = selectedSlotKey.split('-');
     const entry = schedule[session.realUserId + '_' + selectedSlotKey] || null;
     const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
@@ -2714,6 +2789,174 @@
     }
   }
 
+  /* ===================== ФИНАНСИИ ===================== */
+  function currentFinanceMonth(){
+    const input = document.getElementById('financeMonth');
+    if(input.value) return input.value;
+    const now = new Date();
+    const val = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    input.value = val;
+    return val;
+  }
+  function fmtMoney(n){ return Number(n||0).toLocaleString('mk-MK') + ' ден.'; }
+
+  async function renderFinancePage(){
+    const month = currentFinanceMonth();
+    document.getElementById('financeMonth').onchange = renderFinancePage;
+
+    // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
+    const accessCard = document.getElementById('financeAccessCard');
+    if(session.role === 'admin'){
+      accessCard.style.display = 'block';
+      try{
+        const staff = await authApiCall('/admin/staff-list');
+        document.getElementById('financeStaffList').innerHTML = staff.map(s => `
+          <div class="sent-item">
+            <div class="sent-icon">${s.role==='admin' ? '👑' : (s.instrument ? instrumentInfo(s.instrument).icon : '🎵')}</div>
+            <div class="sent-meta">
+              <div class="t">${escapeHtml(s.full_name)}</div>
+              <div class="sub">${escapeHtml(s.email)} · ${s.role==='admin' ? 'Admin (секогаш има пристап)' : (s.finance_access ? '✓ Има финансиски пристап' : 'Нема пристап')}</div>
+            </div>
+            ${s.role==='admin' ? '' : `<button class="mc-btn" style="flex:none;" data-staff-id="${s.id}" data-grant="${s.finance_access ? '0' : '1'}">${s.finance_access ? 'Отповикај' : 'Дозволи'}</button>`}
+          </div>
+        `).join('');
+        document.getElementById('financeStaffList').querySelectorAll('button[data-staff-id]').forEach(btn=>{
+          btn.addEventListener('click', async ()=>{
+            try{
+              await authApiCall(`/admin/staff/${btn.dataset.staffId}/finance-access`, {
+                method:'PUT', body: JSON.stringify({ grant: btn.dataset.grant === '1' })
+              });
+              renderFinancePage();
+            } catch(err){ alert(err.message || 'Грешка.'); }
+          });
+        });
+      } catch(err){ console.error(err); }
+    } else {
+      accessCard.style.display = 'none';
+    }
+
+    // --- приход / плати / трошоци / остаток (месечно резиме) ---
+    try{
+      const summary = await authApiCall('/finance/summary?month=' + month);
+      document.getElementById('financeSummaryGrid').innerHTML = `
+        <div class="admin-stat-card"><div class="num">${fmtMoney(summary.income)}</div><div class="lbl">Приход</div></div>
+        <div class="admin-stat-card"><div class="num">${fmtMoney(summary.salaries)}</div><div class="lbl">Плати и хонорари</div></div>
+        <div class="admin-stat-card"><div class="num">${fmtMoney(summary.total_expenses)}</div><div class="lbl">Трошоци и маркетинг</div></div>
+        <div class="admin-stat-card"><div class="num" style="color:${summary.remainder>=0?'var(--leaf)':'var(--wine)'};">${fmtMoney(summary.remainder)}</div><div class="lbl">Остаток</div></div>
+      `;
+    } catch(err){
+      document.getElementById('financeSummaryGrid').innerHTML = `<div class="empty-state">Грешка: ${err.message}</div>`;
+    }
+
+    // --- плати и хонорари: пополни dropdown со професори ---
+    try{
+      const profs = await authApiCall('/admin/professors');
+      const sel = document.getElementById('financeSalaryProf');
+      sel.innerHTML = profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
+
+      const salaries = await authApiCall('/finance/salaries?month=' + month);
+      const salBox = document.getElementById('financeSalaryList');
+      salBox.innerHTML = salaries.length === 0
+        ? '<div class="empty-state">Сè уште нема внесени плати за овoj месец.</div>'
+        : salaries.map(s => `
+          <div class="sent-item">
+            <div class="sent-icon">${s.instrument ? instrumentInfo(s.instrument).icon : '🎵'}</div>
+            <div class="sent-meta"><div class="t">${escapeHtml(s.professor_name)}</div><div class="sub">${fmtMoney(s.amount)}</div></div>
+            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-sal-id="${s.id}">Избриши</button>
+          </div>
+        `).join('');
+      salBox.querySelectorAll('button[data-sal-id]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          await authApiCall('/finance/salaries/' + btn.dataset.salId, { method:'DELETE' });
+          renderFinancePage();
+        });
+      });
+    } catch(err){ console.error(err); }
+
+    // --- трошоци и маркетинг ---
+    try{
+      const expenses = await authApiCall('/finance/expenses?month=' + month);
+      const expBox = document.getElementById('financeExpenseList');
+      expBox.innerHTML = expenses.length === 0
+        ? '<div class="empty-state">Сè уште нема внесени трошоци за овoj месец.</div>'
+        : expenses.map(e => `
+          <div class="sent-item">
+            <div class="sent-icon">${e.category==='marketing' ? '📣' : '🧾'}</div>
+            <div class="sent-meta"><div class="t">${escapeHtml(e.description)}</div><div class="sub">${e.category==='marketing'?'Маркетинг':'Трошок'} · ${new Date(e.expense_date).toLocaleDateString('mk-MK')} · ${fmtMoney(e.amount)}</div></div>
+            <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-exp-id="${e.id}">Избриши</button>
+          </div>
+        `).join('');
+      expBox.querySelectorAll('button[data-exp-id]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          await authApiCall('/finance/expenses/' + btn.dataset.expId, { method:'DELETE' });
+          renderFinancePage();
+        });
+      });
+    } catch(err){ console.error(err); }
+
+    // --- неплатени школарини ---
+    try{
+      const unpaid = await authApiCall('/finance/unpaid?month=' + month);
+      const unpaidBox = document.getElementById('financeUnpaidList');
+      unpaidBox.innerHTML = unpaid.length === 0
+        ? '<div class="empty-state">Нема неплатени школарини за овoj месец. 🎉</div>'
+        : unpaid.map(u => `
+          <div class="sent-item">
+            <div class="sent-icon">⏳</div>
+            <div class="sent-meta">
+              <div class="t">${escapeHtml(u.student_name)} · ${fmtMoney(u.amount)}</div>
+              <div class="sub">Родител: ${escapeHtml(u.parent_email)} · ${escapeHtml(u.package_name)} · рата ${u.installment_number}/${u.total_installments} · доспева ${new Date(u.due_date).toLocaleDateString('mk-MK')}</div>
+            </div>
+          </div>
+        `).join('');
+    } catch(err){ console.error(err); }
+
+    // --- приход по професор ---
+    try{
+      const revenue = await authApiCall('/finance/professor-revenue');
+      const revBox = document.getElementById('financeProfRevenueList');
+      revBox.innerHTML = revenue.length === 0
+        ? '<div class="empty-state">Сè уште нема податоци.</div>'
+        : revenue.map(r => `
+          <div class="sent-item">
+            <div class="sent-icon">${r.instrument ? instrumentInfo(r.instrument).icon : '🎵'}</div>
+            <div class="sent-meta"><div class="t">${escapeHtml(r.professor_name)}</div><div class="sub">${r.student_count} ученици · вкупен приход ${fmtMoney(r.total_revenue)}</div></div>
+          </div>
+        `).join('');
+    } catch(err){ console.error(err); }
+  }
+
+  document.getElementById('financeSalarySaveBtn').addEventListener('click', async ()=>{
+    const professor_id = document.getElementById('financeSalaryProf').value;
+    const amount = document.getElementById('financeSalaryAmount').value;
+    if(!professor_id || !amount) return;
+    try{
+      await authApiCall('/finance/salaries', {
+        method:'POST',
+        body: JSON.stringify({ professor_id, month: currentFinanceMonth(), amount })
+      });
+      document.getElementById('financeSalaryAmount').value = '';
+      renderFinancePage();
+    } catch(err){ alert(err.message || 'Грешка.'); }
+  });
+
+  document.getElementById('financeExpenseSaveBtn').addEventListener('click', async ()=>{
+    const description = document.getElementById('financeExpenseDesc').value.trim();
+    const category = document.getElementById('financeExpenseCategory').value;
+    const amount = document.getElementById('financeExpenseAmount').value;
+    const expense_date = document.getElementById('financeExpenseDate').value;
+    if(!description || !amount || !expense_date) return;
+    try{
+      await authApiCall('/finance/expenses', {
+        method:'POST',
+        body: JSON.stringify({ description, category, amount, expense_date })
+      });
+      document.getElementById('financeExpenseDesc').value = '';
+      document.getElementById('financeExpenseAmount').value = '';
+      renderFinancePage();
+    } catch(err){ alert(err.message || 'Грешка.'); }
+  });
+
   async function renderAdminPage(){
     renderAdminIndivBookings();
     renderAdminOverview();
@@ -2804,7 +3047,7 @@
     }
   });
 
-  function levelLabel(level){ return level==='pocetnik' ? 'Почетник' : 'Со предзнаење'; }
+  function levelLabel(level){ return level==='pocetnik' ? 'Почетник' : 'Ученик со предзнаење'; }
   function ageLabel(range){ const a = AGE_RANGES.find(x=>x.id===range); return a ? a.label : range; }
 
   let selectedPkgInstrument = null;
