@@ -187,7 +187,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       token: accessToken,
       refreshToken,
-      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument }
+      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access }
     });
   } catch (err) {
     console.error(err);
@@ -216,7 +216,7 @@ router.post('/refresh', async (req, res) => {
   res.json({
     token: accessToken,
     refreshToken: newRefreshToken,
-    user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument }
+    user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access }
   });
 });
 
@@ -229,7 +229,7 @@ router.post('/logout', requireAuth, async (req, res) => {
 // GET /auth/me  — сопствен профил, потврдува дека токенот работи
 router.get('/me', requireAuth, async (req, res) => {
   const [rows] = await pool.query(
-    'SELECT id, email, role, full_name, email_verified, instrument, created_at FROM users WHERE id = ?',
+    'SELECT id, email, role, full_name, email_verified, instrument, finance_access, created_at FROM users WHERE id = ?',
     [req.user.id]
   );
   if (rows.length === 0) return res.status(404).json({ error: 'Корисникот не постои.' });
