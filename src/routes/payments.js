@@ -7,7 +7,7 @@ const { sendMail } = require('../mailer');
 const router = express.Router();
 
 // ===== cPay поставки (Casys, спецификација v3.5) =====
-const CPAY_PAYMENT_URL = process.env.CPAY_PAYMENT_URL || 'https://vpos.cpay.com.mk/mk-MK';
+const CPAY_PAYMENT_URL = process.env.CPAY_PAYMENT_URL || 'https://www.cpay.com.mk/client/Page/default.aspx?xml_id=/mk-MK/.loginToPay/.simple/';
 const CPAY_MERCHANT_ID = process.env.CPAY_MERCHANT_ID;       // PayToMerchant
 const CPAY_MERCHANT_NAME = process.env.CPAY_MERCHANT_NAME || 'PianoForte';
 const CPAY_CHECKSUM_KEY = process.env.CPAY_CHECKSUM_KEY;     // "checksum authentication key" — во тест период стандардно TEST_PASS
@@ -151,7 +151,6 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
     );
 
     const fields = {
-      isSimple: 'true',
       AmountToPay: String(firstAmount * 100),
       AmountCurrency: 'MKD',
       Details1: truncateDetails1(`${pkg.name} ${child.full_name}`),
@@ -219,7 +218,6 @@ router.post('/init-individual-booking', requireAuth, requireRole('student'), asy
     );
 
     const fields = {
-      isSimple: 'true',
       AmountToPay: String(amount * 100),
       AmountCurrency: 'MKD',
       Details1: truncateDetails1(`Инд. час ${instrument} ${child.full_name}`),
