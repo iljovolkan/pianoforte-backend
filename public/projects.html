@@ -60,6 +60,15 @@
   .dropdown a{display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:9px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500; transition:.15s var(--ease);}
   .dropdown a:hover{background:var(--lilac-pale); color:var(--lilac-deep);}
   .dropdown.instruments{min-width:240px; width:420px; display:grid; grid-template-columns:1fr 1fr; gap:2px;}
+  .dropdown-label{grid-column:1/-1; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--mist); padding:8px 12px 4px;}
+  .dropdown-highlight{grid-column:1/-1; background:var(--sand-pale); color:var(--sand-deep) !important; font-weight:700; margin-top:4px;}
+  .dropdown-highlight:hover{background:var(--sand-pale) !important;}
+  .dropdown-rich{min-width:280px; width:300px;}
+  .dropdown-rich-item{display:flex !important; align-items:flex-start; gap:12px; padding:12px !important;}
+  .dri-icon{font-size:20px; flex-shrink:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:var(--lilac-pale); border-radius:9px;}
+  .dri-text{display:flex; flex-direction:column; gap:2px;}
+  .dri-title{font-weight:600; font-size:14px; color:var(--ink);}
+  .dri-desc{font-size:12px; color:var(--mist); font-weight:400;}
   .cta-primary{background:var(--ink); color:#fff !important; padding:13px 24px; border-radius:100px; font-weight:600; font-size:13.5px; letter-spacing:.02em; text-decoration:none; white-space:nowrap; transition:.25s var(--ease); display:inline-flex; align-items:center; gap:8px; box-shadow:var(--shadow-sm);}
   .cta-primary:hover{background:var(--lilac-deep); transform:translateY(-1px); box-shadow:var(--shadow);}
   .burger{display:none; background:none; border:none; width:44px; height:44px; align-items:center; justify-content:center; cursor:pointer; position:relative; z-index:210;}
@@ -285,14 +294,21 @@
       <div class="nav-item"><a href="index.html" data-i18n="nav_home">Почетна</a></div>
       <div class="nav-item">
         <span data-i18n="nav_about">За нас <span class="caret">▾</span></span>
-        <div class="dropdown">
-          <a href="about.html" data-i18n="nav_about_us">За нас</a>
-          <a href="projects.html" data-i18n="nav_projects">Проекти</a>
+        <div class="dropdown dropdown-rich">
+          <a href="about.html" class="dropdown-rich-item">
+            <span class="dri-icon">📖</span>
+            <span class="dri-text"><span class="dri-title" data-i18n="nav_about_us">За нас</span><span class="dri-desc" data-i18n="dri_about_desc">Нашата приказна и филозофија</span></span>
+          </a>
+          <a href="projects.html" class="dropdown-rich-item">
+            <span class="dri-icon">🎭</span>
+            <span class="dri-text"><span class="dri-title" data-i18n="nav_projects">Проекти</span><span class="dri-desc" data-i18n="dri_projects_desc">Концерти и соработки</span></span>
+          </a>
         </div>
       </div>
       <div class="nav-item">
         <span data-i18n="nav_instruments">Инструменти <span class="caret">▾</span></span>
         <div class="dropdown instruments">
+          <div class="dropdown-label" data-i18n="dropdown_label_instruments">ИНСТРУМЕНТИ</div>
           <a href="packages.html?instrument=piano">🎹 <span data-i18n="inst_piano">Пијано</span></a>
           <a href="packages.html?instrument=gitara">🎸 <span data-i18n="inst_guitar">Гитара</span></a>
           <a href="packages.html?instrument=el-gitara">🎸 <span data-i18n="inst_elguitar">Електрична гитара</span></a>
@@ -301,7 +317,7 @@
           <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
           <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
           <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
-          <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
+          <a href="summer-school.html" class="dropdown-highlight">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
         </div>
       </div>
       <div class="nav-item"><a href="blog.html" data-i18n="nav_blog">Блог</a></div>
@@ -332,7 +348,7 @@
       <a href="packages.html?instrument=tapani">🥁 <span data-i18n="inst_drums">Тапани</span></a>
       <a href="packages.html?instrument=peenje">🎤 <span data-i18n="inst_singing">Пеење</span></a>
       <a href="packages.html?instrument=ran-razvoj">🌱 <span data-i18n="inst_early">Ран музички развој</span></a>
-      <a href="summer-school.html">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
+      <a href="summer-school.html" style="color:var(--sand-deep); font-weight:700;">🌞 <span data-i18n="nav_summer">Летна школа</span></a>
     </div>
   </div>
   <a href="blog.html" class="m-link" data-i18n="nav_blog">Блог</a>
@@ -446,6 +462,7 @@
     mk: {
       util_login:'Најави се / Регистрација', util_buy:'Купи час',
       nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      dri_about_desc:'Нашата приказна и филозофија', dri_projects_desc:'Концерти и соработки', dropdown_label_instruments:'ИНСТРУМЕНТИ',
       nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
       inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
       inst_bass:'Бас гитара', inst_drums:'Тапани', inst_singing:'Пеење', inst_early:'Ран музички развој', soon:'наскоро',
@@ -494,6 +511,7 @@
     en: {
       util_login:'Sign in / Register', util_buy:'Buy a lesson',
       nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      dri_about_desc:'Our story and philosophy', dri_projects_desc:'Concerts and collaborations', dropdown_label_instruments:'INSTRUMENTS',
       nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
       inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
       inst_bass:'Bass guitar', inst_drums:'Drums', inst_singing:'Singing', inst_early:'Early musical development', soon:'coming soon',
