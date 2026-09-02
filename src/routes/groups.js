@@ -127,4 +127,21 @@ router.get('/search-students', requireAuth, requireRole('professor', 'admin'), a
   }
 });
 
+// DELETE /groups/:id — бришe цела група (за грешки при креирање). Members се
+// бришат автоматски (ON DELETE CASCADE). Professor може да брише само сопствени групи.
+router.delete('/:id', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  try {
+    const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [req.params.id]);
+    if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+    if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Можеш да бришеш само сопствени групи.' });
+    }
+    await pool.query('DELETE FROM groups_table WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /groups/:id error:', err);
+    res.status(500).json({ error: 'Грешка при бришење група: ' + err.message });
+  }
+});
+
 module.exports = router;
