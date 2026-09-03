@@ -2804,7 +2804,7 @@
         cta.style.marginTop = '10px';
         cta.innerHTML = `<div class="n-ic">📅</div><div>
           <div class="n-title">Сè уште немаш избрано термин</div>
-          <div class="n-body">Уплатата е примена — сега избери група/термин за ${escapeHtml(sub.student_name||'детето')}. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.</div>
+          <div class="n-body">Уплатата е примена — сега избери група/термин за ${escapeHtml(sub.student_name||'детето')}. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.</div>
           <button class="send-btn choose-group-btn" data-sub="${sub.id}" data-inst="${sub.instrument}" style="margin-top:10px; width:auto; padding:9px 18px;">Избери термин</button>
           </div>`;
         section.appendChild(cta);
@@ -2855,14 +2855,21 @@
 
   window.payInstallment = async function(installmentId){
     try{
-      const result = await authApiCall('/installments/'+installmentId+'/pay', {
+      const initResult = await authApiCall('/payments/init-installment', {
         method:'POST',
-        body: JSON.stringify({ payment_method_id: 'SIMULATED-' + Date.now() })
+        body: JSON.stringify({ installment_id: installmentId })
       });
-      await loadInstallments();
-      await loadSubscriptions();
-      renderBillingPage();
-      alert('Ратата е успешно платена! 📧 Испративме потврда на email.');
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = initResult.cpay_url;
+      Object.entries(initResult.fields).forEach(([key, value])=>{
+        if(value === null || value === undefined) return;
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = key; input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch(err){
       alert('Грешка при плаќање: ' + err.message);
     }
@@ -3211,7 +3218,7 @@
       document.getElementById('pkgInstrumentChips').parentElement.parentElement.style.display = 'none';
       const grid = document.getElementById('pkgGrid'); grid.innerHTML = `
         <button class="mc-btn" id="cancelChooseGroupBtn" style="margin-bottom:16px;">← Назад кон Наплата</button>
-        <div style="font-size:13px; color:var(--mist); margin-bottom:16px;">Избери термин за <strong>${instrumentLabel(selectedPkgInstrument)}</strong>. Ако не најдеш соодветен термин, контактирај нè на <a href="mailto:info@pianoforte.edu.mk">info@pianoforte.edu.mk</a>.</div>
+        <div style="font-size:13px; color:var(--mist); margin-bottom:16px;">Избери термин за <strong>${instrumentLabel(selectedPkgInstrument)}</strong>. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.</div>
       `;
       document.getElementById('cancelChooseGroupBtn').addEventListener('click', ()=>{
         chooseGroupMode = null;
@@ -3309,8 +3316,8 @@
           <div class="pkg-table">
             ${tableHead()}
             ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
-            ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
-            ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано online или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
+            ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано „online" или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
+            ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано „online" или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
           </div>
         </div>`;
       }
