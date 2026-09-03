@@ -41,48 +41,49 @@ function buildAnnualSchedule(plan, monthlyPrice) {
 }
 
 // ===================================================================
-// CheckSum — точно реконструиран од твojot вистински WordPress плагин
-// (wp-content/plugins/casis/admin.php). За разлика од новата официјална
-// спецификација (HMAC-SHA256, само присутни полиња), твojata сметка
-// користи:
-//   - секогаш точно овие 18 полиња, во точно овoj редослед, дури и
-//     кога некои се празни (тогаш нивната "должина" е 000)
-//   - CheckSum = MD5(Header + СитеВредностиСпоени + Клуч) — не HMAC
+// CheckSum — точно реконструиран и ПОТВРДЕН со реален успешен тест против
+// нашиот вистински WordPress плагин (wp-content/plugins/casis/admin.php)
+// И реалниот cPay одговор (ReturnCheckSum совпадна точно). CheckSum =
+// MD5(Header + СитеВредностиСпоени + Клуч).
 // ===================================================================
-const CHECKSUM_FIELD_ORDER = [
+const REQUEST_FIELD_ORDER = [
   'AmountToPay', 'PayToMerchant', 'MerchantName', 'AmountCurrency', 'Details1', 'Details2',
   'PaymentOKURL', 'PaymentFailURL', 'FirstName', 'LastName', 'Address', 'City', 'Zip',
   'Country', 'Telephone', 'Email', 'OriginalAmount', 'OriginalCurrency'
 ];
 
-function buildLegacyChecksum(fields) {
-  const count = String(CHECKSUM_FIELD_ORDER.length).padStart(2, '0');
-  const names = CHECKSUM_FIELD_ORDER.join(',');
-  const lengths = CHECKSUM_FIELD_ORDER.map(name => {
+// Враќачкиот checksum ги менува местата на првите два параметри
+// (PayToMerchant, AmountToPay наместо AmountToPay, PayToMerchant),
+// и додава cPayPaymentRef на крајот. Потврдено со реален тест.
+const RETURN_FIELD_ORDER = [
+  'PayToMerchant', 'AmountToPay', 'MerchantName', 'AmountCurrency', 'Details1', 'Details2',
+  'PaymentOKURL', 'PaymentFailURL', 'FirstName', 'LastName', 'Address', 'City', 'Zip',
+  'Country', 'Telephone', 'Email', 'OriginalAmount', 'OriginalCurrency', 'cPayPaymentRef'
+];
+
+function buildLegacyChecksum(fields, order) {
+  const count = String(order.length).padStart(2, '0');
+  const names = order.join(',');
+  const lengths = order.map(name => {
     const val = String(fields[name] ?? '');
     return String([...val].length).padStart(3, '0'); // UTF-8-безбедно броење карактери
   }).join('');
   const header = `${count}${names},${lengths}`;
-  const values = CHECKSUM_FIELD_ORDER.map(name => String(fields[name] ?? '')).join('');
+  const values = order.map(name => String(fields[name] ?? '')).join('');
   const checksum = crypto.createHash('md5').update(header + values + CPAY_CHECKSUM_KEY, 'utf8').digest('hex');
   return { header, checksum };
 }
 
 function buildRequestChecksum(fields) {
-  return buildLegacyChecksum(fields);
+  return buildLegacyChecksum(fields, REQUEST_FIELD_ORDER);
 }
 
 function verifyReturnChecksum(data) {
-  // Проверката за враќање МОЖЕБИ не е имплементирана во старата верзија на
-  // овoj систем (нивниот стар PHP код не покажува return-checksum проверка
-  // воопшто). За безбедност сепак пробуваме да ja потврдиме ако полето
-  // ReturnCheckSum е присутно; ако не е присутно воопшто, не блокираме
-  // (легacy системот можеби не го испраќа), но логираме предупредување.
   if (!data.ReturnCheckSum) {
-    console.warn('cPay: ReturnCheckSum не е присутен во одговорот — прескокната верификација (можеби не се поддржува во legacy режим).');
+    console.warn('cPay: ReturnCheckSum не е присутен во одговорот.');
     return true;
   }
-  const { checksum } = buildLegacyChecksum(data);
+  const { checksum } = buildLegacyChecksum(data, RETURN_FIELD_ORDER);
   return checksum.toLowerCase() === String(data.ReturnCheckSum).toLowerCase();
 }
 
@@ -254,12 +255,11 @@ router.all('/cpay-ok', async (req, res) => {
 
   try {
     if (!intentId) throw new Error('Недостасува референца на плаќањето (Details2).');
+    // Алгоритамот е потврден со реален успешен тест (совпадна точно со
+    // ReturnCheckSum од вистински cPay одговор) — сега сигурно блокираме
+    // ако не се совпаѓа, бидejќи тоa значи реален обид за измама.
     if (!verifyReturnChecksum(data)) {
-      // НЕ блокираме тука — не сме 100% сигурни во точниот формат на враќачкиот
-      // checksum за legacy режимот (немаме пристап до нивниот succes-payment.php).
-      // Сигурноста сепак е зачувана преку проверка на Details2 (intent id) +
-      // AmountToPay подолу, кои се доволни за да се спречи лажно плаќање.
-      console.warn('cPay: ReturnCheckSum проверката не помина (продолжуваме, ослонувајќи се на Details2+Amount проверка). Податоци:', JSON.stringify(data));
+      throw new Error('ReturnCheckSum не се совпаѓа — можен обид за измама.');
     }
 
     const [[intent]] = await pool.query('SELECT * FROM payment_intents WHERE id = ?', [intentId]);
