@@ -14,7 +14,7 @@ router.get('/', requireAuth, async (req, res) => {
       `SELECT s.*, p.name AS package_name, p.instrument, g.name AS group_name, g.professor_id, c.full_name AS student_name
        FROM subscriptions s
        JOIN packages p ON p.id = s.package_id
-       JOIN groups_table g ON g.id = s.group_id
+       LEFT JOIN groups_table g ON g.id = s.group_id
        JOIN children c ON c.id = s.student_id
        WHERE c.parent_id = ?
        ORDER BY s.created_at DESC`,
@@ -31,7 +31,7 @@ router.get('/', requireAuth, async (req, res) => {
      FROM subscriptions s
      JOIN children c ON c.id = s.student_id
      JOIN packages p ON p.id = s.package_id
-     JOIN groups_table g ON g.id = s.group_id
+     LEFT JOIN groups_table g ON g.id = s.group_id
      WHERE ${whereClause}
      ORDER BY s.next_due_date ASC`,
     params
