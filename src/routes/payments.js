@@ -176,6 +176,63 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
 // ===================================================================
 const VALID_TIMES = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
 
+// ===================================================================
+// POST /payments/init-installment — плаќање на идна (закажана) рата
+// од веќе постоечка претплата, исто преку вистински cPay (не веќе
+// симулирано).
+// ===================================================================
+router.post('/init-installment', requireAuth, requireRole('student'), async (req, res) => {
+  try {
+    const { installment_id } = req.body;
+    if (!installment_id) return res.status(400).json({ error: 'installment_id е задолжителен.' });
+    if (!CPAY_MERCHANT_ID || !CPAY_CHECKSUM_KEY) {
+      return res.status(500).json({ error: 'CPay сè уште не е целосно конфигуриран на серверот.' });
+    }
+
+    const [[inst]] = await pool.query(
+      `SELECT i.*, s.student_id, s.package_id, c.full_name AS child_name, c.parent_id, p.name AS package_name
+       FROM installments i
+       JOIN subscriptions s ON s.id = i.subscription_id
+       JOIN children c ON c.id = s.student_id
+       JOIN packages p ON p.id = s.package_id
+       WHERE i.id = ?`,
+      [installment_id]
+    );
+    if (!inst) return res.status(404).json({ error: 'Ратата не постои.' });
+    if (inst.parent_id !== req.user.id) return res.status(403).json({ error: 'Немаш пристап до оваа рата.' });
+    if (inst.status === 'paid') return res.status(409).json({ error: 'Ратата е веќе платена.' });
+
+    const amount = Math.round(Number(inst.amount));
+    const payload = { installment_id: inst.id };
+    const [result] = await pool.query(
+      `INSERT INTO payment_intents (kind, user_id, payload, amount, status) VALUES ('installment', ?, ?, ?, 'pending')`,
+      [req.user.id, JSON.stringify(payload), amount]
+    );
+
+    const fields = {
+      AmountToPay: String(amount * 100),
+      AmountCurrency: 'MKD',
+      Details1: truncateDetails1(`Рата ${inst.installment_number}/${inst.total_installments} ${inst.child_name}`),
+      Details2: String(result.insertId),
+      PayToMerchant: CPAY_MERCHANT_ID,
+      MerchantName: CPAY_MERCHANT_NAME,
+      PaymentOKURL: `${APP_URL}/payments/cpay-ok`,
+      PaymentFailURL: `${APP_URL}/payments/cpay-fail`,
+      FirstName: '', LastName: '', Address: '', City: '', Zip: '', Country: '', Telephone: '',
+      Email: req.user.email,
+      OriginalAmount: '', OriginalCurrency: ''
+    };
+    const { header, checksum } = buildRequestChecksum(fields);
+    fields.CheckSumHeader = header;
+    fields.CheckSum = checksum;
+
+    res.json({ intent_id: result.insertId, cpay_url: CPAY_PAYMENT_URL, fields });
+  } catch (err) {
+    console.error('POST /payments/init-installment error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
 router.post('/init-individual-booking', requireAuth, requireRole('student'), async (req, res) => {
   try {
     const { package_id, professor_id, instrument, booking_date, start_time, child_id } = req.body;
@@ -279,6 +336,8 @@ router.all('/cpay-ok', async (req, res) => {
       await completeSubscriptionPurchase(intent, payload, cpayRef);
     } else if (intent.kind === 'individual_booking') {
       await completeIndividualBooking(intent, payload, cpayRef);
+    } else if (intent.kind === 'installment') {
+      await completeInstallmentPayment(intent, payload, cpayRef);
     }
 
     await pool.query(
@@ -375,6 +434,52 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
         <p>Прва рата (платена сега): <strong>${schedule[0].amount} ден.</strong></p>
         ${groupNoteHtml}
         <p style="color:#888; font-size:13px; margin-top:20px;">Референца (cPay): ${cpayRef || '—'}</p>
+      </div>
+    `
+  });
+}
+
+async function completeInstallmentPayment(intent, payload, cpayRef) {
+  const { installment_id } = payload;
+
+  const [[inst]] = await pool.query(
+    `SELECT i.*, s.id AS subscription_id, u.email, c.full_name, p.name AS package_name
+     FROM installments i
+     JOIN subscriptions s ON s.id = i.subscription_id
+     JOIN children c ON c.id = s.student_id
+     JOIN users u ON u.id = c.parent_id
+     JOIN packages p ON p.id = s.package_id
+     WHERE i.id = ?`,
+    [installment_id]
+  );
+  if (!inst) return;
+
+  await pool.query(`UPDATE installments SET status = 'paid', paid_at = NOW() WHERE id = ?`, [installment_id]);
+
+  const [[nextPending]] = await pool.query(
+    `SELECT due_date FROM installments WHERE subscription_id = ? AND status = 'pending' ORDER BY due_date ASC LIMIT 1`,
+    [inst.subscription_id]
+  );
+  if (nextPending) {
+    await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?', [nextPending.due_date, inst.subscription_id]);
+  } else {
+    const farFuture = new Date();
+    farFuture.setDate(farFuture.getDate() + 365);
+    await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
+      [farFuture.toISOString().slice(0, 10), inst.subscription_id]);
+  }
+
+  await sendMail({
+    to: inst.email,
+    subject: `Потврда за рата ${inst.installment_number}/${inst.total_installments} — PianoForte`,
+    html: `
+      <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+        <h2>Ратата е успешно платена!</h2>
+        <p>Пакет: <strong>${inst.package_name}</strong></p>
+        <p>Дете: <strong>${inst.full_name}</strong></p>
+        <p>Рата: <strong>${inst.installment_number}/${inst.total_installments}</strong></p>
+        <p>Износ: <strong>${inst.amount} ден.</strong></p>
+        ${nextPending ? `<p>Следна рата доспева на: <strong>${new Date(nextPending.due_date).toLocaleDateString('mk-MK')}</strong></p>` : '<p>Ова беше последната рата — целиот пакет е платен!</p>'}
       </div>
     `
   });
