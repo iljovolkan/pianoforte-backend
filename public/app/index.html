@@ -686,6 +686,28 @@
 
       <div class="groups-overview" id="groupsOverview"></div>
 
+      <div class="card" id="profAvailabilityCard" style="margin-bottom:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:6px;">Понуди термини за индивидуална настава</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.</p>
+        <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+          <div style="min-width:150px;">
+            <label>Датум</label>
+            <input type="date" id="profAvailDate" class="login-input" style="margin-bottom:0;">
+          </div>
+          <div style="width:130px;">
+            <label>Време</label>
+            <select id="profAvailTime" class="login-select" style="margin-bottom:0;">
+              <option value="14:30">14:30</option><option value="15:15">15:15</option>
+              <option value="16:00">16:00</option><option value="16:45">16:45</option>
+              <option value="17:30">17:30</option><option value="18:15">18:15</option>
+              <option value="19:00">19:00</option><option value="19:45">19:45</option>
+            </select>
+          </div>
+          <button class="send-btn" id="profAvailAddBtn" style="width:auto; padding:0 20px;">Додади термин</button>
+        </div>
+        <div id="profAvailList"></div>
+      </div>
+
       <div class="card" id="indivBookingsCard" style="margin-bottom:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:14px;">Закажани индивидуални часови</h3>
         <div id="indivBookingsList"></div>
@@ -1002,15 +1024,10 @@
           </div>
           <div style="height:14px;"></div>
           <div class="form-row">
-            <label>Датум</label>
-            <input type="date" id="indivDate" class="login-input" style="margin-bottom:0;">
+            <label>Достапни термини кај овoj професор</label>
+            <div id="indivAvailabilityList"></div>
           </div>
-          <div style="height:14px;"></div>
-          <div class="form-row">
-            <label>Термин</label>
-            <div class="type-toggle" id="indivTimeToggle" style="flex-wrap:wrap;"></div>
-          </div>
-          <button class="send-btn" id="indivBookBtn" style="margin-top:10px;">Продолжи кон плаќање</button>
+          <button class="send-btn" id="indivBookBtn" style="margin-top:10px;" disabled>Продолжи кон плаќање</button>
           <div id="indivBookError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
         </div>
       </div>
@@ -2237,6 +2254,54 @@
     list.innerHTML = upcoming.map(b=>indivBookingRow(b, b.student_name)).join('');
   }
 
+  async function renderProfAvailability(){
+    const card = document.getElementById('profAvailabilityCard');
+    if(session.role !== 'professor'){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const dateInput = document.getElementById('profAvailDate');
+    if(!dateInput.value){
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+      dateInput.min = tomorrow.toISOString().slice(0,10);
+      dateInput.value = tomorrow.toISOString().slice(0,10);
+    }
+
+    const listBox = document.getElementById('profAvailList');
+    try{
+      const slots = await authApiCall('/individual-bookings/my-availability');
+      listBox.innerHTML = slots.length === 0
+        ? '<div class="empty-state">Сè уште немаш понудено термини.</div>'
+        : slots.map(s => `
+          <div class="sent-item">
+            <div class="sent-icon">${s.is_booked ? '✅' : '🕐'}</div>
+            <div class="sent-meta"><div class="t">${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}</div><div class="sub">${instrumentLabel(s.instrument)} · ${s.is_booked ? 'Резервиран' : 'Слободен'}</div></div>
+            ${!s.is_booked ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-avail-del="${s.id}">Отстрани</button>` : ''}
+          </div>
+        `).join('');
+      listBox.querySelectorAll('button[data-avail-del]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          try{
+            await authApiCall('/individual-bookings/availability/' + btn.dataset.availDel, { method:'DELETE' });
+            renderProfAvailability();
+          } catch(err){ alert(err.message || 'Грешка.'); }
+        });
+      });
+    } catch(err){ listBox.innerHTML = '<div class="empty-state">Грешка при вчитување.</div>'; }
+  }
+
+  document.getElementById('profAvailAddBtn').addEventListener('click', async ()=>{
+    const slot_date = document.getElementById('profAvailDate').value;
+    const start_time = document.getElementById('profAvailTime').value;
+    if(!slot_date){ alert('Избери датум.'); return; }
+    try{
+      await authApiCall('/individual-bookings/availability', {
+        method:'POST',
+        body: JSON.stringify({ instrument: session.instrument, slot_date, start_time })
+      });
+      renderProfAvailability();
+    } catch(err){ alert(err.message || 'Грешка.'); }
+  });
+
   function renderStudentIndivBookings(){
     const card = document.getElementById('billingIndivBookingsCard');
     const list = document.getElementById('billingIndivBookingsList');
@@ -2466,6 +2531,7 @@
   function renderSchedulePage(){
     renderGroupsOverview();
     renderProfessorIndivBookings();
+    renderProfAvailability();
 
     document.querySelectorAll('.view-toggle-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===calendarView));
     document.getElementById('weekViewWrap').style.display = calendarView==='week' ? 'block' : 'none';
@@ -3440,7 +3506,7 @@
       const btnLabel = chooseGroupMode ? 'Избери термин' : 'Резервирај термин';
       card.innerHTML = `
         <h4>${g.name}</h4>
-        <div class="prof-line">👤 проф. ${escapeHtml(g.professor_name||'—')}</div>
+        ${g.professor_name ? `<div class="prof-line">👤 проф. ${escapeHtml(g.professor_name)}</div>` : ''}
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
           <span class="tag age">${ageLabel(g.age_range)}</span>
@@ -3481,9 +3547,39 @@
     });
   }
 
-  /* ---- индивидуален час — избор на професор/датум/термин ---- */
-  const INDIV_TIMES = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
-  let selectedIndivTime = null;
+  /* ---- индивидуален час — избор на професор, потоа од НЕГОВИТЕ понудени термини ---- */
+  let selectedAvailabilityId = null;
+
+  async function loadIndivAvailability(professorId){
+    const listBox = document.getElementById('indivAvailabilityList');
+    const bookBtn = document.getElementById('indivBookBtn');
+    selectedAvailabilityId = null;
+    bookBtn.disabled = true;
+    listBox.innerHTML = '<div style="font-size:12.5px; color:var(--mist);">Се вчитуваат термини...</div>';
+    if(!professorId){ listBox.innerHTML = ''; return; }
+    try{
+      const slots = await authApiCall(`/individual-bookings/availability?professor_id=${professorId}&instrument=${selectedPkgInstrument}`);
+      if(slots.length === 0){
+        listBox.innerHTML = '<div style="font-size:12.5px; color:var(--mist);">Овoj професор моментално нема понудено слободни термини. Пробај друг професор или контактирај нè на +389 70 247 442.</div>';
+        return;
+      }
+      listBox.innerHTML = slots.map(s => `
+        <div class="type-btn indiv-slot-btn" data-avail-id="${s.id}" style="margin-bottom:6px; display:block;">
+          ${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}
+        </div>
+      `).join('');
+      listBox.querySelectorAll('.indiv-slot-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          listBox.querySelectorAll('.indiv-slot-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedAvailabilityId = Number(btn.dataset.availId);
+          bookBtn.disabled = false;
+        });
+      });
+    } catch(err){
+      listBox.innerHTML = '<div style="font-size:12.5px; color:var(--wine);">Грешка при вчитување термини.</div>';
+    }
+  }
 
   async function renderIndividualBookingStep(){
     const profSelect = document.getElementById('indivProfessorSelect');
@@ -3498,35 +3594,16 @@
     } catch(err){
       profSelect.innerHTML = '<option value="">Грешка при вчитување</option>';
     }
-
-    const dateInput = document.getElementById('indivDate');
-    const minDate = new Date(); minDate.setDate(minDate.getDate()+1);
-    dateInput.min = minDate.toISOString().slice(0,10);
-    dateInput.value = '';
-
-    selectedIndivTime = INDIV_TIMES[0];
-    const timeWrap = document.getElementById('indivTimeToggle');
-    timeWrap.innerHTML = INDIV_TIMES.map((t,i)=>`<div class="type-btn${i===0?' active':''}" data-time="${t}">${t}</div>`).join('');
-    timeWrap.querySelectorAll('.type-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        timeWrap.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedIndivTime = btn.dataset.time;
-      });
-    });
+    profSelect.onchange = ()=>{ loadIndivAvailability(profSelect.value); };
+    if(profSelect.value) await loadIndivAvailability(profSelect.value);
   }
 
   document.getElementById('indivBookBtn').addEventListener('click', ()=>{
     const errBox = document.getElementById('indivBookError');
     errBox.style.display = 'none';
-    const professor_id = Number(document.getElementById('indivProfessorSelect').value);
-    const booking_date = document.getElementById('indivDate').value;
-    if(!professor_id){ errBox.textContent = 'Избери професор.'; errBox.style.display='block'; return; }
-    if(!booking_date){ errBox.textContent = 'Избери датум.'; errBox.style.display='block'; return; }
-    const dow = new Date(booking_date+'T00:00:00').getDay();
-    if(dow===0 || dow===6){ errBox.textContent = 'Избери работен ден (не сабота/недела).'; errBox.style.display='block'; return; }
+    if(!selectedAvailabilityId){ errBox.textContent = 'Избери термин.'; errBox.style.display='block'; return; }
 
-    pendingIndividualBooking = { professor_id, instrument: selectedPkgInstrument, booking_date, start_time: selectedIndivTime };
+    pendingIndividualBooking = { availability_id: selectedAvailabilityId };
     pendingBooking = null;
     openPaymentModal();
   });
@@ -3655,10 +3732,7 @@
           method:'POST',
           body: JSON.stringify({
             package_id: chosenPackage,
-            professor_id: pendingIndividualBooking.professor_id,
-            instrument: pendingIndividualBooking.instrument,
-            booking_date: pendingIndividualBooking.booking_date,
-            start_time: pendingIndividualBooking.start_time,
+            availability_id: pendingIndividualBooking.availability_id,
             child_id: activeChildId
           })
         });
