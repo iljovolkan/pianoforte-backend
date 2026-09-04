@@ -235,18 +235,24 @@ router.post('/init-installment', requireAuth, requireRole('student'), async (req
 
 router.post('/init-individual-booking', requireAuth, requireRole('student'), async (req, res) => {
   try {
-    const { package_id, professor_id, instrument, booking_date, start_time, child_id } = req.body;
-    if (!package_id || !professor_id || !instrument || !booking_date || !start_time || !child_id) {
-      return res.status(400).json({ error: 'Сите полиња се задолжителни.' });
+    const { package_id, availability_id, child_id } = req.body;
+    if (!package_id || !availability_id || !child_id) {
+      return res.status(400).json({ error: 'package_id, availability_id и child_id се задолжителни.' });
     }
     if (!CPAY_MERCHANT_ID || !CPAY_CHECKSUM_KEY) {
       return res.status(500).json({ error: 'CPay сè уште не е целосно конфигуриран на серверот.' });
     }
-    if (!VALID_TIMES.includes(start_time)) return res.status(400).json({ error: 'Невалиден термин.' });
-    const dateObj = new Date(booking_date + 'T00:00:00');
-    const day = dateObj.getDay();
-    if (day === 0 || day === 6) return res.status(400).json({ error: 'Не работиме за викенд.' });
-    if (dateObj < new Date(new Date().toDateString())) return res.status(400).json({ error: 'Не можеш да закажеш во минатото.' });
+
+    const [[slot]] = await pool.query(
+      'SELECT * FROM individual_availability WHERE id = ?', [availability_id]
+    );
+    if (!slot) return res.status(404).json({ error: 'Терминот повеќе не постои.' });
+    if (slot.is_booked) return res.status(409).json({ error: 'Овoj термин веќе е резервиран од некого друг. Избери друг.' });
+
+    const professor_id = slot.professor_id;
+    const instrument = slot.instrument;
+    const booking_date = slot.slot_date;
+    const start_time = slot.start_time;
 
     const [[child]] = await pool.query('SELECT id, full_name FROM children WHERE id = ? AND parent_id = ?', [child_id, req.user.id]);
     if (!child) return res.status(403).json({ error: 'Ова дете не е поврзано со твojot профил.' });
@@ -260,14 +266,8 @@ router.post('/init-individual-booking', requireAuth, requireRole('student'), asy
     );
     if (!prof) return res.status(404).json({ error: 'Професорот не постои или не го предава овoj инструмент.' });
 
-    const [[existing]] = await pool.query(
-      "SELECT id FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status != 'cancelled'",
-      [professor_id, booking_date, start_time]
-    );
-    if (existing) return res.status(409).json({ error: 'Овoj термин веќе е зафатен кај тoj професор.' });
-
     const amount = Math.round(Number(pkg.price_mkd));
-    const payload = { child_id, professor_id, instrument, booking_date, start_time };
+    const payload = { child_id, professor_id, instrument, booking_date, start_time, availability_id };
     const [result] = await pool.query(
       `INSERT INTO payment_intents (kind, user_id, payload, amount, status) VALUES ('individual_booking', ?, ?, ?, 'pending')`,
       [req.user.id, JSON.stringify(payload), amount]
@@ -486,7 +486,22 @@ async function completeInstallmentPayment(intent, payload, cpayRef) {
 }
 
 async function completeIndividualBooking(intent, payload, cpayRef) {
-  const { child_id, professor_id, instrument, booking_date, start_time } = payload;
+  const { child_id, professor_id, instrument, booking_date, start_time, availability_id } = payload;
+
+  if (availability_id) {
+    const [updateResult] = await pool.query(
+      'UPDATE individual_availability SET is_booked = 1 WHERE id = ? AND is_booked = 0',
+      [availability_id]
+    );
+    if (updateResult.affectedRows === 0) {
+      // некој друг веќе го зазел истиот термин во меѓувреме — плаќањето сепак
+      // помина кај cPay, па го бележиме резервацијата (админ треба рачно да
+      // ja разреши колизијата и по потреба да врати пари), наместо тивко да
+      // ja изгубиме уплатата.
+      console.error(`Колизија: availability_id ${availability_id} веќе е зафатена, но плаќање помина (intent ${intent.id}).`);
+    }
+  }
+
   await pool.query(
     `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
