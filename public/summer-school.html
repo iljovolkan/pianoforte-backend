@@ -220,7 +220,8 @@
 
   /* ===== CONTACT ===== */
   .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
-  .contact-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px;}
+  .contact-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:26px; transition:.2s;}
+  a.contact-card:hover{border-color:var(--lilac-deep); box-shadow:var(--shadow-sm); transform:translateY(-2px);}
   .contact-card h4{font-size:14px; margin-bottom:10px; color:var(--sand-deep);}
   .contact-card p{font-size:14.5px; margin-bottom:4px;}
   .contact-form .frow{margin-bottom:16px;}
@@ -430,8 +431,8 @@
       </div>
       <div>
         <h4 data-i18n="footer_address">Адреса</h4>
-        <p>Виенска Бр 1<br>1000, Скопје</p>
-        <p style="margin-top:8px;">Булевар Јане Сандански Бр 79а<br>1000, Скопје</p>
+        <p><a href="https://www.google.com/maps/search/?api=1&query=Виенска+1+Скопје" target="_blank" rel="noopener">Виенска Бр 1<br>1000, Скопје</a></p>
+        <p style="margin-top:8px;"><a href="https://www.google.com/maps/search/?api=1&query=Кузман+Јосифовски+Питу+28+Скопје" target="_blank" rel="noopener">Кузман Јосифовски Питу бр 28-лам.1/лок.14<br>1000, Скопје</a></p>
       </div>
       <div>
         <h4 data-i18n="footer_hours">Работно време</h4>
