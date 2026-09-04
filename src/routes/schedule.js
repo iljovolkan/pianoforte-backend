@@ -17,8 +17,8 @@ router.get('/', requireAuth, async (req, res) => {
 
   for (const slot of slots) {
     const [members] = await pool.query(
-      `SELECT u.id, u.full_name FROM group_members gm
-       JOIN users u ON u.id = gm.student_id
+      `SELECT c.id, c.full_name FROM group_members gm
+       JOIN children c ON c.id = gm.student_id
        WHERE gm.group_id = ?`,
       [slot.group_id]
     );
@@ -28,19 +28,17 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(slots);
 });
 
-// POST /schedule  { group_id, day_of_week, start_time, note }  — доделува термин на група
-// Ограничувањето за "веќе зафатен термин" важи ПО ПРОФЕСОР — различни
-// професори слободно можат да имаат групи во исто време.
-// POST /schedule/pair  { group_id, day1, day2, start_time, note }
+// POST /schedule/pair  { group_id, day1, day2, start_time1, start_time2, note }
 // Доделува ДВА термина неделно одеднаш за иста група (сите пакети се 2 часа
-// неделно, па логично е групата секогаш да добива двата дена заедно, во ист
-// час). Ако едниот од двата термина е веќе зафатен, двете се откажуваат
+// неделно). Секој ден може да има РАЗЛИЧНО време — не мора да е исто.
+// Ако едниот од двата термина е веќе зафатен, двете се откажуваат
 // (трансакција — сè или ништо).
 router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { group_id, day1, day2, start_time, note } = req.body;
+  const { group_id, day1, day2, start_time1, start_time2, note } = req.body;
 
-  if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2) || day1 === day2 || !TIME_RE.test(start_time || '')) {
-    return res.status(400).json({ error: 'Избери два различни дена и валиден термин (HH:MM).' });
+  if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2) || day1 === day2
+      || !TIME_RE.test(start_time1 || '') || !TIME_RE.test(start_time2 || '')) {
+    return res.status(400).json({ error: 'Избери два различни дена и валидни термини (HH:MM) за секој ден.' });
   }
 
   const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
@@ -53,10 +51,10 @@ router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req,
   try {
     await conn.beginTransaction();
     const ids = [];
-    for (const day of [day1, day2]) {
+    for (const [day, time] of [[day1, start_time1], [day2, start_time2]]) {
       const [result] = await conn.query(
         'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?, ?)',
-        [group_id, group.professor_id, day, start_time, note || null]
+        [group_id, group.professor_id, day, time, note || null]
       );
       ids.push(result.insertId);
     }
