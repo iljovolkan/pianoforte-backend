@@ -1269,6 +1269,12 @@
   const paymentStateClass = {paid:'status-done', due_soon:'status-delivered', late:'status-opened', released:'status-queued', none:'status-queued'};
 
   /* ===================== SESSION ===================== */
+  // ===== ПЛАЌАЊЕТО е привремено исклучено (само CPay redirect-от) — сè друго
+  // (регистрација, најава, разгледување пакети, admin, итн.) работи нормално.
+  // Кога плаќањето треба да се вклучи повторно — само промени го ова на true. =====
+  const PAYMENTS_ENABLED = false;
+  const PAYMENTS_DISABLED_MSG = 'Онлајн плаќањето наскоро ќе биде достапно. За резервација контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.';
+
   let session = null;
   let activeStudentForIndex = null;
   let selectedSlotKey = null;
@@ -2923,6 +2929,7 @@
 
 
   window.payInstallment = async function(installmentId){
+    if(!PAYMENTS_ENABLED){ alert(PAYMENTS_DISABLED_MSG); return; }
     try{
       const initResult = await authApiCall('/payments/init-installment', {
         method:'POST',
@@ -3698,6 +3705,7 @@
   });
 
   document.getElementById('payConfirmBtn').addEventListener('click', async ()=>{
+    if(!PAYMENTS_ENABLED){ alert(PAYMENTS_DISABLED_MSG); return; }
     // Забелешка: card полињата (број/датум/CVV) веќе не се потребни овде —
     // вистинските податоци за картичка сега се внесуваат на cPay-овата
     // сопствена, безбедна страница (не кај нас). Го задржуваме checkbox-от
