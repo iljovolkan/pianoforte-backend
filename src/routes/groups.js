@@ -5,12 +5,21 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво, professor
+// ВАЖНО: за ученик/родител, идентитетот на professor-от е СКРИЕН (анонимен)
+// додека не резервираат термин во таa група — professor_name/professor_id
+// се отстрануваат од одговорот, освен ако веќе имаат дете запишано таму.
 router.get('/', requireAuth, async (req, res) => {
   try {
     const [groups] = await pool.query(
       `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, u.full_name AS professor_name
        FROM groups_table g JOIN users u ON u.id = g.professor_id`
     );
+
+    let ownChildIds = [];
+    if (req.user.role === 'student') {
+      const [ownChildren] = await pool.query('SELECT id FROM children WHERE parent_id = ?', [req.user.id]);
+      ownChildIds = ownChildren.map(c => c.id);
+    }
 
     for (const g of groups) {
       const [members] = await pool.query(
@@ -23,6 +32,14 @@ router.get('/', requireAuth, async (req, res) => {
       );
       g.members = members;
       g.spots_left = g.capacity - members.length;
+
+      if (req.user.role === 'student') {
+        const alreadyEnrolled = members.some(m => ownChildIds.includes(m.id));
+        if (!alreadyEnrolled) {
+          delete g.professor_id;
+          delete g.professor_name;
+        }
+      }
     }
 
     res.json(groups);
