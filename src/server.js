@@ -39,6 +39,7 @@ app.use('/payments', paymentsRoutes);
 
 // CORS — дозволени се само нашите вистински домени (не "било кој сајт")
 const ALLOWED_ORIGINS = [
+  'https://pianoforte.edu.mk',
   'https://app.pianoforte.edu.mk',
   'https://pianoforte-backend-production.up.railway.app'
 ];
