@@ -34,12 +34,13 @@ app.use(express.urlencoded({ extended: true })); // потребно за cPay c
 // што CORS проверката инаку ja блокираше (cpay.com.mk не е во ALLOWED_ORIGINS
 // и никогаш не треба да биде, бидejќи тoj домен не е наш frontend).
 // /payments/init-* рутите не страдаат од ова бидejќи и онака се повикуваат
-// од истиот домен (app.pianoforte.edu.mk), па CORS не им е ниту потребен.
+// од истиот домен (www.pianoforte.edu.mk), па CORS не им е ниту потребен.
 app.use('/payments', paymentsRoutes);
 
 // CORS — дозволени се само нашите вистински домени (не "било кој сајт")
 const ALLOWED_ORIGINS = [
   'https://pianoforte.edu.mk',
+  'https://www.pianoforte.edu.mk',
   'https://app.pianoforte.edu.mk',
   'https://pianoforte-backend-production.up.railway.app'
 ];
