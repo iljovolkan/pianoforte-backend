@@ -1295,7 +1295,7 @@
 
   /* ===================== LOGIN LOGIC ===================== */
   /* ===================== REAL API CONNECTION ===================== */
-  const API_BASE = 'https://app.pianoforte.edu.mk';
+  const API_BASE = ''; // релативно — секогаш точно, без разлика кој домен е активен
   async function apiCall(path, options={}){
     const isFormData = options.body instanceof FormData;
     const res = await fetch(API_BASE + path, {
