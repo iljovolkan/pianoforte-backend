@@ -8,6 +8,7 @@ const { runDailyMaintenance } = require('../cron');
 const router = express.Router();
 const SALT_ROUNDS = 12;
 const VALID_INSTRUMENTS = ['piano', 'gitara', 'el-gitara', 'bas-gitara', 'tapani', 'peenje', 'violina', 'ran-razvoj'];
+const VALID_LOCATIONS = ['aerodrom', 'taftalidze'];
 
 function generateTempPassword(){
   // 12-карактерна случајна лозинка (hex), доволно силна за привремена употреба
@@ -15,9 +16,9 @@ function generateTempPassword(){
 }
 
 // POST /admin/professors  { email, full_name, instrument }  — само admin
-// Создава professor сметка со генерирана привремена лозинка, "заклучена" на
-// еден инструмент — тоj professor понатаму смее да создава групи само за
-// тоj инструмент (проверено на серверска страна во groups.js).
+// Создава professor сметка со генерирана привремена лозинка. "instrument" тука
+// е само ПРВИОТ/главен инструмент — понатаму admin може да додаде уште преку
+// /admin/professors/:id/instruments (professor_instruments табелата).
 router.post('/professors', requireAuth, requireRole('admin'), async (req, res) => {
   const { email, full_name, instrument } = req.body;
   if (!email || !full_name || !instrument) {
@@ -39,6 +40,10 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
     'INSERT INTO users (email, password_hash, role, full_name, email_verified, instrument) VALUES (?, ?, ?, ?, TRUE, ?)',
     [email, passwordHash, 'professor', full_name, instrument]
   );
+  await pool.query(
+    'INSERT IGNORE INTO professor_instruments (professor_id, instrument) VALUES (?, ?)',
+    [result.insertId, instrument]
+  );
 
   res.status(201).json({
     id: result.insertId,
@@ -50,7 +55,7 @@ router.post('/professors', requireAuth, requireRole('admin'), async (req, res) =
   });
 });
 
-// GET /admin/professors — листа на сите професори, со број групи/ученици (само admin)
+// GET /admin/professors — листа на сите професори, со инструменти + локации (само admin)
 router.get('/professors', requireAuth, requireRole('admin'), async (req, res) => {
   const [rows] = await pool.query(`
     SELECT u.id, u.email, u.full_name, u.instrument, u.created_at,
@@ -63,7 +68,41 @@ router.get('/professors', requireAuth, requireRole('admin'), async (req, res) =>
     GROUP BY u.id
     ORDER BY u.created_at DESC
   `);
+  for (const p of rows) {
+    const [insts] = await pool.query('SELECT instrument FROM professor_instruments WHERE professor_id = ?', [p.id]);
+    p.instruments = insts.map(i => i.instrument);
+    const [locs] = await pool.query('SELECT location FROM professor_locations WHERE professor_id = ?', [p.id]);
+    p.locations = locs.map(l => l.location);
+  }
   res.json(rows);
+});
+
+// POST /admin/professors/:id/instruments  { instrument } — додава уште еден инструмент на professor
+router.post('/professors/:id/instruments', requireAuth, requireRole('admin'), async (req, res) => {
+  const { instrument } = req.body;
+  if (!VALID_INSTRUMENTS.includes(instrument)) return res.status(400).json({ error: 'Невалиден инструмент.' });
+  await pool.query('INSERT IGNORE INTO professor_instruments (professor_id, instrument) VALUES (?, ?)', [req.params.id, instrument]);
+  res.status(201).json({ ok: true });
+});
+
+// DELETE /admin/professors/:id/instruments/:instrument
+router.delete('/professors/:id/instruments/:instrument', requireAuth, requireRole('admin'), async (req, res) => {
+  await pool.query('DELETE FROM professor_instruments WHERE professor_id = ? AND instrument = ?', [req.params.id, req.params.instrument]);
+  res.json({ ok: true });
+});
+
+// POST /admin/professors/:id/locations  { location } — 'aerodrom' или 'taftalidze'
+router.post('/professors/:id/locations', requireAuth, requireRole('admin'), async (req, res) => {
+  const { location } = req.body;
+  if (!VALID_LOCATIONS.includes(location)) return res.status(400).json({ error: 'Невалидна локација.' });
+  await pool.query('INSERT IGNORE INTO professor_locations (professor_id, location) VALUES (?, ?)', [req.params.id, location]);
+  res.status(201).json({ ok: true });
+});
+
+// DELETE /admin/professors/:id/locations/:location
+router.delete('/professors/:id/locations/:location', requireAuth, requireRole('admin'), async (req, res) => {
+  await pool.query('DELETE FROM professor_locations WHERE professor_id = ? AND location = ?', [req.params.id, req.params.location]);
+  res.json({ ok: true });
 });
 
 // GET /admin/students — листа на сите деца (со податоци за родителот), само admin
