@@ -14,7 +14,9 @@ router.get('/professors', requireAuth, async (req, res) => {
   const { instrument } = req.query;
   if (!instrument) return res.status(400).json({ error: 'instrument е задолжителен параметар.' });
   const [rows] = await pool.query(
-    "SELECT id, full_name FROM users WHERE role = 'professor' AND instrument = ?",
+    `SELECT u.id, u.full_name FROM users u
+     JOIN professor_instruments pi ON pi.professor_id = u.id
+     WHERE u.role = 'professor' AND pi.instrument = ?`,
     [instrument]
   );
   res.json(rows);
@@ -22,18 +24,28 @@ router.get('/professors', requireAuth, async (req, res) => {
 
 // ===================================================================
 // ДОСТАПНОСТ ЗА ИНДИВИДУАЛНА НАСТАВА — professor-от ги дефинира
-// термините што ги нуди, ученикот бира само од понудените (не веќе
-// слободно кое било време).
+// термините што ги нуди (на секои 15 мин, било кое време во работно
+// време), ученикот бира само од понудените.
 // ===================================================================
+const TIME_15MIN_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 
-// POST /individual-bookings/availability  { instrument, slot_date, start_time }
-// Само professor додава сопствени термини.
+// POST /individual-bookings/availability  { instrument, slot_date, start_time, location }
+// Само professor додава сопствени термини, само за инструмент(и) на кои е доделен.
 router.post('/availability', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само професор може да додава термини.' });
-  const { instrument, slot_date, start_time } = req.body;
+  const { instrument, slot_date, start_time, location } = req.body;
   if (!instrument || !slot_date || !start_time) {
     return res.status(400).json({ error: 'instrument, slot_date и start_time се задолжителни.' });
   }
+  if (!TIME_15MIN_RE.test(start_time)) {
+    return res.status(400).json({ error: 'Времето мора да е на секои 15 минути (пр. 15:00, 15:15, 15:30...).' });
+  }
+  if (location && !['aerodrom', 'taftalidze'].includes(location)) {
+    return res.status(400).json({ error: 'Невалидна локација.' });
+  }
+  const [[allowed]] = await pool.query('SELECT 1 FROM professor_instruments WHERE professor_id = ? AND instrument = ?', [req.user.id, instrument]);
+  if (!allowed) return res.status(403).json({ error: 'Не си доделен за тоj инструмент.' });
+
   const dateObj = new Date(slot_date + 'T00:00:00');
   const day = dateObj.getDay();
   if (day === 0 || day === 6) return res.status(400).json({ error: 'Не работиме за викенд.' });
@@ -41,8 +53,8 @@ router.post('/availability', requireAuth, async (req, res) => {
 
   try {
     const [result] = await pool.query(
-      'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time) VALUES (?, ?, ?, ?)',
-      [req.user.id, instrument, slot_date, start_time]
+      'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, instrument, slot_date, start_time, location || null]
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
@@ -58,12 +70,19 @@ router.get('/availability', requireAuth, async (req, res) => {
   const { professor_id, instrument } = req.query;
   if (!professor_id || !instrument) return res.status(400).json({ error: 'professor_id и instrument се задолжителни.' });
   const [rows] = await pool.query(
-    `SELECT id, slot_date, start_time FROM individual_availability
+    `SELECT id, slot_date, start_time, location FROM individual_availability
      WHERE professor_id = ? AND instrument = ? AND is_booked = 0 AND slot_date >= CURDATE()
      ORDER BY slot_date ASC, start_time ASC`,
     [professor_id, instrument]
   );
   res.json(rows);
+});
+
+// GET /individual-bookings/my-instruments — сопствените доделени инструменти (за dropdown при додавање термин)
+router.get('/my-instruments', requireAuth, async (req, res) => {
+  if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само за професори.' });
+  const [rows] = await pool.query('SELECT instrument FROM professor_instruments WHERE professor_id = ?', [req.user.id]);
+  res.json(rows.map(r => r.instrument));
 });
 
 // GET /individual-bookings/my-availability — сопствен преглед на professor-от (сите, вклучувajќи зафатени)
