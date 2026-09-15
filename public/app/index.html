@@ -412,6 +412,10 @@
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-card">
+    <div class="lang-switch" id="langSwitchLogin" style="justify-content:flex-end; margin-bottom:10px;">
+      <button class="lang-btn active" data-lang="mk">МК</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
     <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;">← Назад кон почетна</a>
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="login_tagline">Најави се за да продолжиш</p></div>
 
@@ -442,19 +446,19 @@
 <div id="forgotPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card">
-    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Ресетирај ja лозинката</p></div>
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="forgot_tagline">Ресетирај ja лозинката</p></div>
     <div id="forgotPasswordForm">
-      <label class="field-label" style="margin-top:20px; display:block;">Email</label>
-      <input class="login-input" id="forgotEmail" type="email" placeholder="твоја@email.com">
-      <button class="login-btn" id="forgotSubmitBtn">Испрати линк за ресетирање</button>
+      <label class="field-label" style="margin-top:20px; display:block;" data-i18n="label_email">Email</label>
+      <input class="login-input" id="forgotEmail" type="email" placeholder="твоја@email.com" data-i18n-placeholder="placeholder_login_email">
+      <button class="login-btn" id="forgotSubmitBtn" data-i18n="forgot_submit">Испрати линк за ресетирање</button>
       <div id="forgotError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     </div>
     <div id="forgotPasswordSuccess" style="display:none; text-align:center;">
       <div style="font-size:40px; margin-bottom:14px;">📧</div>
-      <p style="color:var(--ink); font-size:14px; line-height:1.6;">Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).</p>
+      <p style="color:var(--ink); font-size:14px; line-height:1.6;" data-i18n="forgot_success">Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).</p>
     </div>
     <div style="text-align:center; margin-top:18px;">
-      <a href="#" id="backToLoginFromForgotLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;">← Назад кон најава</a>
+      <a href="#" id="backToLoginFromForgotLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;" data-i18n="back_to_login">← Назад кон најава</a>
     </div>
   </div>
 </div>
@@ -463,12 +467,12 @@
 <div id="resetPasswordScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card">
-    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Постави нова лозинка</p></div>
-    <label class="field-label" style="margin-top:20px; display:block;">Нова лозинка</label>
-    <div class="pw-wrap"><input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери"><button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <label class="field-label">Потврди ja лозинката</label>
-    <div class="pw-wrap"><input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja"><button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-    <button class="login-btn" id="resetSubmitBtn">Зачувај ja новата лозинка</button>
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reset_tagline">Постави нова лозинка</p></div>
+    <label class="field-label" style="margin-top:20px; display:block;" data-i18n="reset_new_pw">Нова лозинка</label>
+    <div class="pw-wrap"><input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери" data-i18n-placeholder="placeholder_min8"><button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <label class="field-label" data-i18n="reset_confirm_pw">Потврди ja лозинката</label>
+    <div class="pw-wrap"><input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja" data-i18n-placeholder="placeholder_repeat"><button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <button class="login-btn" id="resetSubmitBtn" data-i18n="reset_submit">Зачувај ja новата лозинка</button>
     <div id="resetError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div id="resetSuccess" style="display:none; color:var(--leaf); font-size:13px; text-align:center; margin-top:10px;"></div>
   </div>
@@ -477,10 +481,10 @@
 <!-- ================= TERMS / PRIVACY ================= -->
 <div id="termsScreen" style="display:none; min-height:100vh; padding:24px; background:var(--bg);">
   <div style="max-width:720px; margin:0 auto;">
-    <button id="closeTermsBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;">← Назад</button>
+    <button id="closeTermsBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;" data-i18n="back_link_short">← Назад</button>
     <div class="login-card" style="max-width:100%; text-align:left;">
-      <h1 style="font-size:22px; margin-bottom:18px;">Услови за користење</h1>
-      <div style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+      <h1 style="font-size:22px; margin-bottom:18px;" data-i18n="terms_title">Услови за користење</h1>
+      <div id="termsBodyMk" style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
         <p style="margin-bottom:14px;">Добредојдовте на pianoforte.edu.mk. Со вашиот пристап на страничката/платформата, се согласувате со општите одредби објавени подолу. Ве молиме прочитајте ги внимателно.</p>
         <p style="margin-bottom:14px;">pianoforte.edu.mk претставува интернет платформа за испорака на онлајн подучување за свирење на инструмент. Преносот на податоците се врши на серверот на pianoforte.edu.mk.</p>
 
@@ -517,16 +521,53 @@
 
         <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Адреса: Пијано Форте ДОО Скопје, ул. Виенска 1 Б/1-2, Карпош, 1000 Скопје, Македонија.</p>
       </div>
+      <div id="termsBodyEn" style="display:none; font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+        <p style="margin-bottom:14px;">Welcome to pianoforte.edu.mk. By accessing this website/platform, you agree to the general terms published below. Please read them carefully.</p>
+        <p style="margin-bottom:14px;">pianoforte.edu.mk is an internet platform for delivering online instrument tuition. Data transfer takes place on the pianoforte.edu.mk server.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Electronic communication</h3>
+        <p style="margin-bottom:14px;">By visiting the site, registering, or sending an email to info@pianoforte.edu.mk, you establish electronic communication with us. Our response will follow by email and/or notifications shown on the site. Registered members agree to receive informational and promotional newsletters \u2014 if you do not wish to, please send a request to stop your registration.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Username and password</h3>
+        <p style="margin-bottom:14px;">By logging in, you agree to our limited access to your device, and to the privacy of your username and password and all activity associated with them.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Access</h3>
+        <p style="margin-bottom:14px;">Minors under 18 years of age may not access the platform without consent or supervision from a parent/guardian authorized to pay with their debit or credit card.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Protecting your account</h3>
+        <p style="margin-bottom:14px;">Your password is the key to your account \u2014 do not share it with anyone. If you lose control of your password, you may become a victim of fraud or misuse carried out in your name. If your password is compromised, change it immediately and notify us.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Description of services and general terms of operation</h3>
+        <p style="margin-bottom:14px;">The PianoForte school year begins on September 1 and lasts individually for each client depending on the purchased lesson package. PianoForte will not operate on recognized public holidays, but this will not affect the delivered lesson fund \u2014 any lesson lost due to a public holiday will be rescheduled. Pre-announced absences (no more than 4 hours per semester) and absences due to illness will be made up at other times. A lesson missed due to an unannounced absence by the client will not be made up and will be considered fulfilled. A lesson cancelled by PianoForte will be made up.</p>
+        <p style="margin-bottom:14px;">The school has the right to organize public performances and to select participants. The school begins delivering lessons once membership payment is completed. <strong>PianoForte does not refund already paid funds</strong> (paid funds may be transferred to another end user with prior notice).</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Tuition</h3>
+        <p style="margin-bottom:14px;">Tuition on the site is expressed in Macedonian denars.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Copyright</h3>
+        <p style="margin-bottom:14px;">All content on this web portal/platform is the property of PianoForte. Using it for the same or similar activity is not permitted and is considered a violation of copyright and ownership rights.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Limitation of liability</h3>
+        <p style="margin-bottom:14px;">pianoforte.edu.mk takes all reasonable measures for the highest level of security, but cannot guarantee protection against hacker attacks, computer viruses, or similar threats. You agree to use our platform at your own risk.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Legal provisions</h3>
+        <p style="margin-bottom:14px;">By visiting pianoforte.edu.mk you agree to these general terms and to all applicable laws in North Macedonia. pianoforte.edu.mk reserves the right to change the appearance, content and terms at any time.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Electronic invoice</h3>
+        <p style="margin-bottom:14px;">After each successful payment, you will receive an electronic invoice by email. If the payer is a legal entity, the invoice will be issued in written form upon request sent to info@pianoforte.edu.mk.</p>
+
+        <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Address: PianoForte DOO Skopje, Vienska 1 B/1-2, Karpos, 1000 Skopje, North Macedonia.</p>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="privacyScreen" style="display:none; min-height:100vh; padding:24px; background:var(--bg);">
   <div style="max-width:720px; margin:0 auto;">
-    <button id="closePrivacyBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;">← Назад</button>
+    <button id="closePrivacyBtn" style="background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; margin-bottom:24px;" data-i18n="back_link_short">← Назад</button>
     <div class="login-card" style="max-width:100%; text-align:left;">
-      <h1 style="font-size:22px; margin-bottom:18px;">Правила за приватност и заштита на личните податоци</h1>
-      <div style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+      <h1 style="font-size:22px; margin-bottom:18px;" data-i18n="privacy_title">Правила за приватност и заштита на личните податоци</h1>
+      <div id="privacyBodyMk" style="font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
         <p style="margin-bottom:14px;">Со Правилата се уредуваат начинот на користење и правото на приватност, сигурност и заштита на дадените лични податоци на pianoforte.edu.mk. Правилата можат да бидат изменети и секоја измена ќе биде видливо означена, а корисниците известени.</p>
 
         <h3 style="font-size:15px; margin:20px 0 8px;">Заштита на лични податоци</h3>
@@ -548,6 +589,28 @@
 
         <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Адреса: Пијано Форте ДОО Скопје, ул. Виенска 1 Б/1-2, Карпош, 1000 Скопје, Македонија.</p>
       </div>
+      <div id="privacyBodyEn" style="display:none; font-size:13.5px; line-height:1.7; color:var(--ink); opacity:.9;">
+        <p style="margin-bottom:14px;">These Rules govern the manner of use and the right to privacy, security and protection of personal data provided on pianoforte.edu.mk. The Rules may be amended and every change will be clearly marked, with users notified.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Protection of personal data</h3>
+        <p style="margin-bottom:14px;">The primary purpose of collecting personal information is to ensure secure, easy and efficient use of the site. You agree that we may use your personal data to: provide the services and support you request; resolve your requests or issues; and adapt, measure and improve our services and content.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Privacy and personal data protection rules</h3>
+        <p style="margin-bottom:14px;">The collection of personal data complies with personal data protection regulations. Personal data is collected, processed and stored solely for the purposes of our site \u2014 name, surname, address, phone number and email \u2014 in order to smoothly deliver the music instrument learning service. Data is kept no longer than necessary for the purposes for which it was collected, after which it is deleted and destroyed.</p>
+        <p style="margin-bottom:14px;"><strong>Minors may not provide personal data without permission from a parent or guardian. PianoForte will never disclose minors\u2019 personal data to third parties.</strong> We recommend that all parents and guardians teach their children safe and responsible handling of personal data online.</p>
+        <p style="margin-bottom:14px;">For questions or comments about these rules, please write to info@pianoforte.edu.mk. Upon request, you will be informed within 7 days which of your personal data has been collected.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Cookies / Tracking technology</h3>
+        <p style="margin-bottom:14px;">Our site may use cookies and tracking technology, useful for improving the site and tailoring it to visitors\u2019 needs. Personal data cannot be collected through cookies.</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Disclosure of personal data</h3>
+        <p style="margin-bottom:14px;">Only on a legal basis may your personal data be disclosed to government bodies or other institutions (e.g. a request from an authorized institution based on law, fraud prevention, or investigation of already committed fraud).</p>
+
+        <h3 style="font-size:15px; margin:20px 0 8px;">Storage of personal data</h3>
+        <p style="margin-bottom:14px;">Personal data is securely protected from loss, destruction, falsification and unauthorized access. Only authorized persons have access. Transfer is protected by appropriate methods, and all necessary technical and organizational security measures are taken.</p>
+
+        <p style="margin-top:24px; color:var(--mist); font-size:12.5px;">Address: PianoForte DOO Skopje, Vienska 1 B/1-2, Karpos, 1000 Skopje, North Macedonia.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -557,22 +620,22 @@
 <div id="registerScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:480px;">
-    <a href="#" id="backToLoginFromRegisterLink" style="display:inline-block; color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none; margin-bottom:14px;">← Назад кон најава</a>
+    <a href="#" id="backToLoginFromRegisterLink" style="display:inline-block; color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none; margin-bottom:14px;" data-i18n="back_to_login">← Назад кон најава</a>
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reg_tagline">Креирај профил за ученик</p></div>
 
     <label class="field-label" data-i18n="reg_parent_name_label">Твоето име и презиме (родител/старател)</label>
-    <input class="login-input" id="regName" placeholder="пр. Марија Петровска">
+    <input class="login-input" id="regName" placeholder="пр. Марија Петровска" data-i18n-placeholder="placeholder_reg_name">
     <label class="field-label" data-i18n="label_email">Email</label>
-    <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com">
+    <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com" data-i18n-placeholder="placeholder_parent_email">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
     <div class="pw-wrap"><input class="login-input" id="regPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="regPassword" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 
     <div style="border-top:1px solid var(--line); margin:18px 0 14px; padding-top:14px;">
       <div style="font-size:11px; color:var(--mist); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em;" data-i18n="reg_child_section">Прво дете (можеш да додадеш уште подоцна)</div>
       <label class="field-label" data-i18n="reg_child_name_label">Име и презиме на детето</label>
-      <input class="login-input" id="regChildName" placeholder="Име и презиме на детето">
+      <input class="login-input" id="regChildName" placeholder="Име и презиме на детето" data-i18n-placeholder="placeholder_child_name">
       <label class="field-label" data-i18n="reg_age_label">Возраст на детето</label>
-      <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8">
+      <input class="login-input" id="regAge" type="number" min="3" max="99" placeholder="пр. 8" data-i18n-placeholder="placeholder_age">
     </div>
 
     <div class="g-recaptcha" data-sitekey="6LdLMrwtAAAAAM_eZf-7WirUq7xR_xy2TVQaC-oY" style="margin-bottom:16px;"></div>
@@ -594,13 +657,13 @@
 <div id="confirmEmailScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;
   background: radial-gradient(circle at 15% 20%, rgba(203,154,68,0.14), transparent 45%), radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);">
   <div class="login-card" style="max-width:440px; text-align:center;">
-    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;">← Назад кон почетна</a>
+    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;" data-i18n="back_to_home">← Назад кон почетна</a>
     <div style="font-size:40px; margin-bottom:14px;">📧</div>
-    <h2 style="font-size:20px; margin-bottom:8px;">Испративме email до тебе</h2>
+    <h2 style="font-size:20px; margin-bottom:8px;" data-i18n="confirm_email_title">Испративме email до тебе</h2>
     <p style="color:var(--mist); font-size:13.5px; margin-bottom:24px;" id="confirmEmailAddress"></p>
-    <p style="color:var(--mist); font-size:13px; margin-bottom:22px;">провери го inbox или spam</p>
+    <p style="color:var(--mist); font-size:13px; margin-bottom:22px;" data-i18n="confirm_email_sub">провери го inbox или spam</p>
 
-    <button class="login-btn" id="confirmEmailBtn">Разбрав, одам на најава</button>
+    <button class="login-btn" id="confirmEmailBtn" data-i18n="confirm_email_btn">Разбрав, одам на најава</button>
   </div>
 </div>
 
@@ -614,7 +677,7 @@
         <button class="lang-btn active" data-lang="mk">МК</button>
         <button class="lang-btn" data-lang="en">EN</button>
       </div>
-      <button class="icon-btn" id="refreshBtn" title="Освежи">↻</button>
+      <button class="icon-btn" id="refreshBtn" title="Освежи" data-i18n-title="refresh_title">↻</button>
       <div class="avatar" id="avatar" style="cursor:pointer;" title="Профил"></div>
       <div style="cursor:pointer;" id="userNameRoleBox"><div class="u-name" id="uName"></div><div class="u-role" id="uRole"></div></div>
       <button class="logout-btn" id="logoutBtn" data-i18n="logout">Одјави се</button>
@@ -1089,6 +1152,14 @@
   const translations = {
     mk: {
       login_tagline:'Најави се за да продолжиш', label_email:'Email', label_password:'Лозинка',
+      terms_title:'Услови за користење', privacy_title:'Правила за приватност и заштита на личните податоци',
+      back_link_short:'← Назад', back_to_login:'← Назад кон најава', back_to_home:'← Назад кон почетна',
+      confirm_email_title:'Испративме email до тебе', confirm_email_sub:'провери го inbox или spam', confirm_email_btn:'Разбрав, одам на најава',
+      forgot_tagline:'Ресетирaj ja лозинката', forgot_submit:'Испрати линк за ресетирање',
+      forgot_success:'Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).',
+      reset_tagline:'Постави нова лозинка', reset_new_pw:'Нова лозинка', reset_confirm_pw:'Потврди ja лозинката', reset_submit:'Зачувај ja новата лозинка',
+      placeholder_login_email:'твoja@email.com', placeholder_min8:'барем 8 карактери', placeholder_repeat:'повтори ja',
+      placeholder_reg_name:'пр. Марија Петровска', placeholder_parent_email:'родител@email.com', placeholder_child_name:'Име и презиме на детето', placeholder_age:'пр. 8',
       login_btn:'Најави се', login_go_register:'Немаш профил? Регистрирај се →', login_remember_me:'Запомни ме',
       login_forgot:'Ja заборави лозинката?', login_terms_link:'Услови за користење', login_privacy_link:'Политика на приватност',
       logout:'Одјави се', refresh_title:'Освежи',
@@ -1126,6 +1197,14 @@
     },
     en: {
       login_tagline:'Sign in to continue', label_email:'Email', label_password:'Password',
+      terms_title:'Terms of Use', privacy_title:'Privacy Policy and Personal Data Protection',
+      back_link_short:'← Back', back_to_login:'← Back to login', back_to_home:'← Back to home',
+      confirm_email_title:'We\\u2019ve sent you an email', confirm_email_sub:'check your inbox or spam', confirm_email_btn:'Got it, take me to login',
+      forgot_tagline:'Reset your password', forgot_submit:'Send reset link',
+      forgot_success:'If that email exists in our system, we\\u2019ve sent a reset link. Check your inbox (and spam folder).',
+      reset_tagline:'Set a new password', reset_new_pw:'New password', reset_confirm_pw:'Confirm password', reset_submit:'Save new password',
+      placeholder_login_email:'your@email.com', placeholder_min8:'at least 8 characters', placeholder_repeat:'repeat it',
+      placeholder_reg_name:'e.g. Maria Petrovska', placeholder_parent_email:'parent@email.com', placeholder_child_name:'Child\\u2019s full name', placeholder_age:'e.g. 8',
       login_btn:'Sign in', login_go_register:"Don't have an account? Register →", login_remember_me:'Remember me',
       login_forgot:'Forgot your password?', login_terms_link:'Terms of Use', login_privacy_link:'Privacy Policy',
       logout:'Log out', refresh_title:'Refresh',
@@ -1169,6 +1248,17 @@
     document.querySelectorAll('[data-i18n]').forEach(el=>{
       el.textContent = t(el.dataset.i18n);
     });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.dataset.i18nTitle); });
+    // Услови/Приватност — два целосни HTML блока (МК/EN), прикажуваме само едниот
+    ['terms', 'privacy'].forEach(doc=>{
+      const mkEl = document.getElementById(doc + 'BodyMk');
+      const enEl = document.getElementById(doc + 'BodyEn');
+      if(mkEl && enEl){
+        mkEl.style.display = currentLang === 'mk' ? 'block' : 'none';
+        enEl.style.display = currentLang === 'en' ? 'block' : 'none';
+      }
+    });
     document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
     document.documentElement.lang = currentLang;
     renderRegTermsText();
@@ -1181,7 +1271,7 @@
     }
   }
 
-  document.getElementById('langSwitch').addEventListener('click', e=>{
+  document.addEventListener('click', e=>{
     const btn = e.target.closest('.lang-btn'); if(!btn) return;
     currentLang = btn.dataset.lang;
     localStorage.setItem('pf_lang', currentLang);
