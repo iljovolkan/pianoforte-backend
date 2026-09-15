@@ -1054,13 +1054,13 @@
       </div>
       <div class="page-head">
         <span class="eyebrow" data-i18n="eyebrow_packages">Пакети</span>
-        <h2>Избери пакет на часови</h2>
-        <p>Прво избери инструмент, потоа тип на пакет.</p>
+        <h2 data-i18n="pkg_page_title">Избери пакет на часови</h2>
+        <p data-i18n="pkg_page_sub">Прво избери инструмент, потоа тип на пакет.</p>
       </div>
 
       <div class="filter-bar" style="margin-bottom:24px;">
         <div class="filter-group">
-          <span class="fg-label">Инструмент</span>
+          <span class="fg-label" data-i18n="fg_instrument">Инструмент</span>
           <div class="filter-chips" id="pkgInstrumentChips"></div>
         </div>
       </div>
@@ -1068,15 +1068,15 @@
       <div class="pkg-grid" id="pkgGrid"></div>
 
       <div class="booking-step" id="bookingStep" style="display:none;">
-        <h3>Избери термин за групни часови</h3>
-        <p class="sub">Филтрирај по возраст и претходно искуство за да ja најдеш вистинската група.</p>
+        <h3 data-i18n="booking_group_title">Избери термин за групни часови</h3>
+        <p class="sub" data-i18n="booking_group_sub">Филтрирај по возраст и претходно искуство за да ja најдеш вистинската група.</p>
         <div class="filter-bar">
           <div class="filter-group">
-            <span class="fg-label">Возраст на детето</span>
+            <span class="fg-label" data-i18n="fg_age">Возраст на детето</span>
             <div class="filter-chips" id="ageFilterChips"></div>
           </div>
           <div class="filter-group">
-            <span class="fg-label">Претходно искуство</span>
+            <span class="fg-label" data-i18n="fg_level">Претходно искуство</span>
             <div class="filter-chips" id="levelFilterChips"></div>
           </div>
         </div>
@@ -1084,19 +1084,19 @@
       </div>
 
       <div class="booking-step" id="individualBookingStep" style="display:none;">
-        <h3>Закажи индивидуален час</h3>
-        <p class="sub">1-на-1 настава, 45 минути, еднократна уплата.</p>
+        <h3 data-i18n="indiv_title">Закажи индивидуален час</h3>
+        <p class="sub" data-i18n="indiv_sub">1-на-1 настава, 45 минути, еднократна уплата.</p>
         <div class="card">
           <div class="form-row">
-            <label>Професор</label>
+            <label data-i18n="label_professor">Професор</label>
             <select id="indivProfessorSelect" class="login-select" style="margin-bottom:0;"></select>
           </div>
           <div style="height:14px;"></div>
           <div class="form-row">
-            <label>Достапни термини кај овoj професор</label>
+            <label data-i18n="label_avail_slots">Достапни термини кај овoj професор</label>
             <div id="indivAvailabilityList"></div>
           </div>
-          <button class="send-btn" id="indivBookBtn" style="margin-top:10px;" disabled>Продолжи кон плаќање</button>
+          <button class="send-btn" id="indivBookBtn" style="margin-top:10px;" disabled data-i18n="continue_to_payment">Продолжи кон плаќање</button>
           <div id="indivBookError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
         </div>
       </div>
@@ -1114,35 +1114,35 @@
 <!-- ================= PAYMENT MODAL ================= -->
 <div class="payment-modal-overlay" id="paymentOverlay">
   <div class="payment-modal">
-    <h3>Плаќање со картичка</h3>
+    <h3 data-i18n="payment_modal_title">Плаќање со картичка</h3>
     <p class="psub" id="paymentSub">Пакет · термин</p>
 
     <div class="form-row" id="payChildSelectorRow" style="display:none;">
-      <label>За кое дете?</label>
+      <label data-i18n="label_which_child">За кое дете?</label>
       <select class="login-select" id="payChildSelect" style="margin-bottom:0;"></select>
     </div>
 
     <div class="form-row" id="planSelectorRow">
-      <label>План на плаќање</label>
+      <label data-i18n="label_payment_plan">План на плаќање</label>
       <div class="type-toggle" id="planToggle" style="margin-bottom:0;">
-        <div class="type-btn active" data-plan="eight">8 рати</div>
-        <div class="type-btn" data-plan="two">2 рати −3%</div>
-        <div class="type-btn" data-plan="full">Целосно −5%</div>
+        <div class="type-btn active" data-plan="eight" data-i18n="plan_eight">8 рати</div>
+        <div class="type-btn" data-plan="two" data-i18n="plan_two">2 рати −3%</div>
+        <div class="type-btn" data-plan="full" data-i18n="plan_full">Целосно −5%</div>
       </div>
     </div>
     <div id="planSummary" style="font-size:12.5px; color:var(--mist); margin:8px 0 18px;"></div>
 
-    <div class="card-only-badge">💳 Плаќање со картичка — безбедно преку cPay</div>
+    <div class="card-only-badge" data-i18n="card_badge">💳 Плаќање со картичка — безбедно преку cPay</div>
     <div style="background:var(--surface-2); border-radius:10px; padding:14px; font-size:12.5px; color:var(--mist); margin-bottom:16px;">
-      По кликот на „Плати" ќе бидеш пренасочен кон cPay (сигурна, банкарска страница) каде ги внесуваш податоците за картичка. Ние никогаш не ги гледаме и не ги чуваме твоите податоци за картичка.
+      <span data-i18n="cpay_note">По кликот на „Плати" ќе бидеш пренасочен кон cPay (сигурна, банкарска страница) каде ги внесуваш податоците за картичка. Ние никогаш не ги гледаме и не ги чуваме твоите податоци за картичка.</span>
     </div>
     <label id="payTermsLabel" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
       <input type="checkbox" id="payTermsCheckbox" style="margin-top:2px;">
       <span id="payTermsText"></span>
     </label>
 
-    <button class="pay-btn" id="payConfirmBtn">Плати ja првата рата</button>
-    <button class="pm-cancel" id="payCancelBtn">Откажи</button>
+    <button class="pay-btn" id="payConfirmBtn" data-i18n="pay_first_installment">Плати ja првата рата</button>
+    <button class="pm-cancel" id="payCancelBtn" data-i18n="cancel_btn">Откажи</button>
   </div>
 </div>
 
@@ -1155,6 +1155,18 @@
       terms_title:'Услови за користење', privacy_title:'Правила за приватност и заштита на личните податоци',
       back_link_short:'← Назад', back_to_login:'← Назад кон најава', back_to_home:'← Назад кон почетна',
       confirm_email_title:'Испративме email до тебе', confirm_email_sub:'провери го inbox или spam', confirm_email_btn:'Разбрав, одам на најава',
+      pkg_page_title:'Избери пакет на часови', pkg_page_sub:'Прво избери инструмент, потоа тип на пакет.',
+      fg_instrument:'Инструмент', fg_age:'Возраст на детето', fg_level:'Претходно искуство',
+      booking_group_title:'Избери термин за групни часови', booking_group_sub:'Филтрирaj по возраст и претходно искуство за да ja најдеш вистинската група.',
+      indiv_title:'Закажи индивидуален час', indiv_sub:'1-на-1 настава, 45 минути, еднократна уплата.',
+      label_professor:'Професор', label_avail_slots:'Достапни термини кај овoj професор', continue_to_payment:'Продолжи кон плаќање',
+      payment_modal_title:'Плаќање со картичка', label_which_child:'За кое дете?', label_payment_plan:'План на плаќање',
+      plan_eight:'8 рати', plan_two:'2 рати −3%', plan_full:'Целосно −5%',
+      card_badge:'💳 Плаќање со картичка — безбедно преку cPay',
+      cpay_note:'По кликот на „Плати" ќе бидеш пренасочен кон cPay (сигурна, банкарска страница) каде ги внесуваш податоците за картичка. Ние никогаш не ги гледаме и не ги чуваме твоите податоци за картичка.',
+      pay_first_installment:'Плати ja првата рата', cancel_btn:'Откажи',
+      billing_title_prof:'Статус на плаќање — твоите ученици', billing_sub_prof:'Само учениците од твоите групи. Задоцнетите рати автоматски го ослободуваат терминот.',
+      billing_title_student:'Твojot план на плаќање', billing_sub_student:'Овде гледаш ja целата распоредба на рати и дали е сè во ред со твоето место.',
       forgot_tagline:'Ресетирaj ja лозинката', forgot_submit:'Испрати линк за ресетирање',
       forgot_success:'Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).',
       reset_tagline:'Постави нова лозинка', reset_new_pw:'Нова лозинка', reset_confirm_pw:'Потврди ja лозинката', reset_submit:'Зачувај ja новата лозинка',
@@ -1200,6 +1212,18 @@
       terms_title:'Terms of Use', privacy_title:'Privacy Policy and Personal Data Protection',
       back_link_short:'← Back', back_to_login:'← Back to login', back_to_home:'← Back to home',
       confirm_email_title:'We\\u2019ve sent you an email', confirm_email_sub:'check your inbox or spam', confirm_email_btn:'Got it, take me to login',
+      pkg_page_title:'Choose a lesson package', pkg_page_sub:'First choose an instrument, then a package type.',
+      fg_instrument:'Instrument', fg_age:'Child\\u2019s age', fg_level:'Prior experience',
+      booking_group_title:'Choose a group lesson slot', booking_group_sub:'Filter by age and prior experience to find the right group.',
+      indiv_title:'Book an individual lesson', indiv_sub:'1-on-1 tuition, 45 minutes, one-time payment.',
+      label_professor:'Professor', label_avail_slots:'Available slots with this professor', continue_to_payment:'Continue to payment',
+      payment_modal_title:'Card Payment', label_which_child:'For which child?', label_payment_plan:'Payment plan',
+      plan_eight:'8 installments', plan_two:'2 installments −3%', plan_full:'Full −5%',
+      card_badge:'💳 Card payment — secure via cPay',
+      cpay_note:'After clicking \\u201cPay\\u201d you\\u2019ll be redirected to cPay (a secure banking page) where you enter your card details. We never see or store your card information.',
+      pay_first_installment:'Pay first installment', cancel_btn:'Cancel',
+      billing_title_prof:'Payment status — your students', billing_sub_prof:'Only students from your groups. Overdue installments automatically release the slot.',
+      billing_title_student:'Your payment plan', billing_sub_student:'See the full installment schedule here, and whether your spot is all set.',
       forgot_tagline:'Reset your password', forgot_submit:'Send reset link',
       forgot_success:'If that email exists in our system, we\\u2019ve sent a reset link. Check your inbox (and spam folder).',
       reset_tagline:'Set a new password', reset_new_pw:'New password', reset_confirm_pw:'Confirm password', reset_submit:'Save new password',
@@ -2998,8 +3022,8 @@
     else document.getElementById('billingIndivBookingsCard').style.display = 'none';
 
     if(session.role === 'professor'){
-      document.getElementById('billingTitle').textContent = 'Статус на плаќање — твоите ученици';
-      document.getElementById('billingSub').textContent = 'Само учениците од твоите групи. Задоцнетите рати автоматски го ослободуваат терминот.';
+      document.getElementById('billingTitle').textContent = t('billing_title_prof');
+      document.getElementById('billingSub').textContent = t('billing_sub_prof');
 
       const rows = subscriptions.map(sub => ({ sub, ps: paymentStateFromSub(sub) }));
       const order = {late:0, due_soon:1, paid:2, released:3, none:4};
@@ -3027,8 +3051,8 @@
     }
 
     // ---- student view ----
-    document.getElementById('billingTitle').textContent = 'Твojot план на плаќање';
-    document.getElementById('billingSub').textContent = 'Овде гледаш ja целата распоредба на рати и дали е сè во ред со твоето место.';
+    document.getElementById('billingTitle').textContent = t('billing_title_student');
+    document.getElementById('billingSub').textContent = t('billing_sub_student');
 
     if(subscriptions.length === 0){
       wrap.innerHTML = `<div class="empty-state">Сè уште немаш активен пакет. Оди на „Пакети" за да избереш.</div>`;
