@@ -690,17 +690,23 @@
         <h3 style="font-size:15px; margin-bottom:6px;">Понуди термини за индивидуална настава</h3>
         <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.</p>
         <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
-          <div style="min-width:150px;">
+          <div style="min-width:140px;">
+            <label>Инструмент</label>
+            <select id="profAvailInstrument" class="login-select" style="margin-bottom:0;"></select>
+          </div>
+          <div style="min-width:140px;">
             <label>Датум</label>
             <input type="date" id="profAvailDate" class="login-input" style="margin-bottom:0;">
           </div>
-          <div style="width:130px;">
+          <div style="width:110px;">
             <label>Време</label>
-            <select id="profAvailTime" class="login-select" style="margin-bottom:0;">
-              <option value="14:30">14:30</option><option value="15:15">15:15</option>
-              <option value="16:00">16:00</option><option value="16:45">16:45</option>
-              <option value="17:30">17:30</option><option value="18:15">18:15</option>
-              <option value="19:00">19:00</option><option value="19:45">19:45</option>
+            <select id="profAvailTime" class="login-select" style="margin-bottom:0;"></select>
+          </div>
+          <div style="min-width:140px;">
+            <label>Локација</label>
+            <select id="profAvailLocation" class="login-select" style="margin-bottom:0;">
+              <option value="aerodrom">Аеродром</option>
+              <option value="taftalidze">Тафталиџе</option>
             </select>
           </div>
           <button class="send-btn" id="profAvailAddBtn" style="width:auto; padding:0 20px;">Додади термин</button>
@@ -1233,7 +1239,7 @@
   const materials = {}; // кеш по studentId, вчитува се на барање од GET /materials/:id
 
   const days = ['Пон','Вто','Сре','Чет','Пет']; // саботите се неработни, нема термини таму
-  const hours = ['14:30','15:15','16:00','16:45','17:30','18:15','19:00','19:45'];
+  const hours = (()=>{ const arr=[]; for(let h=9; h<=20; h++){ for(const m of ['00','15','30','45']){ arr.push(`${String(h).padStart(2,'0')}:${m}`); } } return arr; })();
   const MK_TO_EN_DAY = {'Пон':'mon','Вто':'tue','Сре':'wed','Чет':'thu','Пет':'fri'};
   const EN_TO_MK_DAY = {mon:'Пон', tue:'Вто', wed:'Сре', thu:'Чет', fri:'Пет'};
 
@@ -1248,7 +1254,7 @@
   function slotsLabel(groupId){
     const entries = findGroupSlots(groupId);
     if(entries.length===0) return 'Нема доделен термин';
-    return entries.map(e=>`${e.day} ${e.time}`).sort().join('  и  ');
+    return entries.map(e=>`${e.day} ${e.time.slice(0,5)}${e.location ? ' (' + (e.location==='aerodrom'?'Аеродром':'Тафталиџе') + ')' : ''}`).sort().join('  и  ');
   }
 
   /* ---- плаќања / претплати ---- */
@@ -1389,7 +1395,7 @@
         const mkDay = EN_TO_MK_DAY[r.day_of_week];
         if(!mkDay) return;
         const key = r.professor_id + '_' + mkDay + '-' + r.start_time;
-        schedule[key] = { slotId: r.id, groupId: r.group_id, note: r.note || '', professorId: r.professor_id, day: mkDay, time: r.start_time };
+        schedule[key] = { slotId: r.id, groupId: r.group_id, note: r.note || '', professorId: r.professor_id, day: mkDay, time: r.start_time, location: r.location || null };
       });
     } catch(err){ console.error('loadSchedule', err); }
   }
@@ -2030,6 +2036,10 @@
     myGroups.forEach(g=>{
       if(!g.members || g.members.length===0) return;
       const og = document.createElement('optgroup'); og.label = g.name;
+      const groupOpt = document.createElement('option');
+      groupOpt.value = 'group-' + g.id;
+      groupOpt.textContent = `📢 Целата група (${g.members.length} деца)`;
+      og.appendChild(groupOpt);
       g.members.forEach(m=>{
         cacheStudent(m);
         const o=document.createElement('option'); o.value=m.id; o.textContent=m.full_name; og.appendChild(o);
@@ -2040,7 +2050,13 @@
     if(firstStudent && !activeStudentForIndex) activeStudentForIndex = firstStudent;
   }
   studentSelect.addEventListener('change', async e=>{
-    activeStudentForIndex = Number(e.target.value);
+    const val = e.target.value;
+    if(String(val).startsWith('group-')){
+      activeStudentForIndex = val; // остави го "group-<id>" стрингот како е
+      renderIndexPage();
+      return;
+    }
+    activeStudentForIndex = Number(val);
     await loadMaterialsFor(activeStudentForIndex);
     renderIndexPage();
   });
@@ -2074,21 +2090,31 @@
     const fileInput = document.getElementById('matFile');
     const title = titleInput.value.trim();
     if(!title){ titleInput.style.borderColor='var(--wine)'; setTimeout(()=>{titleInput.style.borderColor='';},1000); return; }
-    if(!activeStudentForIndex){ alert('Избери ученик прво.'); return; }
+    if(!activeStudentForIndex){ alert('Избери ученик или група прво.'); return; }
     const activeType = document.querySelector('.type-btn.active').dataset.type;
     const btn = document.getElementById('sendBtn');
+    const isGroupSend = String(activeStudentForIndex).startsWith('group-');
     btn.disabled = true; btn.textContent = 'Се испраќа...';
     try{
       const formData = new FormData();
-      formData.append('student_id', activeStudentForIndex);
+      if(isGroupSend){
+        formData.append('group_id', activeStudentForIndex.replace('group-', ''));
+      } else {
+        formData.append('student_id', activeStudentForIndex);
+      }
       formData.append('title', title);
       formData.append('type', activeType);
       formData.append('note', noteInput.value.trim());
       if(fileInput.files[0]) formData.append('file', fileInput.files[0]);
 
-      await authApiCall('/materials', { method:'POST', body: formData });
+      const endpoint = isGroupSend ? '/materials/send-to-group' : '/materials';
+      const result = await authApiCall(endpoint, { method:'POST', body: formData });
       titleInput.value=''; noteInput.value=''; fileInput.value=''; document.getElementById('matFileName').textContent='';
-      await loadMaterialsFor(activeStudentForIndex);
+      if(isGroupSend){
+        alert(`Материjaлот е испратен до ${result.sent_to_count} деца во групата.`);
+      } else {
+        await loadMaterialsFor(activeStudentForIndex);
+      }
       renderIndexPage();
     } catch(err){
       alert('Грешка при испраќање: ' + err.message);
@@ -2179,6 +2205,20 @@
     }
 
     const childForTablet = children.find(c=>c.id===activeStudentForIndex);
+    const isGroupMode = String(activeStudentForIndex).startsWith('group-');
+    if(isGroupMode){
+      const gid = Number(String(activeStudentForIndex).replace('group-',''));
+      const g = groups.find(x=>x.id===gid);
+      document.getElementById('tabletName').textContent = g ? `📢 ${g.name} (целата група)` : '—';
+      document.getElementById('tabletClock').textContent = nowStr();
+      document.getElementById('roomBtn').disabled = true;
+      document.getElementById('roomBtn').textContent = 'Прикажи одделно дете за преглед';
+      document.getElementById('statSent').textContent = '—';
+      document.getElementById('statOpened').textContent = '—';
+      document.getElementById('statDone').textContent = '—';
+      document.getElementById('sentList').innerHTML = '<div class="empty-state">Материjaлот ќе се испрати посебно до секое дете во групата. Избери одделно дете (погоре) за да видиш историја на испратени материjaли.</div>';
+      return;
+    }
     document.getElementById('tabletName').textContent = isStudent ? (childForTablet ? childForTablet.full_name : session.name) : studentName(activeStudentForIndex);
     document.getElementById('tabletClock').textContent = nowStr();
     if(!isStudent && studentSelect.value) studentSelect.value = activeStudentForIndex;
@@ -2272,15 +2312,38 @@
       dateInput.value = tomorrow.toISOString().slice(0,10);
     }
 
+    // 15-минутни термини, целото работно време (09:00–20:45)
+    const timeSelect = document.getElementById('profAvailTime');
+    if(!timeSelect.dataset.filled){
+      const opts = [];
+      for(let h=9; h<=20; h++){
+        for(const m of ['00','15','30','45']){
+          opts.push(`${String(h).padStart(2,'0')}:${m}`);
+        }
+      }
+      timeSelect.innerHTML = opts.map(t=>`<option value="${t}">${t}</option>`).join('');
+      timeSelect.value = '14:30';
+      timeSelect.dataset.filled = '1';
+    }
+
+    // dropdown со сите инструменти на кои е доделен овоj professor
+    const instSelect = document.getElementById('profAvailInstrument');
+    try{
+      const myInstruments = await authApiCall('/individual-bookings/my-instruments');
+      instSelect.innerHTML = myInstruments.length === 0
+        ? '<option value="">Нема доделен инструмент</option>'
+        : myInstruments.map(i=>`<option value="${i}">${instrumentLabel(i)}</option>`).join('');
+    } catch(err){ instSelect.innerHTML = '<option value="">Грешка</option>'; }
+
     const listBox = document.getElementById('profAvailList');
     try{
       const slots = await authApiCall('/individual-bookings/my-availability');
       listBox.innerHTML = slots.length === 0
-        ? '<div class="empty-state">Сè уште немаш понудено термини.</div>'
+        ? '<div class="empty-state">Сè уште немaш понудено термини.</div>'
         : slots.map(s => `
           <div class="sent-item">
             <div class="sent-icon">${s.is_booked ? '✅' : '🕐'}</div>
-            <div class="sent-meta"><div class="t">${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}</div><div class="sub">${instrumentLabel(s.instrument)} · ${s.is_booked ? 'Резервиран' : 'Слободен'}</div></div>
+            <div class="sent-meta"><div class="t">${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}</div><div class="sub">${instrumentLabel(s.instrument)} · ${s.location ? (s.location==='aerodrom'?'Аеродром':'Тафталиџе') + ' · ' : ''}${s.is_booked ? 'Резервиран' : 'Слободен'}</div></div>
             ${!s.is_booked ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-avail-del="${s.id}">Отстрани</button>` : ''}
           </div>
         `).join('');
@@ -2296,13 +2359,16 @@
   }
 
   document.getElementById('profAvailAddBtn').addEventListener('click', async ()=>{
+    const instrument = document.getElementById('profAvailInstrument').value;
     const slot_date = document.getElementById('profAvailDate').value;
     const start_time = document.getElementById('profAvailTime').value;
+    const location = document.getElementById('profAvailLocation').value;
+    if(!instrument){ alert('Немаш доделен инструмент — контактирај admin.'); return; }
     if(!slot_date){ alert('Избери датум.'); return; }
     try{
       await authApiCall('/individual-bookings/availability', {
         method:'POST',
-        body: JSON.stringify({ instrument: session.instrument, slot_date, start_time })
+        body: JSON.stringify({ instrument, slot_date, start_time, location })
       });
       renderProfAvailability();
     } catch(err){ alert(err.message || 'Грешка.'); }
@@ -2341,8 +2407,8 @@
       <h4 style="margin-bottom:10px;">+ Нова група</h4>
       <div class="form-row"><input type="text" id="newGroupName" placeholder="Име (пр. Пијано — почетници)"></div>
       <div class="form-row">
-        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Инструмент (според твojot профил)</label>
-        <div style="padding:10px 12px; background:var(--ink-2); border:1px solid var(--line); border-radius:8px; font-size:14px;">${instrumentLabel(session.instrument)}</div>
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Инструмент</label>
+        <select id="newGroupInstrument" class="login-select" style="margin-bottom:0;"><option>Се вчитува...</option></select>
       </div>
       <div style="height:8px;"></div>
       <div class="form-row"><select id="newGroupAge" class="login-select" style="margin-bottom:0;">
@@ -2352,6 +2418,14 @@
       <div class="form-row"><select id="newGroupLevel" class="login-select" style="margin-bottom:0;">
         ${LEVELS.filter(l=>l.id!=='all').map(l=>`<option value="${l.id}">${l.label}</option>`).join('')}
       </select></div>
+      <div style="height:8px;"></div>
+      <div class="form-row">
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Локација</label>
+        <select id="newGroupLocation" class="login-select" style="margin-bottom:0;">
+          <option value="aerodrom">Аеродром</option>
+          <option value="taftalidze">Тафталиџе</option>
+        </select>
+      </div>
       <div style="height:8px;"></div>
       <div class="form-row">
         <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Капацитет (макс. деца во групата)</label>
@@ -2364,14 +2438,25 @@
       <button class="send-btn" id="newGroupBtn" style="margin-top:6px;">Создади група</button>
     `;
     wrap.appendChild(createCard);
+    (async ()=>{
+      const instSelect = document.getElementById('newGroupInstrument');
+      try{
+        const myInstruments = await authApiCall('/individual-bookings/my-instruments');
+        instSelect.innerHTML = myInstruments.length === 0
+          ? '<option value="">Нема доделен инструмент</option>'
+          : myInstruments.map(i=>`<option value="${i}">${instrumentLabel(i)}</option>`).join('');
+      } catch(err){ instSelect.innerHTML = `<option value="${session.instrument}">${instrumentLabel(session.instrument)}</option>`; }
+    })();
     document.getElementById('newGroupBtn').addEventListener('click', async ()=>{
       const name = document.getElementById('newGroupName').value.trim();
       if(!name){ alert('Внеси име на групата.'); return; }
+      const instrument = document.getElementById('newGroupInstrument').value;
       const age_range = document.getElementById('newGroupAge').value;
       const level = document.getElementById('newGroupLevel').value;
+      const location = document.getElementById('newGroupLocation').value;
       const capacity = Number(document.getElementById('newGroupCapacity').value);
       try{
-        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level }) });
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level, instrument, location }) });
         await loadGroups();
         renderSchedulePage();
       } catch(err){ alert('Грешка: ' + err.message); }
@@ -2391,7 +2476,25 @@
           <span class="tag age">${ageLabel(g.age_range)}</span>
           <span class="tag level-${g.level}">${levelLabel(g.level)}</span>
         </div>
-        <div class="group-ov-slot">🕐 ${slotLabel}</div>
+        <div class="group-ov-slot">
+          ${slots.length === 0 ? '🕐 Нема доделен термин' : slots.map(s => `
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span>🕐 ${s.day} ${s.time.slice(0,5)}${s.location ? ' · 📍 ' + (s.location==='aerodrom'?'Аеродром':'Тафталиџе') : ''}</span>
+              <button class="edit-slot-btn" data-slot-id="${s.slotId}" data-group="${g.id}" style="background:none; border:none; color:var(--lilac-deep); font-size:12px; cursor:pointer; padding:2px 6px;">✎ Уреди</button>
+            </div>
+            <div class="edit-slot-panel" data-slot-id="${s.slotId}" style="display:none; margin-bottom:8px; padding:8px; background:var(--surface-2); border-radius:8px;">
+              <div style="display:flex; gap:6px; margin-bottom:6px;">
+                <select class="login-select edit-slot-day" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}" ${d===s.day?'selected':''}>${d}</option>`).join('')}</select>
+                <select class="login-select edit-slot-time" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}" ${h===s.time.slice(0,5)?'selected':''}>${h}</option>`).join('')}</select>
+              </div>
+              <select class="login-select edit-slot-location" style="margin-bottom:6px;">
+                <option value="aerodrom" ${s.location==='aerodrom'?'selected':''}>📍 Аеродром</option>
+                <option value="taftalidze" ${s.location==='taftalidze'?'selected':''}>📍 Тафталиџе</option>
+              </select>
+              <button class="send-btn save-slot-edit-btn" data-slot-id="${s.slotId}" style="padding:8px; font-size:12.5px;">Зачувај промена</button>
+            </div>
+          `).join('')}
+        </div>
         <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
         ${!full ? `
         <div class="add-student-box" style="margin-top:10px;">
@@ -2408,15 +2511,47 @@
             <select class="login-select pair-day1" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
             <select class="login-select pair-time1" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
           </div>
-          <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
             <select class="login-select pair-day2" style="margin-bottom:0; flex:1;">${days.map((d,i)=>`<option value="${d}" ${i===1?'selected':''}>${d}</option>`).join('')}</select>
             <select class="login-select pair-time2" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
           </div>
+          <select class="login-select pair-location" style="margin-bottom:8px;">
+            <option value="aerodrom">📍 Аеродром</option>
+            <option value="taftalidze">📍 Тафталиџе</option>
+          </select>
           <button class="send-btn pair-save-btn" data-group="${g.id}" style="padding:9px;">Додели ги двата термина</button>
           <div class="pair-error" style="display:none; color:var(--wine); font-size:11.5px; margin-top:6px;"></div>
         </div>` : ''}
       `;
       wrap.appendChild(card);
+
+      // --- уредување (промена на термин) на веќе доделен слот ---
+      card.querySelectorAll('.edit-slot-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const panel = card.querySelector(`.edit-slot-panel[data-slot-id="${btn.dataset.slotId}"]`);
+          panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+      });
+      card.querySelectorAll('.save-slot-edit-btn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const panel = card.querySelector(`.edit-slot-panel[data-slot-id="${btn.dataset.slotId}"]`);
+          const day = MK_TO_EN_DAY[panel.querySelector('.edit-slot-day').value];
+          const start_time = panel.querySelector('.edit-slot-time').value;
+          const location = panel.querySelector('.edit-slot-location').value;
+          btn.disabled = true; btn.textContent = 'Се зачувува...';
+          try{
+            await authApiCall('/schedule/' + btn.dataset.slotId, {
+              method:'PUT',
+              body: JSON.stringify({ day_of_week: day, start_time, location })
+            });
+            await loadSchedule();
+            renderSchedulePage();
+          } catch(err){
+            alert('Грешка: ' + err.message);
+            btn.disabled = false; btn.textContent = 'Зачувај промена';
+          }
+        });
+      });
 
       // --- бришење група (по грешка формирана) ---
       const delGroupBtn = card.querySelector('.del-group-btn');
@@ -2485,6 +2620,7 @@
           const day2 = card.querySelector('.pair-day2').value;
           const start_time1 = card.querySelector('.pair-time1').value;
           const start_time2 = card.querySelector('.pair-time2').value;
+          const location = card.querySelector('.pair-location').value;
           const errBox = card.querySelector('.pair-error');
           errBox.style.display = 'none';
           if(day1 === day2){
@@ -2496,7 +2632,7 @@
           try{
             await authApiCall('/schedule/pair', {
               method:'POST',
-              body: JSON.stringify({ group_id: g.id, day1: MK_TO_EN_DAY[day1], day2: MK_TO_EN_DAY[day2], start_time1, start_time2 })
+              body: JSON.stringify({ group_id: g.id, day1: MK_TO_EN_DAY[day1], day2: MK_TO_EN_DAY[day2], start_time1, start_time2, location })
             });
             await loadSchedule();
             renderSchedulePage();
@@ -3572,7 +3708,7 @@
       }
       listBox.innerHTML = slots.map(s => `
         <div class="type-btn indiv-slot-btn" data-avail-id="${s.id}" style="margin-bottom:6px; display:block;">
-          ${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}
+          ${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}${s.location ? ' · 📍 ' + (s.location==='aerodrom'?'Аеродром':'Тафталиџе') : ''}
         </div>
       `).join('');
       listBox.querySelectorAll('.indiv-slot-btn').forEach(btn=>{
