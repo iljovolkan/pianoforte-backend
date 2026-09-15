@@ -17,7 +17,7 @@ const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 // Потврдува дека captcha токенот е вистински, преку Google-овиот siteverify API
 async function verifyRecaptcha(token) {
   if (!RECAPTCHA_SECRET) return true; // ако не е поставен клучот, не блокирај (development fallback)
-  if (!token) return false;
+  if (!token) { console.warn('reCAPTCHA: нема token од frontend-от.'); return false; }
   try {
     const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
       method: 'POST',
@@ -25,6 +25,9 @@ async function verifyRecaptcha(token) {
       body: `secret=${RECAPTCHA_SECRET}&response=${token}`
     });
     const data = await res.json();
+    if (data.success !== true) {
+      console.warn('reCAPTCHA одбиена. Одговор од Google:', JSON.stringify(data));
+    }
     return data.success === true;
   } catch (e) {
     console.error('reCAPTCHA verify error:', e);
