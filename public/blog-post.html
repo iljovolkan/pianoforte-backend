@@ -347,7 +347,7 @@
       <div class="nav-item"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
     </nav>
     <a href="/app" class="cta-primary" data-i18n="nav_cta"><span class="cta-label">Купи/Најави се</span></a>
-    <button class="burger" id="burgerBtn" aria-label="Мени"><span></span><span></span><span></span></button>
+    <button class="burger" id="burgerBtn" aria-label="Мени" data-i18n-aria="aria_menu"><span></span><span></span><span></span></button>
   </div>
 </header>
 
@@ -380,13 +380,13 @@
 </div>
 <div class="page-hero tint-lilac">
   <div class="wrap">
-    <a href="blog.html" class="back-link">← Назад кон Блог</a>
+    <a href="blog.html" class="back-link" data-i18n="back_to_blog">← Назад кон Блог</a>
   </div>
 </div>
 <section>
   <div class="wrap">
     <article class="blog-post-article" id="postArticle">
-      <div style="text-align:center; padding:60px 0; color:var(--mist);">Се вчитува...</div>
+      <div style="text-align:center; padding:60px 0; color:var(--mist);" data-i18n="loading_text">Се вчитува...</div>
     </article>
   </div>
 </section>
@@ -435,7 +435,7 @@
     <h3 data-i18n="nl_title">Претплатете се на нашата листа на е-пошта</h3>
     <form class="newsletter-form" id="newsletterForm">
       <div class="nl-email-row">
-        <input type="email" placeholder="твoja@email.com" required id="newsletterEmail">
+        <input type="email" placeholder="твoja@email.com" data-i18n-placeholder="placeholder_email" required id="newsletterEmail">
         <button type="submit" data-i18n="nl_submit">Пријави се</button>
       </div>
       <label class="nl-consent">
@@ -454,6 +454,7 @@
     mk: {
       util_login:'Најави се / Регистрација', util_buy:'Купи час',
       nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      aria_menu:'Мени', back_to_blog:'← Назад кон Блог', loading_text:'Се вчитува...', placeholder_email:'твoja@email.com',
       dri_about_desc:'Нашата приказна и филозофија', dri_projects_desc:'Концерти и соработки', dropdown_label_instruments:'ИНСТРУМЕНТИ',
       nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
       inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
@@ -498,6 +499,7 @@
     en: {
       util_login:'Sign in / Register', util_buy:'Buy a lesson',
       nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      aria_menu:'Menu', back_to_blog:'← Back to Blog', loading_text:'Loading...', placeholder_email:'your@email.com',
       dri_about_desc:'Our story and philosophy', dri_projects_desc:'Concerts and collaborations', dropdown_label_instruments:'INSTRUMENTS',
       nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
       inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
@@ -544,6 +546,9 @@
   function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
   function applyLanguage(){
     document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-alt]').forEach(el=>{ el.alt = t(el.dataset.i18nAlt); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
     document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
     document.documentElement.lang = currentLang;
     if(typeof renderNlConsentText === 'function') renderNlConsentText();
