@@ -4,12 +4,13 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 const VALID_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri']; // саботите/неделите се секогаш неработни
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // формат "HH:MM"
+const TIME_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/; // само на секои 15 мин
+const VALID_LOCATIONS = ['aerodrom', 'taftalidze'];
 
 // GET /schedule — целиот неделен распоред со група + членови по термин
 router.get('/', requireAuth, async (req, res) => {
   const [slots] = await pool.query(
-    `SELECT s.id, s.day_of_week, s.start_time, s.note, s.professor_id,
+    `SELECT s.id, s.day_of_week, s.start_time, s.location, s.note, s.professor_id,
             g.id AS group_id, g.name AS group_name, g.capacity, g.instrument, g.age_range, g.level
      FROM schedule_slots s
      JOIN groups_table g ON g.id = s.group_id`
@@ -28,17 +29,20 @@ router.get('/', requireAuth, async (req, res) => {
   res.json(slots);
 });
 
-// POST /schedule/pair  { group_id, day1, day2, start_time1, start_time2, note }
+// POST /schedule/pair  { group_id, day1, day2, start_time1, start_time2, location, note }
 // Доделува ДВА термина неделно одеднаш за иста група (сите пакети се 2 часа
-// неделно). Секој ден може да има РАЗЛИЧНО време — не мора да е исто.
-// Ако едниот од двата термина е веќе зафатен, двете се откажуваат
+// неделно). Секој ден може да има РАЗЛИЧНО време (на секои 15 мин) — не мора
+// да е исто. Ако едниот од двата термина е веќе зафатен, двете се откажуваат
 // (трансакција — сè или ништо).
 router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { group_id, day1, day2, start_time1, start_time2, note } = req.body;
+  const { group_id, day1, day2, start_time1, start_time2, location, note } = req.body;
 
   if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2) || day1 === day2
       || !TIME_RE.test(start_time1 || '') || !TIME_RE.test(start_time2 || '')) {
-    return res.status(400).json({ error: 'Избери два различни дена и валидни термини (HH:MM) за секој ден.' });
+    return res.status(400).json({ error: 'Избери два различни дена и валидни термини (на секои 15 мин) за секој ден.' });
+  }
+  if (location && !VALID_LOCATIONS.includes(location)) {
+    return res.status(400).json({ error: 'Невалидна локација.' });
   }
 
   const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
@@ -53,8 +57,8 @@ router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req,
     const ids = [];
     for (const [day, time] of [[day1, start_time1], [day2, start_time2]]) {
       const [result] = await conn.query(
-        'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?, ?)',
-        [group_id, group.professor_id, day, time, note || null]
+        'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, location, note) VALUES (?, ?, ?, ?, ?, ?)',
+        [group_id, group.professor_id, day, time, location || null, note || null]
       );
       ids.push(result.insertId);
     }
@@ -73,10 +77,13 @@ router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req,
 });
 
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { group_id, day_of_week, start_time, note } = req.body;
+  const { group_id, day_of_week, start_time, location, note } = req.body;
 
   if (!group_id || !VALID_DAYS.includes(day_of_week) || !TIME_RE.test(start_time || '')) {
-    return res.status(400).json({ error: 'Невалидни податоци за термин (ден или време HH:MM).' });
+    return res.status(400).json({ error: 'Невалидни податоци за термин (ден или време на секои 15 мин).' });
+  }
+  if (location && !VALID_LOCATIONS.includes(location)) {
+    return res.status(400).json({ error: 'Невалидна локација.' });
   }
 
   const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
@@ -87,8 +94,8 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
 
   try {
     const [result] = await pool.query(
-      'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, note) VALUES (?, ?, ?, ?, ?)',
-      [group_id, group.professor_id, day_of_week, start_time, note || null]
+      'INSERT INTO schedule_slots (group_id, professor_id, day_of_week, start_time, location, note) VALUES (?, ?, ?, ?, ?, ?)',
+      [group_id, group.professor_id, day_of_week, start_time, location || null, note || null]
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
@@ -100,11 +107,49 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
   }
 });
 
-// PUT /schedule/:id  { note }  — ажурира белешка од часот
+// PUT /schedule/:id  { note, day_of_week, start_time, location } — уредува термин
+// (сите полиња опционални — праќaj само тие што сакаш да ги смениш).
+// Ова овозможува ПРОМЕНА на терминот на веќе закажан час, не само белешка.
 router.put('/:id', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
-  const { note } = req.body;
-  await pool.query('UPDATE schedule_slots SET note = ? WHERE id = ?', [note || null, req.params.id]);
-  res.json({ ok: true });
+  const { note, day_of_week, start_time, location } = req.body;
+
+  const [[slot]] = await pool.query('SELECT * FROM schedule_slots WHERE id = ?', [req.params.id]);
+  if (!slot) return res.status(404).json({ error: 'Терминот не постои.' });
+  if (req.user.role === 'professor' && slot.professor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Овoj термин не е твoj.' });
+  }
+
+  if (day_of_week !== undefined && !VALID_DAYS.includes(day_of_week)) {
+    return res.status(400).json({ error: 'Невалиден ден.' });
+  }
+  if (start_time !== undefined && !TIME_RE.test(start_time)) {
+    return res.status(400).json({ error: 'Времето мора да е на секои 15 минути.' });
+  }
+  if (location !== undefined && location !== null && !VALID_LOCATIONS.includes(location)) {
+    return res.status(400).json({ error: 'Невалидна локација.' });
+  }
+
+  try {
+    await pool.query(
+      `UPDATE schedule_slots SET
+        note = ?, day_of_week = ?, start_time = ?, location = ?
+       WHERE id = ?`,
+      [
+        note !== undefined ? note : slot.note,
+        day_of_week !== undefined ? day_of_week : slot.day_of_week,
+        start_time !== undefined ? start_time : slot.start_time,
+        location !== undefined ? location : slot.location,
+        req.params.id
+      ]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Веќе имаш друга група во тoj термин.' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Грешка на серверот.' });
+  }
 });
 
 // DELETE /schedule/:id — го ослободува терминот
