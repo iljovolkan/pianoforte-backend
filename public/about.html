@@ -189,9 +189,11 @@
   }
 
   /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
-  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
+  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:stretch;}
+  .about-media{display:flex;}
+  .about-media img{width:100%; height:100%; object-fit:cover;}
   .about-media{aspect-ratio:4/3; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); border-radius:22px; display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px;}
-  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} }
+  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} .about-media{aspect-ratio:4/3; height:auto;} }
 
   /* ===== BLOG — вистински написи, естетски картички ===== */
   .blog-post-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px;}
@@ -385,8 +387,8 @@
 </div>
 <section>
   <div class="wrap about-grid">
-    <div>
-      <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2020/10/zanaaaas-300x200.png" alt="За PianoForte" style="border-radius:20px; width:100%;">
+    <div class="about-media">
+      <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2020/10/zanaaaas-300x200.png" alt="За PianoForte" style="border-radius:20px;">
     </div>
     <div>
       <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;">
