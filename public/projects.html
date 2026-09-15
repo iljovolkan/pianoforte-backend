@@ -349,7 +349,7 @@
       <div class="nav-item current"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
     </nav>
     <a href="/app" class="cta-primary" data-i18n="nav_cta"><span class="cta-label">Купи/Најави се</span></a>
-    <button class="burger" id="burgerBtn" aria-label="Мени"><span></span><span></span><span></span></button>
+    <button class="burger" id="burgerBtn" aria-label="Мени" data-i18n-aria="aria_menu"><span></span><span></span><span></span></button>
   </div>
 </header>
 
@@ -382,7 +382,7 @@
 </div>
 <div class="page-hero tint-sand">
   <div class="wrap">
-    <a href="#" class="back-link" onclick="history.back(); return false;">← Назад</a>
+    <a href="#" class="back-link" onclick="history.back(); return false;" data-i18n="back_link">← Назад</a>
     <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_projects">Проекти</span></div>
     <h1 data-i18n="projects_title">Проекти</h1>
     <p data-i18n="projects_sub">Концерти, настапи и соработки со други музички институции.</p>
@@ -392,12 +392,12 @@
 <section>
   <div class="wrap about-grid">
     <div>
-      <span class="placeholder-tag" style="background:var(--sand-pale); color:var(--sand-deep);">Меѓународна соработка</span>
-      <h3 style="font-size:24px; margin-bottom:14px;">PianoForte Strings во Љубљана</h3>
-      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;">
+      <span class="placeholder-tag" style="background:var(--sand-pale); color:var(--sand-deep);" data-i18n="proj1_tag">Меѓународна соработка</span>
+      <h3 style="font-size:24px; margin-bottom:14px;" data-i18n="proj1_title">PianoForte Strings во Љубљана</h3>
+      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;" data-i18n="proj1_p1">
         Камерниот ансамбл PianoForte Strings — составен од млади музички уметници и врвни педагози на училиштето — гостуваше во Словенија, како резултат на повеќегодишна соработка меѓу PianoForte Скопје и Валдорфската школа во Љубљана.
       </p>
-      <p style="color:var(--mist); line-height:1.75;">
+      <p style="color:var(--mist); line-height:1.75;" data-i18n="proj1_p2">
         На заедничкиот концерт публиката слушна и македонско современо и народно творештво, и словенечки аранжмани за класичен состав. Настанот беше делумно поддржан од Министерството за култура на РС Македонија, како проект од национален интерес во меѓународната културна дејност.
       </p>
     </div>
@@ -413,12 +413,12 @@
       <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2023/04/DRA_5168-scaled-600x400.jpg" alt="Профундис и PianoForte" style="width:100%; height:100%; object-fit:cover; border-radius:22px;">
     </div>
     <div>
-      <span class="placeholder-tag">Оркестарска работилница</span>
-      <h3 style="font-size:24px; margin-bottom:14px;">Профундис и PianoForte</h3>
-      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;">
-        Во соработка со камерниот оркестар „Профундис“ — еден од најнапредните ансамбли во земјава — учениците на PianoForte имаа можност да ja доживеат целата подготовка на еден концерт, од првата проба до настапот.
+      <span class="placeholder-tag" data-i18n="proj2_tag">Оркестарска работилница</span>
+      <h3 style="font-size:24px; margin-bottom:14px;" data-i18n="proj2_title">Профундис и PianoForte</h3>
+      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;" data-i18n="proj2_p1">
+        Во соработка со камерниот оркестар „Профундис“ — еден од најнапредните ансамбли во земjaва — учениците на PianoForte имаа можност да ja доживеат целата подготовка на еден концерт, од првата проба до настапот.
       </p>
-      <p style="color:var(--mist); line-height:1.75;">
+      <p style="color:var(--mist); line-height:1.75;" data-i18n="proj2_p2">
         Работилницата ги запозна младите музичари со архитектурата на концертната сала, распоредот на инструментите во оркестарот, и им овозможи да свират рамо до рамо со професионални музичари, под диригентство на Ѓурѓица Дашиќ.
       </p>
     </div>
@@ -469,7 +469,7 @@
     <h3 data-i18n="nl_title">Претплатете се на нашата листа на е-пошта</h3>
     <form class="newsletter-form" id="newsletterForm">
       <div class="nl-email-row">
-        <input type="email" placeholder="твoja@email.com" required id="newsletterEmail">
+        <input type="email" placeholder="твoja@email.com" data-i18n-placeholder="placeholder_email" required id="newsletterEmail">
         <button type="submit" data-i18n="nl_submit">Пријави се</button>
       </div>
       <label class="nl-consent">
@@ -488,6 +488,13 @@
     mk: {
       util_login:'Најави се / Регистрација', util_buy:'Купи час',
       nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      page_title:'Проекти — PianoForte', aria_menu:'Мени', back_link:'← Назад', placeholder_email:'твoja@email.com',
+      proj1_tag:'Меѓународна соработка', proj1_title:'PianoForte Strings во Љубљана',
+      proj1_p1:'Камерниот ансамбл PianoForte Strings — составен од млади музички уметници и врвни педагози на училиштето — гостуваше во Словенија, како резултат на повеќегодишна соработка меѓу PianoForte Скопје и Валдорфската школа во Љубљана.',
+      proj1_p2:'На заедничкиот концерт публиката слушна и македонско современо и народно творештво, и словенечки аранжмани за класичен состав. Настанот беше делумно поддржан од Министерството за култура на РС Македонија, како проект од национален интерес во меѓународната културна дејност.',
+      proj2_tag:'Оркестарска работилница', proj2_title:'Профундис и PianoForte',
+      proj2_p1:'Во соработка со камерниот оркестар „Профундис“ — еден од најнапредните ансамбли во земjaва — учениците на PianoForte имаа можност да ja доживеат целата подготовка на еден концерт, од првата проба до настапот.',
+      proj2_p2:'Работилницата ги запозна младите музичари со архитектурата на концертната сала, распоредот на инструментите во оркестарот, и им овозможи да свират рамо до рамо со професионални музичари, под диригентство на Ѓурѓица Дашиќ.',
       dri_about_desc:'Нашата приказна и филозофија', dri_projects_desc:'Концерти и соработки', dropdown_label_instruments:'ИНСТРУМЕНТИ',
       nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
       inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
@@ -532,6 +539,13 @@
     en: {
       util_login:'Sign in / Register', util_buy:'Buy a lesson',
       nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      page_title:'Projects — PianoForte', aria_menu:'Menu', back_link:'← Back', placeholder_email:'your@email.com',
+      proj1_tag:'International collaboration', proj1_title:'PianoForte Strings in Ljubljana',
+      proj1_p1:'The PianoForte Strings chamber ensemble — made up of young musicians and the school\u2019s top teachers — performed in Slovenia, the result of a multi-year partnership between PianoForte Skopje and the Waldorf School in Ljubljana.',
+      proj1_p2:'At the joint concert, the audience heard Macedonian contemporary and folk works alongside Slovenian arrangements for classical ensemble. The event was partly supported by the Ministry of Culture of the Republic of North Macedonia as a project of national interest in international cultural activity.',
+      proj2_tag:'Orchestra workshop', proj2_title:'Profundis and PianoForte',
+      proj2_p1:'In collaboration with the chamber orchestra \u201cProfundis\u201d — one of the country\u2019s most advanced ensembles — PianoForte students got to experience the full preparation of a concert, from the first rehearsal to the performance.',
+      proj2_p2:'The workshop introduced the young musicians to the architecture of the concert hall and the layout of instruments within the orchestra, and let them play side by side with professional musicians under the direction of conductor Gjurgjica Dashikj.',
       dri_about_desc:'Our story and philosophy', dri_projects_desc:'Concerts and collaborations', dropdown_label_instruments:'INSTRUMENTS',
       nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
       inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
@@ -578,6 +592,10 @@
   function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
   function applyLanguage(){
     document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-alt]').forEach(el=>{ el.alt = t(el.dataset.i18nAlt); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    document.title = t('page_title');
     document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
     document.documentElement.lang = currentLang;
     if(typeof renderNlConsentText === 'function') renderNlConsentText();
