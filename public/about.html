@@ -349,7 +349,7 @@
       <div class="nav-item current"><a href="contact.html" data-i18n="nav_contact">Контакт</a></div>
     </nav>
     <a href="/app" class="cta-primary" data-i18n="nav_cta"><span class="cta-label">Купи/Најави се</span></a>
-    <button class="burger" id="burgerBtn" aria-label="Мени"><span></span><span></span><span></span></button>
+    <button class="burger" id="burgerBtn" aria-label="Мени" data-i18n-aria="aria_menu"><span></span><span></span><span></span></button>
   </div>
 </header>
 
@@ -382,7 +382,7 @@
 </div>
 <div class="page-hero tint-lilac">
   <div class="wrap">
-    <a href="#" class="back-link" onclick="history.back(); return false;">← Назад</a>
+    <a href="#" class="back-link" onclick="history.back(); return false;" data-i18n="back_link">← Назад</a>
     <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_about_us">За нас</span></div>
     <h1 data-i18n="about_title">За PianoForte</h1>
   </div>
@@ -393,16 +393,16 @@
       <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2020/10/zanaaaas-300x200.png" alt="За PianoForte" style="border-radius:20px;">
     </div>
     <div>
-      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;">
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p1">
         PianoForte е музичко училиште во Скопје кое веќе повеќе од две децении го збогатува музичкото образование на деца и младинци. Основано во 2000-та година, училиштето е дело на визијата на неговите основачки — Марина Чадо, професорка по виолина и извршен директор, и Виолета Стефановска-Шуковиќ, професорка по пијано и академски директор.
       </p>
-      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;">
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p2">
         Денес во училиштето учат над 180 ученици, во класично музичко образование по пијано, виолина, гитара, тапани и пеење, како и во посебен Оддел за популарни жанрови. Наставата се одвива и во просториите на училиштето, и онлајн во живо, а програмата ja предаваат над 20 еминентни професори — дипломирани музичари, магистри и доктори на науки.
       </p>
-      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;">
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p3">
         Секоja возраст е добредојдена — од ран музички развој за предучилишни деца, до возрасни кои сакаат да почнат одново. Учениците на училиштето освоија повеќе награди на меѓународни натпревари и фестивали во Италија, Белгија, Словенија, Србија, Косово и Украина, но фокусот секогаш останува на уживањето во музицирањето, не само на резултатите.
       </p>
-      <p style="color:var(--mist); line-height:1.75;">
+      <p style="color:var(--mist); line-height:1.75;" data-i18n="about_p4">
         Училиштето е активно и во општествено-корисни иницијативи — музичка работилница „По патот на музиката“, волонтерски настапи на детски фестивали, и соработка со основни музички училишта низ Скопје, каде најмладите го доживуваат својот прв контакт со виолина, гитара и флејта.
       </p>
     </div>
@@ -453,7 +453,7 @@
     <h3 data-i18n="nl_title">Претплатете се на нашата листа на е-пошта</h3>
     <form class="newsletter-form" id="newsletterForm">
       <div class="nl-email-row">
-        <input type="email" placeholder="твoja@email.com" required id="newsletterEmail">
+        <input type="email" placeholder="твoja@email.com" data-i18n-placeholder="placeholder_email" required id="newsletterEmail">
         <button type="submit" data-i18n="nl_submit">Пријави се</button>
       </div>
       <label class="nl-consent">
@@ -472,6 +472,12 @@
     mk: {
       util_login:'Најави се / Регистрација', util_buy:'Купи час',
       nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
+      page_title:'За нас — PianoForte',
+      aria_menu:'Мени', back_link:'← Назад', placeholder_email:'твoja@email.com',
+      about_p1:'PianoForte е музичко училиште во Скопје кое веќе повеќе од две децении го збогатува музичкото образование на деца и младинци. Основано во 2000-та година, училиштето е дело на визијата на неговите основачки — Марина Чадо, професорка по виолина и извршен директор, и Виолета Стефановска-Шуковиќ, професорка по пијано и академски директор.',
+      about_p2:'Денес во училиштето учат над 180 ученици, во класично музичко образование по пијано, виолина, гитара, тапани и пеење, како и во посебен Оддел за популарни жанрови. Наставата се одвива и во просториите на училиштето, и онлајн во живо, а програмата ja предаваат над 20 еминентни професори — дипломирани музичари, магистри и доктори на науки.',
+      about_p3:'Секоja возраст е добредојдена — од ран музички развој за предучилишни деца, до возрасни кои сакаат да почнат одново. Учениците на училиштето освоија повеќе награди на меѓународни натпревари и фестивали во Италија, Белгија, Словенија, Србија, Косово и Украина, но фокусот секогаш останува на уживањето во музицирањето, не само на резултатите.',
+      about_p4:'Училиштето е активно и во општествено-корисни иницијативи — музичка работилница „По патот на музиката“, волонтерски настапи на детски фестивали, и соработка со основни музички училишта низ Скопје, каде најмладите го доживуваат својот прв контакт со виолина, гитара и флејта.',
       dri_about_desc:'Нашата приказна и филозофија', dri_projects_desc:'Концерти и соработки', dropdown_label_instruments:'ИНСТРУМЕНТИ',
       nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
       inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
@@ -516,6 +522,12 @@
     en: {
       util_login:'Sign in / Register', util_buy:'Buy a lesson',
       nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
+      page_title:'About us — PianoForte',
+      aria_menu:'Menu', back_link:'← Back', placeholder_email:'your@email.com',
+      about_p1:'PianoForte is a music school in Skopje that has been enriching the musical education of children and young people for over two decades. Founded in 2000, the school is the vision of its founders — Marina Chado, violin professor and executive director, and Violeta Stefanovska-Shukovikj, piano professor and academic director.',
+      about_p2:'Today the school has over 180 students, offering classical music education in piano, violin, guitar, drums and singing, as well as a dedicated Popular Genres department. Classes take place both at the school and live online, taught by over 20 distinguished professors — graduate musicians, master\\u2019s and doctoral degree holders.',
+      about_p3:'Every age is welcome — from early musical development for preschoolers, to adults who want to start fresh. The school\\u2019s students have won numerous awards at international competitions and festivals in Italy, Belgium, Slovenia, Serbia, Kosovo and Ukraine, though the focus always remains on the joy of making music, not just results.',
+      about_p4:'The school is also active in community initiatives — the \\u201cAlong the Path of Music\\u201d workshop, volunteer performances at children\\u2019s festivals, and collaborations with primary music schools across Skopje, where the youngest students experience their first contact with violin, guitar and flute.',
       dri_about_desc:'Our story and philosophy', dri_projects_desc:'Concerts and collaborations', dropdown_label_instruments:'INSTRUMENTS',
       nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
       inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
@@ -562,6 +574,10 @@
   function t(key){ return (translations[currentLang] && translations[currentLang][key]) || key; }
   function applyLanguage(){
     document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-i18n-alt]').forEach(el=>{ el.alt = t(el.dataset.i18nAlt); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    document.title = t('page_title');
     document.querySelectorAll('.lang-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.lang===currentLang));
     document.documentElement.lang = currentLang;
     if(typeof renderNlConsentText === 'function') renderNlConsentText();
