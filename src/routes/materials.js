@@ -66,6 +66,54 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), (req, res) => {
   });
 });
 
+// POST /materials/send-to-group  multipart/form-data: group_id, title, type, note, file (опционално)
+// Го испраќа истиот материјал до СИТЕ деца во групата одеднаш (посебен запис
+// за секое дете, за да секое си го следи сопствениот статус).
+router.post('/send-to-group', requireAuth, requireRole('professor', 'admin'), (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+
+    const { group_id, title, type, note } = req.body;
+    if (!group_id || !title || !['note', 'audio', 'task'].includes(type)) {
+      return res.status(400).json({ error: 'Невалидни податоци за материјал.' });
+    }
+
+    const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [group_id]);
+    if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+    if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Оваа група не е твoja.' });
+    }
+
+    const [members] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [group_id]);
+    if (members.length === 0) {
+      return res.status(400).json({ error: 'Групата сè уште нема деца во себе.' });
+    }
+
+    const file = req.file;
+    try {
+      const ids = [];
+      for (const m of members) {
+        const [result] = await pool.query(
+          `INSERT INTO materials (student_id, sent_by, title, type, note, status, file_data, file_name, file_mimetype, file_size)
+           VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?)`,
+          [
+            m.student_id, req.user.id, title, type, note || null,
+            file ? file.buffer : null,
+            file ? file.originalname : null,
+            file ? file.mimetype : null,
+            file ? file.size : null
+          ]
+        );
+        ids.push(result.insertId);
+      }
+      res.status(201).json({ ids, sent_to_count: members.length, has_file: !!file });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Грешка при зачувување на материјалите.' });
+    }
+  });
+});
+
 // GET /materials/:studentId — целиот дигитален индекс на детето
 // Родител смее да гледа само материјали на СВОИ деца; professor/admin гледаат секаде.
 // НЕ ja враќа file_data (тешко поле) — само дали постои фајл, за брзина.
