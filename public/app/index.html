@@ -37,6 +37,9 @@
                 radial-gradient(circle at 85% 80%, rgba(143,114,176,0.16), transparent 45%), var(--bg);
   }
   .login-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:40px 38px; max-width:440px; width:100%; box-shadow:0 30px 60px rgba(107,78,142,0.08);}
+  .scroll-hint{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:var(--lilac-deep); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(107,78,142,0.35); cursor:pointer; z-index:500; animation:scrollBounce 1.6s infinite; transition:opacity .25s;}
+  .scroll-hint svg{width:20px; height:20px;}
+  @keyframes scrollBounce{ 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(6px);} }
   .login-brand{text-align:center; margin-bottom:8px;}
   .login-brand h1{font-size:28px;}
   .login-brand h1 span{color:var(--sand-deep);}
@@ -431,6 +434,17 @@
 
     <button class="login-btn" id="loginBtn" disabled data-i18n="login_btn">Најави се</button>
     <div id="loginError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
+
+    <div style="text-align:center; margin-top:14px;">
+      <a href="#" id="showChildLoginLink" style="color:var(--lilac-deep); font-size:12.5px; font-weight:600; text-decoration:none;" data-i18n="child_login_link">👦 Најави се како ученик (со код)</a>
+    </div>
+    <div id="childLoginBox" style="display:none; margin-top:14px; padding:14px; background:var(--surface-2); border-radius:10px;">
+      <label class="field-label" style="display:block; margin-bottom:6px;" data-i18n="child_code_label">Внеси го твojot код</label>
+      <input class="login-input" id="childAccessCode" type="text" maxlength="6" style="text-transform:uppercase; text-align:center; letter-spacing:3px; font-weight:700; font-size:18px;" placeholder="ABC123">
+      <button class="login-btn" id="childLoginBtn" style="margin-top:10px;" data-i18n="child_login_btn">Најави се</button>
+      <div id="childLoginError" style="display:none; color:var(--wine); font-size:12px; text-align:center; margin-top:8px;"></div>
+    </div>
+
     <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
       <a href="#" id="goToRegisterLink" style="color:var(--lilac-deep); font-size:13px; font-weight:600; text-decoration:none;" data-i18n="login_go_register">Немаш профил? Регистрирај се →</a>
       <a href="#" id="goToForgotPasswordLink" style="color:var(--mist); font-size:12.5px; text-decoration:none;" data-i18n="login_forgot">Ja заборави лозинката?</a>
@@ -640,9 +654,14 @@
 
     <div class="g-recaptcha" data-sitekey="6LdLMrwtAAAAAM_eZf-7WirUq7xR_xy2TVQaC-oY" style="margin-bottom:16px;"></div>
 
-    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;" id="regTermsLabel">
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:14px; cursor:pointer;" id="regTermsLabel">
       <input type="checkbox" id="regTermsCheckbox" style="margin-top:2px;">
       <span id="regTermsText"></span>
+    </label>
+
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:18px; cursor:pointer;" id="regPhotoLabel">
+      <input type="checkbox" id="regPhotoCheckbox" style="margin-top:2px;">
+      <span data-i18n="photo_consent_text">Се согласувам моето дете да биде фотографирано и/или снимано за време на часови, настапи и настани на PianoForte, и материjaлот да се користи за промотивни цели (веб-сajт, социjaлни мрежи, брошури).</span>
     </label>
 
     <button class="login-btn" id="registerBtn" data-i18n="reg_submit_btn">Креирај профил</button>
@@ -838,6 +857,10 @@
             <label data-i18n="reg_age_label">Возраст на детето</label>
             <input type="number" min="3" max="99" id="childFormAge" class="login-input" style="margin-bottom:0;">
           </div>
+          <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin:12px 0; cursor:pointer;">
+            <input type="checkbox" id="childFormPhotoConsent" style="margin-top:2px;">
+            <span data-i18n="photo_consent_text">Се согласувам моето дете да биде фотографирано и/или снимано за време на часови, настапи и настани на PianoForte, и материjaлот да се користи за промотивни цели (веб-сajт, социjaлни мрежи, брошури).</span>
+          </label>
           <button class="send-btn" id="childFormSaveBtn" style="margin-top:12px;" data-i18n="children_save_btn">Зачувај</button>
           <button class="mc-btn" id="childFormCancelBtn" style="margin-top:8px; width:100%;" data-i18n="children_cancel_btn">Откажи</button>
         </div>
@@ -1193,6 +1216,12 @@
       finance_unpaid_title:'Неплатени школарини', th_student:'Ученик', th_parent:'Родител', th_package:'Пакет', th_installment:'Рата', th_due:'Доспева',
       finance_revenue_title:'Приход по професор', th_students:'Ученици', th_total_revenue:'Вкупен приход',
       placeholder_prof_name:'пр. Никола Тодоровски',
+      photo_consent_text:'Се согласувам моето дете да биде фотографирано и/или снимано за време на часови, настапи и настани на PianoForte, и материjaлот да се користи за промотивни цели (веб-сajт, социjaлни мрежи, брошури).',
+      child_login_link:'👦 Најави се како ученик (со код)', child_code_label:'Внеси го твojot код', child_login_btn:'Најави се',
+      child_code_required:'Внеси го кодот.', child_code_invalid:'Невалиден код. Провери и пробaj повторно.',
+      nav_materials_child:'Материjaли', child_access_code_title:'Код за најава на детето',
+      child_access_code_sub:'Со овoj код, детето само може да се најави и да ги гледа своите материjaли — без да ja знае твojata лозинка.',
+      generate_code_btn:'Генерирaj код', regenerate_code_btn:'Генерирaj нов код',
       forgot_tagline:'Ресетирaj ja лозинката', forgot_submit:'Испрати линк за ресетирање',
       forgot_success:'Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).',
       reset_tagline:'Постави нова лозинка', reset_new_pw:'Нова лозинка', reset_confirm_pw:'Потврди ja лозинката', reset_submit:'Зачувај ja новата лозинка',
@@ -1276,6 +1305,12 @@
       finance_unpaid_title:'Unpaid tuition', th_student:'Student', th_parent:'Parent', th_package:'Package', th_installment:'Installment', th_due:'Due',
       finance_revenue_title:'Revenue per professor', th_students:'Students', th_total_revenue:'Total revenue',
       placeholder_prof_name:'e.g. Nikola Todorovski',
+      photo_consent_text:'I agree that my child may be photographed and/or filmed during lessons, performances and events at PianoForte, and that this material may be used for promotional purposes (website, social media, brochures).',
+      child_login_link:'👦 Log in as a student (with a code)', child_code_label:'Enter your code', child_login_btn:'Log in',
+      child_code_required:'Enter your code.', child_code_invalid:'Invalid code. Check it and try again.',
+      nav_materials_child:'Materials', child_access_code_title:'Student login code',
+      child_access_code_sub:'With this code, your child can log in on their own and view their materials — without knowing your password.',
+      generate_code_btn:'Generate code', regenerate_code_btn:'Generate new code',
       forgot_tagline:'Reset your password', forgot_submit:'Send reset link',
       forgot_success:'If that email exists in our system, we\\u2019ve sent a reset link. Check your inbox (and spam folder).',
       reset_tagline:'Set a new password', reset_new_pw:'New password', reset_confirm_pw:'Confirm password', reset_submit:'Save new password',
@@ -1634,6 +1669,41 @@
     document.getElementById('loginScreen').style.display = 'flex';
   });
 
+  document.getElementById('showChildLoginLink').addEventListener('click', (e)=>{
+    e.preventDefault();
+    const box = document.getElementById('childLoginBox');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    if(box.style.display === 'block') document.getElementById('childAccessCode').focus();
+  });
+
+  document.getElementById('childLoginBtn').addEventListener('click', async ()=>{
+    const code = document.getElementById('childAccessCode').value.trim().toUpperCase();
+    const errBox = document.getElementById('childLoginError');
+    errBox.style.display = 'none';
+    if(!code){ errBox.textContent = t('child_code_required'); errBox.style.display = 'block'; return; }
+
+    const btn = document.getElementById('childLoginBtn');
+    btn.disabled = true;
+    try{
+      const { token, refreshToken, user, restricted_child_id, restricted_child_name } = await apiCall('/auth/child-login', {
+        method:'POST',
+        body: JSON.stringify({ access_code: code })
+      });
+      session = {
+        role:'student', name:user.full_name, email:user.email, realUserId:user.id, token, refreshToken, isRealAccount:true,
+        restrictedChildId: restricted_child_id, restrictedChildName: restricted_child_name
+      };
+      rememberMe = false; // детска сесија — секогаш краткотрajна, не се памти на споделен уред
+      saveSessionToStorage();
+      await startApp();
+    } catch(err){
+      errBox.textContent = err.message || t('child_code_invalid');
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   /* ===================== REGISTRATION ===================== */
   document.getElementById('goToRegisterLink').addEventListener('click', (e)=>{
     e.preventDefault();
@@ -1643,16 +1713,43 @@
 
   /* ===================== TERMS / PRIVACY ===================== */
   let legalReturnAction = null; // функција што се повикува кога ќе се затвори документот
+  let scrollHintEl = null;
+  function showScrollHint(){
+    hideScrollHint();
+    scrollHintEl = document.createElement('div');
+    scrollHintEl.className = 'scroll-hint';
+    scrollHintEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+    document.body.appendChild(scrollHintEl);
+    const onScroll = ()=>{
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+      if(nearBottom) hideScrollHint();
+    };
+    scrollHintEl.addEventListener('click', ()=>{
+      window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' });
+    });
+    window.addEventListener('scroll', onScroll);
+    scrollHintEl._onScroll = onScroll;
+  }
+  function hideScrollHint(){
+    if(scrollHintEl){
+      window.removeEventListener('scroll', scrollHintEl._onScroll);
+      scrollHintEl.remove();
+      scrollHintEl = null;
+    }
+  }
+
   function openLegalScreen(doc, returnAction){
     legalReturnAction = returnAction;
     document.getElementById('termsScreen').style.display = 'none';
     document.getElementById('privacyScreen').style.display = 'none';
     document.getElementById(doc==='privacy' ? 'privacyScreen' : 'termsScreen').style.display = 'block';
     window.scrollTo(0,0);
+    setTimeout(showScrollHint, 300); // причекaj DOM да се рендерира за точна висина
   }
   function closeLegalScreen(){
     document.getElementById('termsScreen').style.display = 'none';
     document.getElementById('privacyScreen').style.display = 'none';
+    hideScrollHint();
     if(legalReturnAction) legalReturnAction();
   }
   document.getElementById('openTermsFromLoginLink').addEventListener('click', (e)=>{
@@ -1827,9 +1924,10 @@
 
     try{
       // Вистински повик кон живиот backend — ова реално креира ред во MySQL базата
+      const photoConsent = document.getElementById('regPhotoCheckbox').checked;
       await apiCall('/auth/register', {
         method:'POST',
-        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age, captcha_token:captchaToken })
+        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age, captcha_token:captchaToken, photo_consent: photoConsent })
       });
 
       pendingRegistration = {name, childName, email, password, age};
@@ -1906,18 +2004,32 @@
         <div class="sent-icon">🎵</div>
         <div class="sent-meta">
           <div class="t">${escapeHtml(c.full_name)}</div>
-          <div class="sub">${c.age ? c.age + ' год.' : ''}</div>
+          <div class="sub">${c.age ? c.age + ' год.' : ''}${c.access_code ? ' · 🔑 ' + c.access_code : ''}</div>
         </div>
         <button class="mc-btn" style="flex:none;" onclick="editChild(${c.id})">Уреди</button>
+        <button class="mc-btn" style="flex:none;" data-gen-code="${c.id}">${c.access_code ? t('regenerate_code_btn') : t('generate_code_btn')}</button>
         ${children.length>1 ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteChild(${c.id})">Избриши</button>` : ''}
       </div>
     `).join('');
+    list.querySelectorAll('button[data-gen-code]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const childId = btn.dataset.genCode;
+        btn.disabled = true;
+        try{
+          await authApiCall('/children/' + childId + '/access-code', { method:'POST' });
+          await loadChildren();
+          renderMyChildren();
+        } catch(err){ alert(err.message || 'Грешка.'); }
+        finally { btn.disabled = false; }
+      });
+    });
   }
 
   document.getElementById('addChildBtn').addEventListener('click', ()=>{
     editingChildId = null;
     document.getElementById('childFormName').value = '';
     document.getElementById('childFormAge').value = '';
+    document.getElementById('childFormPhotoConsent').checked = false;
     document.getElementById('childFormBox').style.display = 'block';
     document.getElementById('childFormMsg').style.display = 'none';
   });
@@ -1928,6 +2040,7 @@
     editingChildId = id;
     document.getElementById('childFormName').value = c.full_name;
     document.getElementById('childFormAge').value = c.age || '';
+    document.getElementById('childFormPhotoConsent').checked = !!c.photo_consent;
     document.getElementById('childFormBox').style.display = 'block';
     document.getElementById('childFormMsg').style.display = 'none';
   };
@@ -1951,6 +2064,7 @@
   document.getElementById('childFormSaveBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('childFormName').value.trim();
     const age = document.getElementById('childFormAge').value;
+    const photo_consent = document.getElementById('childFormPhotoConsent').checked;
     const msgBox = document.getElementById('childFormMsg');
     msgBox.style.display = 'none';
     if(!name){ msgBox.style.color='var(--wine)'; msgBox.textContent='Името е задолжително.'; msgBox.style.display='block'; return; }
@@ -1959,9 +2073,9 @@
     btn.disabled = true;
     try{
       if(editingChildId){
-        await authApiCall('/children/'+editingChildId, { method:'PUT', body: JSON.stringify({ full_name:name, age }) });
+        await authApiCall('/children/'+editingChildId, { method:'PUT', body: JSON.stringify({ full_name:name, age, photo_consent }) });
       } else {
-        await authApiCall('/children', { method:'POST', body: JSON.stringify({ full_name:name, age }) });
+        await authApiCall('/children', { method:'POST', body: JSON.stringify({ full_name:name, age, photo_consent }) });
       }
       await loadChildren();
       renderMyChildren();
@@ -2150,6 +2264,17 @@
   function buildNav(){
     const nav = document.getElementById('topnav'); nav.innerHTML = '';
     const tabs = [];
+    // Детска сесија (најавена преку пристапен код) — само еден таб, ништо
+    // друго (без Наплата/Пакети/Admin/Финансии, без промена на профил/лозинка).
+    if(session.restrictedChildId){
+      tabs.push({id:'index', label: t('nav_materials_child')});
+      tabs.forEach(tab=>{
+        const btn = document.createElement('button'); btn.textContent = tab.label; btn.dataset.page = tab.id;
+        btn.addEventListener('click', ()=>{ showPage(tab.id); });
+        nav.appendChild(btn);
+      });
+      return;
+    }
     if(session.role==='admin') tabs.push({id:'admin', label:t('nav_admin')});
     tabs.push({id:'index', label: session.role==='student' ? t('nav_profile') : t('nav_index')});
     if(session.role==='professor') tabs.push({id:'schedule', label:t('nav_schedule')});
@@ -2340,7 +2465,12 @@
     if(isStudent) activeStudentForIndex = activeChildId;
 
     const childRow = document.getElementById('childSelectorRow');
-    if(isStudent && children.length > 0){
+    if(session.restrictedChildId){
+      // детска сесија — секогаш само сопственото дете, никогаш браќа/сестри
+      activeChildId = session.restrictedChildId;
+      activeStudentForIndex = activeChildId;
+      childRow.style.display = 'none';
+    } else if(isStudent && children.length > 0){
       const chipsWrap = document.getElementById('childSelectorChips');
       chipsWrap.innerHTML = children.map(c=>`
         <button class="filter-chip${c.id===activeChildId?' active':''}" data-child="${c.id}">${escapeHtml(c.full_name)}</button>
