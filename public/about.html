@@ -211,6 +211,9 @@
 
   /* ===== BLOG POST DETAILS (blog-post.html) ===== */
   .back-link{display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none; margin-bottom:8px;}
+  .scroll-hint{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:var(--lilac-deep); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(107,78,142,0.35); cursor:pointer; z-index:500; animation:scrollBounce 1.6s infinite;}
+  .scroll-hint svg{width:20px; height:20px;}
+  @keyframes scrollBounce{ 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(6px);} }
   .back-link:hover{text-decoration:underline;}
   .blog-post-article{max-width:760px; margin:0 auto;}
   .post-title{font-size:32px; font-weight:500; margin:10px 0 26px; line-height:1.3;}
@@ -845,6 +848,17 @@
 
 })();
 
+  // Стрелка за скролување — покажува дека има уште содржина подолу
+  (function(){
+    if(document.body.scrollHeight <= window.innerHeight + 100) return; // нема потреба ако страницата е кратка
+    const hint = document.createElement('div');
+    hint.className = 'scroll-hint';
+    hint.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+    document.body.appendChild(hint);
+    hint.addEventListener('click', ()=>{ window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' }); });
+    window.addEventListener('scroll', ()=>{
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+      hint.style.display = nearBottom ? 'none' : 'flex';
+    });
+  })();
 </script>
-</body>
-</html>
