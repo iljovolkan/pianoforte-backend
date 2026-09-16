@@ -416,13 +416,13 @@
       <button class="lang-btn active" data-lang="mk">МК</button>
       <button class="lang-btn" data-lang="en">EN</button>
     </div>
-    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;">← Назад кон почетна</a>
+    <a href="/" class="back-link" style="display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:13px; text-decoration:none; margin-bottom:14px;" data-i18n="back_to_home">← Назад кон почетна</a>
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="login_tagline">Најави се за да продолжиш</p></div>
 
     <label class="field-label" style="margin-top:20px; display:block;" data-i18n="label_email">Email</label>
-    <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com">
+    <input class="login-input" id="loginEmail" type="email" placeholder="твоја@email.com" data-i18n-placeholder="placeholder_login_email">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
-    <div class="pw-wrap"><input class="login-input" id="loginPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="pw-wrap"><input class="login-input" id="loginPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 
     <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
       <input type="checkbox" id="rememberMeCheckbox">
@@ -469,9 +469,9 @@
   <div class="login-card">
     <div class="login-brand"><h1>Piano<span>Forte</span></h1><p data-i18n="reset_tagline">Постави нова лозинка</p></div>
     <label class="field-label" style="margin-top:20px; display:block;" data-i18n="reset_new_pw">Нова лозинка</label>
-    <div class="pw-wrap"><input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери" data-i18n-placeholder="placeholder_min8"><button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="pw-wrap"><input class="login-input" id="resetPassword1" type="password" placeholder="барем 8 карактери" data-i18n-placeholder="placeholder_min8"><button type="button" class="pw-toggle" data-target="resetPassword1" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
     <label class="field-label" data-i18n="reset_confirm_pw">Потврди ja лозинката</label>
-    <div class="pw-wrap"><input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja" data-i18n-placeholder="placeholder_repeat"><button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="pw-wrap"><input class="login-input" id="resetPassword2" type="password" placeholder="повтори ja" data-i18n-placeholder="placeholder_repeat"><button type="button" class="pw-toggle" data-target="resetPassword2" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
     <button class="login-btn" id="resetSubmitBtn" data-i18n="reset_submit">Зачувај ja новата лозинка</button>
     <div id="resetError" style="display:none; color:var(--wine); font-size:12.5px; text-align:center; margin-top:10px;"></div>
     <div id="resetSuccess" style="display:none; color:var(--leaf); font-size:13px; text-align:center; margin-top:10px;"></div>
@@ -628,7 +628,7 @@
     <label class="field-label" data-i18n="label_email">Email</label>
     <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com" data-i18n-placeholder="placeholder_parent_email">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
-    <div class="pw-wrap"><input class="login-input" id="regPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="regPassword" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div class="pw-wrap"><input class="login-input" id="regPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="regPassword" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 
     <div style="border-top:1px solid var(--line); margin:18px 0 14px; padding-top:14px;">
       <div style="font-size:11px; color:var(--mist); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em;" data-i18n="reg_child_section">Прво дете (можеш да додадеш уште подоцна)</div>
@@ -678,7 +678,7 @@
         <button class="lang-btn" data-lang="en">EN</button>
       </div>
       <button class="icon-btn" id="refreshBtn" title="Освежи" data-i18n-title="refresh_title">↻</button>
-      <div class="avatar" id="avatar" style="cursor:pointer;" title="Профил"></div>
+      <div class="avatar" id="avatar" style="cursor:pointer;" title="Профил" data-i18n-title="profile_eyebrow"></div>
       <div style="cursor:pointer;" id="userNameRoleBox"><div class="u-name" id="uName"></div><div class="u-role" id="uRole"></div></div>
       <button class="logout-btn" id="logoutBtn" data-i18n="logout">Одјави се</button>
     </div>
@@ -697,28 +697,28 @@
         <div>
           <div class="card" id="professorFormCard">
             <div class="form-row" id="studentSelectRow">
-              <label>Ученик</label>
+              <label data-i18n="label_student">Ученик</label>
               <select class="login-select" id="studentSelect" style="margin-bottom:0;"></select>
             </div>
             <div style="height:14px;"></div>
-            <div class="form-row"><label>Наслов на материјалот</label><input type="text" id="matTitle" placeholder="пр. Für Elise — тактови 1–16"></div>
+            <div class="form-row"><label data-i18n="label_mat_title">Наслов на материjaлот</label><input type="text" id="matTitle" placeholder="пр. Für Elise — тактови 1–16" data-i18n-placeholder="placeholder_mat_title"></div>
             <div class="form-row">
-              <label>Тип</label>
+              <label data-i18n="label_type">Тип</label>
               <div class="type-toggle" id="typeToggle">
-                <div class="type-btn active" data-type="note">🎼 Ноти</div>
-                <div class="type-btn" data-type="audio">🎧 Аудио</div>
-                <div class="type-btn" data-type="task">✎ Задача</div>
+                <div class="type-btn active" data-type="note" data-i18n="type_note">🎼 Ноти</div>
+                <div class="type-btn" data-type="audio" data-i18n="type_audio">🎧 Аудио</div>
+                <div class="type-btn" data-type="task" data-i18n="type_task">✎ Задача</div>
               </div>
             </div>
-            <div class="form-row"><label>Белешка за ученикот (опционално)</label><textarea id="matNote" placeholder="пр. Внимавај на динамиката во тактови 9–12."></textarea></div>
+            <div class="form-row"><label data-i18n="label_mat_note">Белешка за ученикот (опционално)</label><textarea id="matNote" placeholder="пр. Внимавaj на динамиката во тактови 9–12." data-i18n-placeholder="placeholder_mat_note"></textarea></div>
             <div class="form-row">
-              <label>Фајл (опционално — PDF ноти, аудио mp3/wav/m4a, слика)</label>
+              <label data-i18n="label_mat_file">Фајл (опционално — PDF ноти, аудио mp3/wav/m4a, слика)</label>
               <input type="file" id="matFile" accept=".pdf,audio/*,image/jpeg,image/png">
               <div id="matFileName" style="font-size:11.5px; color:var(--mist); margin-top:4px;"></div>
             </div>
-            <button class="send-btn" id="sendBtn">Испрати до ученикот</button>
+            <button class="send-btn" id="sendBtn" data-i18n="send_to_student">Испрати до ученикот</button>
           </div>
-          <div class="sent-list"><h3>Историја на испратени материјали</h3><div id="sentList"></div></div>
+          <div class="sent-list"><h3 data-i18n="sent_history">Историја на испратени материјали</h3><div id="sentList"></div></div>
         </div>
         <div class="card">
           <div class="form-row" id="childSelectorRow" style="display:none; margin-bottom:14px;">
@@ -727,12 +727,12 @@
           </div>
           <div class="tablet">
             <div class="tablet-topbar"><span class="name" id="tabletName">—</span><span class="mono" id="tabletClock" style="font-size:11px; color:var(--mist);"></span></div>
-            <button class="room-btn" id="roomBtn">Влези во училница</button>
+            <button class="room-btn" id="roomBtn" data-i18n="enter_classroom">Влези во училница</button>
             <div class="tablet-feed" id="tabletFeed"></div>
             <div class="stat-strip">
-              <div class="stat"><div class="num" id="statSent">0</div><div class="lbl">Испратени</div></div>
-              <div class="stat"><div class="num" id="statOpened">0</div><div class="lbl">Отворени</div></div>
-              <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">Завршени</div></div>
+              <div class="stat"><div class="num" id="statSent">0</div><div class="lbl" data-i18n="stat_sent">Испратени</div></div>
+              <div class="stat"><div class="num" id="statOpened">0</div><div class="lbl" data-i18n="stat_opened">Отворени</div></div>
+              <div class="stat"><div class="num" id="statDone">0</div><div class="lbl" data-i18n="stat_done">Завршени</div></div>
             </div>
           </div>
         </div>
@@ -750,35 +750,35 @@
       <div class="groups-overview" id="groupsOverview"></div>
 
       <div class="card" id="profAvailabilityCard" style="margin-bottom:24px; display:none;">
-        <h3 style="font-size:15px; margin-bottom:6px;">Понуди термини за индивидуална настава</h3>
-        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.</p>
+        <h3 style="font-size:15px; margin-bottom:6px;" data-i18n="prof_avail_title">Понуди термини за индивидуална настава</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;" data-i18n="prof_avail_sub">Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.</p>
         <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
           <div style="min-width:140px;">
-            <label>Инструмент</label>
+            <label data-i18n="fg_instrument">Инструмент</label>
             <select id="profAvailInstrument" class="login-select" style="margin-bottom:0;"></select>
           </div>
           <div style="min-width:140px;">
-            <label>Датум</label>
+            <label data-i18n="label_date">Датум</label>
             <input type="date" id="profAvailDate" class="login-input" style="margin-bottom:0;">
           </div>
           <div style="width:110px;">
-            <label>Време</label>
+            <label data-i18n="label_time">Време</label>
             <select id="profAvailTime" class="login-select" style="margin-bottom:0;"></select>
           </div>
           <div style="min-width:140px;">
-            <label>Локација</label>
+            <label data-i18n="label_location">Локација</label>
             <select id="profAvailLocation" class="login-select" style="margin-bottom:0;">
-              <option value="aerodrom">Аеродром</option>
-              <option value="taftalidze">Тафталиџе</option>
+              <option value="aerodrom" data-i18n="loc_aerodrom">Аеродром</option>
+              <option value="taftalidze" data-i18n="loc_taftalidze">Тафталиџе</option>
             </select>
           </div>
-          <button class="send-btn" id="profAvailAddBtn" style="width:auto; padding:0 20px;">Додади термин</button>
+          <button class="send-btn" id="profAvailAddBtn" style="width:auto; padding:0 20px;" data-i18n="add_slot_btn">Додади термин</button>
         </div>
         <div id="profAvailList"></div>
       </div>
 
       <div class="card" id="indivBookingsCard" style="margin-bottom:24px; display:none;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Закажани индивидуални часови</h3>
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="scheduled_indiv_lessons">Закажани индивидуални часови</h3>
         <div id="indivBookingsList"></div>
       </div>
 
@@ -796,7 +796,7 @@
           <div id="yearViewWrap" style="display:none;"></div>
         </div>
         <div class="card sched-panel" id="schedPanel">
-          <h3>Избери термин</h3><span class="slot-tag">Кликни на прозорче од календарот</span>
+          <h3 data-i18n="choose_slot_title">Избери термин</h3><span class="slot-tag" data-i18n="click_slot_hint">Кликни на прозорче од календарот</span>
         </div>
       </div>
     </section>
@@ -854,17 +854,17 @@
         <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="profile_password_title">Смени лозинка</h3>
         <div class="form-row">
           <label data-i18n="profile_current_pw">Тековна лозинка</label>
-          <div class="pw-wrap"><input type="password" id="profileCurrentPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileCurrentPw" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <div class="pw-wrap"><input type="password" id="profileCurrentPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileCurrentPw" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         </div>
         <div style="height:14px;"></div>
         <div class="form-row">
           <label data-i18n="profile_new_pw">Нова лозинка</label>
-          <div class="pw-wrap"><input type="password" id="profileNewPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileNewPw" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <div class="pw-wrap"><input type="password" id="profileNewPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileNewPw" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         </div>
         <div style="height:14px;"></div>
         <div class="form-row">
           <label data-i18n="profile_confirm_pw">Потврди ja новата лозинка</label>
-          <div class="pw-wrap"><input type="password" id="profileConfirmPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileConfirmPw" aria-label="Прикажи лозинка"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <div class="pw-wrap"><input type="password" id="profileConfirmPw" class="login-input" style="margin-bottom:0;"><button type="button" class="pw-toggle" data-target="profileConfirmPw" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         </div>
         <button class="send-btn" id="profilePwBtn" style="margin-top:16px;" data-i18n="profile_pw_btn">Смени лозинка</button>
         <div id="profilePwMsg" style="display:none; font-size:12.5px; margin-top:10px;"></div>
@@ -874,58 +874,58 @@
 
     <section class="page" id="page-admin">
       <div class="page-head">
-        <span class="eyebrow">Администрација</span>
-        <h2>Преглед и управување</h2>
-        <p>Целосен надзор на системот — статистика, активност, професори и корисници.</p>
+        <span class="eyebrow" data-i18n="admin_eyebrow">Администрација</span>
+        <h2 data-i18n="admin_overview_title">Преглед и управување</h2>
+        <p data-i18n="admin_overview_sub">Целосен надзор на системот — статистика, активност, професори и корисници.</p>
       </div>
 
       <div class="admin-stats-grid" id="adminStatsGrid"></div>
 
       <div class="card" style="margin-bottom:24px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Последна активност (купувања)</h3>
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="admin_recent_activity">Последна активност (купувања)</h3>
         <div id="adminPurchasesList"></div>
       </div>
 
       <div class="page-head" style="margin-top:12px;">
-        <h2>Управувај со професори</h2>
-        <p>Создади нова professor сметка. Привремената лозинка се прикажува само еднаш — сподели ja рачно со професорот.</p>
+        <h2 data-i18n="admin_manage_profs">Управувaj со професори</h2>
+        <p data-i18n="admin_manage_profs_sub">Создади нова professor сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.</p>
       </div>
 
       <div class="index-layout">
         <div class="card">
           <div class="form-row">
-            <label>Име и презиме на професорот</label>
-            <input type="text" id="adminProfName" placeholder="пр. Никола Тодоровски">
+            <label data-i18n="admin_prof_name">Име и презиме на професорот</label>
+            <input type="text" id="adminProfName" placeholder="пр. Никола Тодоровски" data-i18n-placeholder="placeholder_prof_name">
           </div>
           <div class="form-row">
             <label>Email</label>
             <input type="email" id="adminProfEmail" placeholder="professor@pianoforte.mk">
           </div>
           <div class="form-row">
-            <label>Инструмент (professor-от ќе смее да создава групи само за овој инструмент)</label>
+            <label data-i18n="admin_prof_instrument">Инструмент (professor-от ќе смее да создава групи само за овoj инструмент)</label>
             <select id="adminProfInstrument" class="login-select" style="margin-bottom:0;"></select>
           </div>
-          <button class="send-btn" id="adminCreateProfBtn">Креирај professor сметка</button>
+          <button class="send-btn" id="adminCreateProfBtn" data-i18n="admin_create_prof">Креирaj professor сметка</button>
           <div id="adminError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
           <div id="adminSuccessBox" style="display:none; margin-top:16px; background:var(--leaf-pale); border:1px solid #cfe3d3; border-radius:10px; padding:16px;">
-            <div style="font-weight:600; font-size:14px; margin-bottom:8px;">✓ Профилот е креиран</div>
+            <div style="font-weight:600; font-size:14px; margin-bottom:8px;" data-i18n="admin_prof_created">✓ Профилот е креиран</div>
             <div style="font-size:13px; line-height:1.6;" id="adminSuccessText"></div>
           </div>
         </div>
 
         <div class="card">
-          <h3 style="font-size:15px; margin-bottom:14px;">Постоечки професори</h3>
+          <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="admin_existing_profs">Постоечки професори</h3>
           <div id="adminProfList"></div>
         </div>
       </div>
 
       <div class="card" style="margin-top:24px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Регистрирани ученици</h3>
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="admin_registered_students">Регистрирани ученици</h3>
         <div id="adminStudentList"></div>
       </div>
 
       <div class="card" style="margin-top:24px;">
-        <h3 style="font-size:15px; margin-bottom:14px;">Сите закажани индивидуални часови</h3>
+        <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="admin_all_indiv">Сите закажани индивидуални часови</h3>
         <div id="adminIndivBookingsList"></div>
       </div>
     </section>
@@ -933,19 +933,19 @@
     <!-- ---- FINANCE PAGE ---- -->
     <section class="page" id="page-finance">
       <div class="page-head">
-        <span class="eyebrow">Финансии</span>
-        <h2>Финансиски преглед</h2>
-        <p>Приход, плати, трошоци и остаток — прецизен табеларен приказ, сè на едно место.</p>
+        <span class="eyebrow" data-i18n="finance_eyebrow">Финансии</span>
+        <h2 data-i18n="finance_title">Финансиски преглед</h2>
+        <p data-i18n="finance_sub">Приход, плати, трошоци и остаток — прецизен табеларен приказ, сè на едно место.</p>
       </div>
 
       <div class="card" style="margin-bottom:20px;">
-        <label style="font-size:12.5px; font-weight:600; display:block; margin-bottom:8px;">Месец</label>
+        <label style="font-size:12.5px; font-weight:600; display:block; margin-bottom:8px;" data-i18n="label_month">Месец</label>
         <input type="month" id="financeMonth" class="login-select" style="max-width:220px; margin-bottom:0;">
       </div>
 
       <div id="financeAccessCard" style="display:none;" class="card" style="margin-bottom:20px;">
-        <h3 style="font-size:15px; margin-bottom:6px;">Персонал со финансиски пристап</h3>
-        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Максимум 3 членови од персоналот (покрај admin) можат да имаат пристап до овoj дел.</p>
+        <h3 style="font-size:15px; margin-bottom:6px;" data-i18n="finance_staff_access">Персонал со финансиски пристап</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;" data-i18n="finance_staff_access_sub">Максимум 3 членови од персоналот (покрaj admin) можат да имаат пристап до овoj дел.</p>
         <div id="financeStaffList"></div>
       </div>
 
@@ -954,21 +954,21 @@
 
       <!-- ПЛАТИ И ХОНОРАРИ -->
       <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Плати и хонорари по професор</h3><span class="fin-section-total" id="financeSalaryTotal"></span></div>
+        <div class="fin-section-title"><h3 data-i18n="finance_salaries_title">Плати и хонорари по професор</h3><span class="fin-section-total" id="financeSalaryTotal"></span></div>
         <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
           <div style="flex:1; min-width:160px;">
-            <label>Професор</label>
+            <label data-i18n="label_professor">Професор</label>
             <select id="financeSalaryProf" class="login-select" style="margin-bottom:0;"></select>
           </div>
           <div style="width:160px;">
-            <label>Износ (ден.)</label>
+            <label data-i18n="label_amount">Износ (ден.)</label>
             <input type="number" id="financeSalaryAmount" class="login-input" style="margin-bottom:0;">
           </div>
-          <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;">Зачувај</button>
+          <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;" data-i18n="save_btn">Зачувaj</button>
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th>Професор</th><th>Инструмент</th><th>Износ</th><th>Белешка</th><th></th></tr></thead>
+            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th data-i18n="th_amount">Износ</th><th data-i18n="th_note">Белешка</th><th></th></tr></thead>
             <tbody id="financeSalaryTbody"></tbody>
           </table>
         </div>
@@ -976,32 +976,32 @@
 
       <!-- ТРОШОЦИ И МАРКЕТИНГ -->
       <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Трошоци и маркетинг</h3><span class="fin-section-total" id="financeExpenseTotal"></span></div>
+        <div class="fin-section-title"><h3 data-i18n="finance_expenses_title">Трошоци и маркетинг</h3><span class="fin-section-total" id="financeExpenseTotal"></span></div>
         <div class="form-row" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
           <div style="flex:2; min-width:160px;">
-            <label>Опис</label>
+            <label data-i18n="label_description">Опис</label>
             <input type="text" id="financeExpenseDesc" class="login-input" style="margin-bottom:0;">
           </div>
           <div style="width:140px;">
-            <label>Категорија</label>
+            <label data-i18n="label_category">Категорија</label>
             <select id="financeExpenseCategory" class="login-select" style="margin-bottom:0;">
-              <option value="trosok">Трошок</option>
-              <option value="marketing">Маркетинг</option>
+              <option value="trosok" data-i18n="cat_expense">Трошок</option>
+              <option value="marketing" data-i18n="cat_marketing">Маркетинг</option>
             </select>
           </div>
           <div style="width:130px;">
-            <label>Износ (ден.)</label>
+            <label data-i18n="label_amount">Износ (ден.)</label>
             <input type="number" id="financeExpenseAmount" class="login-input" style="margin-bottom:0;">
           </div>
           <div style="width:150px;">
-            <label>Датум</label>
+            <label data-i18n="label_date">Датум</label>
             <input type="date" id="financeExpenseDate" class="login-input" style="margin-bottom:0;">
           </div>
-          <button class="send-btn" id="financeExpenseSaveBtn" style="width:auto; padding:0 20px;">Додади</button>
+          <button class="send-btn" id="financeExpenseSaveBtn" style="width:auto; padding:0 20px;" data-i18n="add_btn">Додaди</button>
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th>Опис</th><th>Категорија</th><th>Датум</th><th>Износ</th><th></th></tr></thead>
+            <thead><tr><th data-i18n="th_description">Опис</th><th data-i18n="th_category">Категорија</th><th data-i18n="th_date">Датум</th><th data-i18n="th_amount">Износ</th><th></th></tr></thead>
             <tbody id="financeExpenseTbody"></tbody>
           </table>
         </div>
@@ -1009,10 +1009,10 @@
 
       <!-- НЕПЛАТЕНИ ШКОЛАРИНИ -->
       <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Неплатени школарини</h3><span class="fin-section-total" id="financeUnpaidTotal"></span></div>
+        <div class="fin-section-title"><h3 data-i18n="finance_unpaid_title">Неплатени школарини</h3><span class="fin-section-total" id="financeUnpaidTotal"></span></div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th>Ученик</th><th>Родител</th><th>Пакет</th><th>Рата</th><th>Доспева</th><th>Износ</th></tr></thead>
+            <thead><tr><th data-i18n="th_student">Ученик</th><th data-i18n="th_parent">Родител</th><th data-i18n="th_package">Пакет</th><th data-i18n="th_installment">Рата</th><th data-i18n="th_due">Доспева</th><th data-i18n="th_amount">Износ</th></tr></thead>
             <tbody id="financeUnpaidTbody"></tbody>
           </table>
         </div>
@@ -1020,10 +1020,10 @@
 
       <!-- ПРИХОД ПО ПРОФЕСОР -->
       <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Приход по професор</h3><span class="fin-section-total" id="financeRevenueTotal"></span></div>
+        <div class="fin-section-title"><h3 data-i18n="finance_revenue_title">Приход по професор</h3><span class="fin-section-total" id="financeRevenueTotal"></span></div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th>Професор</th><th>Инструмент</th><th>Ученици</th><th>Вкупен приход</th></tr></thead>
+            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th data-i18n="th_students">Ученици</th><th data-i18n="th_total_revenue">Вкупен приход</th></tr></thead>
             <tbody id="financeRevenueTbody"></tbody>
           </table>
         </div>
@@ -1167,6 +1167,32 @@
       pay_first_installment:'Плати ja првата рата', cancel_btn:'Откажи',
       billing_title_prof:'Статус на плаќање — твоите ученици', billing_sub_prof:'Само учениците од твоите групи. Задоцнетите рати автоматски го ослободуваат терминот.',
       billing_title_student:'Твojot план на плаќање', billing_sub_student:'Овде гледаш ja целата распоредба на рати и дали е сè во ред со твоето место.',
+      label_student:'Ученик', label_mat_title:'Наслов на материjaлот', placeholder_mat_title:'пр. Für Elise — тактови 1–16',
+      label_type:'Тип', type_note:'🎼 Ноти', type_audio:'🎧 Аудио', type_task:'✎ Задача',
+      label_mat_note:'Белешка за ученикот (опционално)', placeholder_mat_note:'пр. Внимавaj на динамиката во тактови 9–12.',
+      label_mat_file:'Фajл (опционално — PDF ноти, аудио mp3/wav/m4a, слика)', send_to_student:'Испрати до ученикот',
+      sent_history:'Историja на испратени материjaли', enter_classroom:'Влези во училница',
+      stat_sent:'Испратени', stat_opened:'Отворени', stat_done:'Завршени',
+      back_to_home:'← Назад кон почетна', aria_show_pw:'Прикажи лозинка',
+      prof_avail_title:'Понуди термини за индивидуална настава', prof_avail_sub:'Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.',
+      label_date:'Датум', label_time:'Време', label_location:'Локација', loc_aerodrom:'Аеродром', loc_taftalidze:'Тафталиџе',
+      add_slot_btn:'Додади термин', scheduled_indiv_lessons:'Закажани индивидуални часови',
+      choose_slot_title:'Избери термин', click_slot_hint:'Кликни на прозорче од календарот',
+      admin_eyebrow:'Администрација', admin_overview_title:'Преглед и управување', admin_overview_sub:'Целосен надзор на системот — статистика, активност, професори и корисници.',
+      admin_recent_activity:'Последна активност (купувања)', admin_manage_profs:'Управувaj со професори',
+      admin_manage_profs_sub:'Создади нова professor сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.',
+      admin_prof_name:'Име и презиме на професорот', admin_prof_instrument:'Инструмент (professor-от ќе смее да создава групи само за овoj инструмент)',
+      admin_create_prof:'Креирaj professor сметка', admin_prof_created:'✓ Профилот е креиран',
+      admin_existing_profs:'Постоечки професори', admin_registered_students:'Регистрирани ученици', admin_all_indiv:'Сите закажани индивидуални часови',
+      finance_eyebrow:'Финансии', finance_title:'Финансиски преглед', finance_sub:'Приход, плати, трошоци и остаток — прецизен табеларен приказ, сè на едно место.',
+      label_month:'Месец', finance_staff_access:'Персонал со финансиски пристап', finance_staff_access_sub:'Максимум 3 членови од персоналот (покрaj admin) можат да имаат пристап до овoj дел.',
+      finance_salaries_title:'Плати и хонорари по професор', label_professor:'Професор', label_amount:'Износ (ден.)', save_btn:'Зачувaj',
+      th_professor:'Професор', th_instrument:'Инструмент', th_amount:'Износ', th_note:'Белешка',
+      finance_expenses_title:'Трошоци и маркетинг', label_description:'Опис', label_category:'Категорија', cat_expense:'Трошок', cat_marketing:'Маркетинг',
+      add_btn:'Додaди', th_description:'Опис', th_category:'Категорија', th_date:'Датум',
+      finance_unpaid_title:'Неплатени школарини', th_student:'Ученик', th_parent:'Родител', th_package:'Пакет', th_installment:'Рата', th_due:'Доспева',
+      finance_revenue_title:'Приход по професор', th_students:'Ученици', th_total_revenue:'Вкупен приход',
+      placeholder_prof_name:'пр. Никола Тодоровски',
       forgot_tagline:'Ресетирaj ja лозинката', forgot_submit:'Испрати линк за ресетирање',
       forgot_success:'Ако тoj email постои во нашиот систем, испративме линк за ресетирање. Провери го inbox-от (и spam папката).',
       reset_tagline:'Постави нова лозинка', reset_new_pw:'Нова лозинка', reset_confirm_pw:'Потврди ja лозинката', reset_submit:'Зачувај ja новата лозинка',
@@ -1224,6 +1250,32 @@
       pay_first_installment:'Pay first installment', cancel_btn:'Cancel',
       billing_title_prof:'Payment status — your students', billing_sub_prof:'Only students from your groups. Overdue installments automatically release the slot.',
       billing_title_student:'Your payment plan', billing_sub_student:'See the full installment schedule here, and whether your spot is all set.',
+      label_student:'Student', label_mat_title:'Material title', placeholder_mat_title:'e.g. F\\u00fcr Elise — bars 1\\u201316',
+      label_type:'Type', type_note:'🎼 Sheet music', type_audio:'🎧 Audio', type_task:'✎ Task',
+      label_mat_note:'Note for the student (optional)', placeholder_mat_note:'e.g. Watch the dynamics in bars 9\\u201312.',
+      label_mat_file:'File (optional — PDF sheet music, audio mp3/wav/m4a, image)', send_to_student:'Send to student',
+      sent_history:'History of sent materials', enter_classroom:'Enter classroom',
+      stat_sent:'Sent', stat_opened:'Opened', stat_done:'Done',
+      back_to_home:'← Back to home', aria_show_pw:'Show password',
+      prof_avail_title:'Offer individual lesson slots', prof_avail_sub:'Students can only book an individual lesson in the slots you offer here.',
+      label_date:'Date', label_time:'Time', label_location:'Location', loc_aerodrom:'Aerodrom', loc_taftalidze:'Taftalidze',
+      add_slot_btn:'Add slot', scheduled_indiv_lessons:'Scheduled individual lessons',
+      choose_slot_title:'Choose a slot', click_slot_hint:'Click a slot on the calendar',
+      admin_eyebrow:'Administration', admin_overview_title:'Overview and management', admin_overview_sub:'Full system oversight — statistics, activity, professors and users.',
+      admin_recent_activity:'Recent activity (purchases)', admin_manage_profs:'Manage professors',
+      admin_manage_profs_sub:'Create a new professor account. The temporary password is shown only once — share it with the professor manually.',
+      admin_prof_name:'Professor\\u2019s full name', admin_prof_instrument:'Instrument (the professor will only be able to create groups for this instrument)',
+      admin_create_prof:'Create professor account', admin_prof_created:'✓ Account created',
+      admin_existing_profs:'Existing professors', admin_registered_students:'Registered students', admin_all_indiv:'All scheduled individual lessons',
+      finance_eyebrow:'Finance', finance_title:'Financial overview', finance_sub:'Income, salaries, expenses and remainder — a precise table view, all in one place.',
+      label_month:'Month', finance_staff_access:'Staff with financial access', finance_staff_access_sub:'A maximum of 3 staff members (besides admin) can have access to this section.',
+      finance_salaries_title:'Salaries and fees per professor', label_professor:'Professor', label_amount:'Amount (den.)', save_btn:'Save',
+      th_professor:'Professor', th_instrument:'Instrument', th_amount:'Amount', th_note:'Note',
+      finance_expenses_title:'Expenses and marketing', label_description:'Description', label_category:'Category', cat_expense:'Expense', cat_marketing:'Marketing',
+      add_btn:'Add', th_description:'Description', th_category:'Category', th_date:'Date',
+      finance_unpaid_title:'Unpaid tuition', th_student:'Student', th_parent:'Parent', th_package:'Package', th_installment:'Installment', th_due:'Due',
+      finance_revenue_title:'Revenue per professor', th_students:'Students', th_total_revenue:'Total revenue',
+      placeholder_prof_name:'e.g. Nikola Todorovski',
       forgot_tagline:'Reset your password', forgot_submit:'Send reset link',
       forgot_success:'If that email exists in our system, we\\u2019ve sent a reset link. Check your inbox (and spam folder).',
       reset_tagline:'Set a new password', reset_new_pw:'New password', reset_confirm_pw:'Confirm password', reset_submit:'Save new password',
@@ -2938,7 +2990,7 @@
       panel.innerHTML = `<h3>Распоред</h3><span class="slot-tag">Само професор може да менува термини</span>`;
       return;
     }
-    if(!selectedSlotKey){ panel.innerHTML = `<h3>Избери термин</h3><span class="slot-tag">Кликни на прозорче од календарот</span>`; return; }
+    if(!selectedSlotKey){ panel.innerHTML = `<h3 data-i18n="choose_slot_title">Избери термин</h3><span class="slot-tag" data-i18n="click_slot_hint">Кликни на прозорче од календарот</span>`; return; }
     const [day, hour] = selectedSlotKey.split('-');
     const entry = schedule[session.realUserId + '_' + selectedSlotKey] || null;
     const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
