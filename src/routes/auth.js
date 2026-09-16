@@ -9,7 +9,7 @@ const { sendMail } = require('../mailer');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
-const APP_URL = process.env.APP_BASE_URL || 'https://app.pianoforte.edu.mk';
+const APP_URL = process.env.APP_BASE_URL || 'https://pianoforte.edu.mk';
 const ACCESS_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '2h';
 const REFRESH_TOKEN_DAYS = 30;
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
