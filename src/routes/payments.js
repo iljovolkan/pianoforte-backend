@@ -15,7 +15,7 @@ const CPAY_PAYMENT_URL = process.env.CPAY_PAYMENT_URL || 'https://www.cpay.com.m
 const CPAY_MERCHANT_ID = process.env.CPAY_MERCHANT_ID;       // PayToMerchant — 1000001529
 const CPAY_MERCHANT_NAME = process.env.CPAY_MERCHANT_NAME || 'PIJANO FORTE SKOPJE'; // точно како во живиот плагин
 const CPAY_CHECKSUM_KEY = process.env.CPAY_CHECKSUM_KEY;     // вистинскиот клуч од стариот плагин
-const APP_URL = process.env.APP_BASE_URL || 'https://pianoforte.edu.mk';
+const APP_URL = process.env.APP_BASE_URL || 'https://www.pianoforte.edu.mk';
 
 const HALF_YEAR_DISCOUNT = 0.03;
 const FULL_YEAR_DISCOUNT = 0.05;
