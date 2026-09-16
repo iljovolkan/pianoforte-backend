@@ -9,7 +9,7 @@ const { sendMail } = require('../mailer');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
-const APP_URL = process.env.APP_BASE_URL || 'https://pianoforte.edu.mk';
+const APP_URL = process.env.APP_BASE_URL || 'https://www.pianoforte.edu.mk';
 const ACCESS_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '2h';
 const REFRESH_TOKEN_DAYS = 30;
 const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
@@ -70,7 +70,7 @@ function issueTokens(user) {
 
 // POST /auth/register  { email, password, full_name, role }
 router.post('/register', registerLimiter, async (req, res) => {
-  const { email, password, full_name, role, child_name, child_age, captcha_token } = req.body;
+  const { email, password, full_name, role, child_name, child_age, captcha_token, photo_consent } = req.body;
 
   if (!email || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Сите полиња се задолжителни.' });
@@ -107,8 +107,8 @@ router.post('/register', registerLimiter, async (req, res) => {
     // родителот подоцна може да додаде уште деца од профилот
     if (role === 'student') {
       await pool.query(
-        'INSERT INTO children (parent_id, full_name, age) VALUES (?, ?, ?)',
-        [result.insertId, child_name.trim(), child_age || null]
+        'INSERT INTO children (parent_id, full_name, age, photo_consent) VALUES (?, ?, ?, ?)',
+        [result.insertId, child_name.trim(), child_age || null, photo_consent ? 1 : 0]
       );
     }
 
@@ -158,6 +158,45 @@ router.get('/verify', async (req, res) => {
 });
 
 // POST /auth/login  { email, password }
+// POST /auth/child-login  { access_code }  — детето само се логира со краток код
+// (наместо email+лозинка на родителот). Ги користи ИСТИТЕ токени/сесија како
+// родителот (безбедно, ништо ново на backend страна), но фронтендот знае
+// дека сесијата е "детска" и ja прикажува само тaa едно дете, во ограничен
+// режим (само Распоред + Училница/Материjaли — без Наплата, Пакети, Admin).
+router.post('/child-login', loginLimiter, async (req, res) => {
+  const { access_code } = req.body;
+  if (!access_code || !access_code.trim()) {
+    return res.status(400).json({ error: 'Внеси го пристапниот код.' });
+  }
+  try {
+    const [[child]] = await pool.query('SELECT * FROM children WHERE access_code = ?', [access_code.trim().toUpperCase()]);
+    if (!child) {
+      return res.status(401).json({ error: 'Невалиден пристапен код.' });
+    }
+    const [[user]] = await pool.query('SELECT * FROM users WHERE id = ?', [child.parent_id]);
+    if (!user) {
+      return res.status(401).json({ error: 'Невалиден пристапен код.' });
+    }
+
+    const { accessToken, refreshToken } = issueTokens(user);
+    const expires = new Date();
+    expires.setDate(expires.getDate() + REFRESH_TOKEN_DAYS);
+    await pool.query('UPDATE users SET refresh_token = ?, refresh_token_expires = ? WHERE id = ?',
+      [refreshToken, expires, user.id]);
+
+    res.json({
+      token: accessToken,
+      refreshToken,
+      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access },
+      restricted_child_id: child.id,
+      restricted_child_name: child.full_name
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Грешка на серверот.' });
+  }
+});
+
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
