@@ -500,6 +500,28 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
       // ja изгубиме уплатата.
       console.error(`Колизија: availability_id ${availability_id} веќе е зафатена, но плаќање помина (intent ${intent.id}).`);
     }
+
+    // Секој час трае 45 мин — ако professor-от одделно понудил и други
+    // 15-минутни термини што ПРЕКЛОПУВААТ со овoj веќе резервиран час
+    // (пр. резервирано 19:00→19:45, а понудено е и 19:15), тие автоматски
+    // се означуваат како зафатени исто, за да веќе не се нудат на никого.
+    const [[bookedDate]] = await pool.query('SELECT slot_date FROM individual_availability WHERE id = ?', [availability_id]);
+    if (bookedDate) {
+      const [sameDaySlots] = await pool.query(
+        `SELECT id, start_time FROM individual_availability
+         WHERE professor_id = ? AND slot_date = ? AND is_booked = 0 AND id != ?`,
+        [professor_id, bookedDate.slot_date, availability_id]
+      );
+      const toMinutes = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+      const bookedStart = toMinutes(start_time);
+      const bookedEnd = bookedStart + 45;
+      const overlappingIds = sameDaySlots
+        .filter(s => { const st = toMinutes(s.start_time); return st < bookedEnd && (st + 45) > bookedStart; })
+        .map(s => s.id);
+      if (overlappingIds.length > 0) {
+        await pool.query('UPDATE individual_availability SET is_booked = 1 WHERE id IN (?)', [overlappingIds]);
+      }
+    }
   }
 
   await pool.query(
