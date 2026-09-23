@@ -51,6 +51,21 @@ router.post('/availability', requireAuth, async (req, res) => {
   if (day === 0 || day === 6) return res.status(400).json({ error: 'Не работиме за викенд.' });
   if (dateObj < new Date(new Date().toDateString())) return res.status(400).json({ error: 'Не можеш да понудиш термин во минатото.' });
 
+  // Провери дали овoj термин преклопува со веќе РЕЗЕРВИРАН час на истиот
+  // ден (секој час трае 45 мин) — за да не понудиш нешто што физички не
+  // може да се одржи.
+  const [bookedSlots] = await pool.query(
+    'SELECT start_time FROM individual_availability WHERE professor_id = ? AND slot_date = ? AND is_booked = 1',
+    [req.user.id, slot_date]
+  );
+  const toMinutes = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+  const newStart = toMinutes(start_time);
+  const newEnd = newStart + 45;
+  const overlapsBooked = bookedSlots.some(s => { const st = toMinutes(s.start_time); return st < newEnd && (st + 45) > newStart; });
+  if (overlapsBooked) {
+    return res.status(409).json({ error: 'Овoj термин преклопува со веќе резервиран час (секој час трае 45 мин).' });
+  }
+
   try {
     const [result] = await pool.query(
       'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location) VALUES (?, ?, ?, ?, ?)',
