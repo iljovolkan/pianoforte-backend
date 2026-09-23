@@ -4002,9 +4002,20 @@
         listBox.innerHTML = '<div style="font-size:12.5px; color:var(--mist);">Овoj професор моментално нема понудено слободни термини. Пробај друг професор или контактирај нè на +389 70 247 442.</div>';
         return;
       }
-      listBox.innerHTML = slots.map(s => `
-        <div class="type-btn indiv-slot-btn" data-avail-id="${s.id}" style="margin-bottom:6px; display:block;">
-          ${fmtDate(s.slot_date)} · ${String(s.start_time).slice(0,5)}${s.location ? ' · 📍 ' + (s.location==='aerodrom'?'Аеродром':'Тафталиџе') : ''}
+      // групирaj ги по датум — приказ поблиску до календар (датум-наслов +
+      // редица од времиња/„чипови" за тoj ден, наместо плоска листа)
+      const byDate = {};
+      slots.forEach(s=>{ (byDate[s.slot_date] = byDate[s.slot_date] || []).push(s); });
+      listBox.innerHTML = Object.entries(byDate).map(([date, daySlots]) => `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11.5px; font-weight:700; color:var(--mist); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;">${fmtDate(date)}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${daySlots.map(s => `
+              <div class="type-btn indiv-slot-btn" data-avail-id="${s.id}" style="padding:8px 12px; font-size:13px;">
+                ${String(s.start_time).slice(0,5)}${s.location ? ' · 📍 ' + (s.location==='aerodrom'?'Аеродром':'Тафталиџе') : ''}
+              </div>
+            `).join('')}
+          </div>
         </div>
       `).join('');
       listBox.querySelectorAll('.indiv-slot-btn').forEach(btn=>{
