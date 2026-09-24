@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
@@ -81,6 +82,57 @@ router.post('/:id/access-code', requireAuth, requireRole('student'), async (req,
   }
   await pool.query('UPDATE children SET access_code = ? WHERE id = ?', [code, req.params.id]);
   res.json({ access_code: code });
+});
+
+// POST /children/:id/withdraw  { reason } — "Прекинување на услугата".
+// Ja бришe од сите групи/претплати, ja архивира во withdrawn_students, и
+// испраќа email до родителот за потврда.
+router.post('/:id/withdraw', requireAuth, requireRole('student'), async (req, res) => {
+  const { reason } = req.body;
+  const [[child]] = await pool.query('SELECT * FROM children WHERE id = ?', [req.params.id]);
+  if (!child || child.parent_id !== req.user.id) {
+    return res.status(404).json({ error: 'Детето не постои.' });
+  }
+
+  const [[parent]] = await pool.query('SELECT full_name, email FROM users WHERE id = ?', [req.user.id]);
+
+  // земи го professor-от од активна претплата/група (ако постои)
+  const [[activeSub]] = await pool.query(
+    `SELECT g.professor_id, u.full_name AS professor_name
+     FROM subscriptions s
+     LEFT JOIN groups_table g ON g.id = s.group_id
+     LEFT JOIN users u ON u.id = g.professor_id
+     WHERE s.student_id = ? AND s.released = FALSE
+     ORDER BY s.id DESC LIMIT 1`,
+    [req.params.id]
+  );
+
+  await pool.query(
+    `INSERT INTO withdrawn_students (student_id, student_name, parent_id, parent_name, parent_email, professor_id, professor_name, reason)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [child.id, child.full_name, req.user.id, parent.full_name, parent.email,
+     activeSub ? activeSub.professor_id : null, activeSub ? activeSub.professor_name : null, reason || null]
+  );
+
+  await pool.query('DELETE FROM group_members WHERE student_id = ?', [req.params.id]);
+  await pool.query("UPDATE subscriptions SET released = TRUE WHERE student_id = ?", [req.params.id]);
+
+  try {
+    await sendMail({
+      to: parent.email,
+      subject: 'Потврда за прекин на услугата — PianoForte',
+      html: `
+        <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+          <h2>Услугата е прекината</h2>
+          <p>Здраво ${parent.full_name},</p>
+          <p>Ja потврдуваме дека услугата за <strong>${child.full_name}</strong> е прекината, согласно твojot барање.</p>
+          <p style="color:#888; font-size:13px; margin-top:20px;">Ако ова е грешка, или сакаш повторно да се запишеш, jaви ни се на info@pianoforte.edu.mk.</p>
+        </div>
+      `
+    });
+  } catch (e) { console.error('Withdraw email error:', e); }
+
+  res.json({ ok: true });
 });
 
 module.exports = router;
