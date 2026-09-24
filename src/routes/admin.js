@@ -218,4 +218,20 @@ router.put('/staff/:id/finance-access', requireAuth, requireRole('admin'), async
   res.json({ ok: true });
 });
 
+// GET /admin/withdrawn-students — архива на сите отпишани ученици
+router.get('/withdrawn-students', requireAuth, requireRole('admin'), async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM withdrawn_students ORDER BY withdrawn_at DESC');
+  res.json(rows);
+});
+
+// GET /admin/photo-consents — преглед на сите деца и нивните согласности за фотографирање
+router.get('/photo-consents', requireAuth, requireRole('admin'), async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT c.id, c.full_name AS student_name, c.photo_consent, u.full_name AS parent_name, u.email AS parent_email
+    FROM children c JOIN users u ON u.id = c.parent_id
+    ORDER BY c.full_name ASC
+  `);
+  res.json(rows);
+});
+
 module.exports = router;
