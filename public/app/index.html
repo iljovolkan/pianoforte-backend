@@ -53,6 +53,17 @@
   .role-card.sel-student{border-color:var(--lilac); background:var(--lilac-pale);}
   .field-label{font-size:12.5px; color:var(--mist); display:block; margin-bottom:6px;}
   .login-input, .login-select{width:100%; border:1px solid var(--line); background:var(--surface); padding:12px 14px; border-radius:8px; font-size:14.5px; margin-bottom:16px; color:var(--ink);}
+
+  /* ===== iPhone-стил wheel picker за избор на време ===== */
+  .wheel-picker{position:relative; height:140px; margin-bottom:16px;}
+  .wheel-picker-track{height:140px; overflow-y:scroll; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+  .wheel-picker-track::-webkit-scrollbar{display:none;}
+  .wheel-picker-track::before, .wheel-picker-track::after{content:''; display:block; height:52px;}
+  .wheel-picker-item{height:36px; display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--mist); scroll-snap-align:center; transition:.15s; font-variant-numeric:tabular-nums;}
+  .wheel-picker-item.selected{color:var(--ink); font-weight:700; font-size:19px;}
+  .wheel-picker-highlight{position:absolute; top:52px; left:0; right:0; height:36px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); pointer-events:none; background:rgba(107,78,142,0.04); border-radius:6px;}
+  .wheel-picker-fade-top{position:absolute; top:0; left:0; right:0; height:52px; background:linear-gradient(var(--surface), transparent); pointer-events:none;}
+  .wheel-picker-fade-bottom{position:absolute; bottom:0; left:0; right:0; height:52px; background:linear-gradient(transparent, var(--surface)); pointer-events:none;}
   .login-input:focus, .login-select:focus{outline:none; border-color:var(--sand);}
   .pw-wrap{position:relative;}
   .pw-wrap .login-input{padding-right:44px;}
@@ -919,7 +930,7 @@
           </div>
           <div style="width:110px;">
             <label data-i18n="label_time">Време</label>
-            <select id="profAvailTime" class="login-select" style="margin-bottom:0;"></select>
+            <div id="profAvailTime" class="wheel-picker"></div>
           </div>
           <div style="min-width:140px;">
             <label data-i18n="label_location">Локација</label>
@@ -1675,6 +1686,62 @@
   const statusClass = {queued:'status-queued', delivered:'status-delivered', opened:'status-opened', done:'status-done'};
 
   function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+
+  // ===== iPhone-стил wheel picker (scroll-snap колона со центар-означен избор) =====
+  // container: празен <div class="wheel-picker"></div> веќе во HTML-от
+  // options: низа од стрингови (пр. ['09:00','09:15',...])
+  // initialValue: почетна избрана вредност
+  // враќа объект со .getValue() и .setValue(v)
+  function createWheelPicker(container, options, initialValue){
+    container.innerHTML = `
+      <div class="wheel-picker-highlight"></div>
+      <div class="wheel-picker-track">${options.map(o=>`<div class="wheel-picker-item" data-val="${o}">${o}</div>`).join('')}</div>
+      <div class="wheel-picker-fade-top"></div>
+      <div class="wheel-picker-fade-bottom"></div>
+    `;
+    const track = container.querySelector('.wheel-picker-track');
+    const items = Array.from(container.querySelectorAll('.wheel-picker-item'));
+    let currentValue = initialValue || options[0];
+
+    function updateSelectedStyling(){
+      const trackRect = track.getBoundingClientRect();
+      const centerY = trackRect.top + trackRect.height / 2;
+      let closest = null, closestDist = Infinity;
+      items.forEach(item=>{
+        const r = item.getBoundingClientRect();
+        const itemCenter = r.top + r.height / 2;
+        const dist = Math.abs(itemCenter - centerY);
+        item.classList.remove('selected');
+        if(dist < closestDist){ closestDist = dist; closest = item; }
+      });
+      if(closest){ closest.classList.add('selected'); currentValue = closest.dataset.val; }
+    }
+
+    let scrollTimer;
+    track.addEventListener('scroll', ()=>{
+      updateSelectedStyling();
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(updateSelectedStyling, 120); // финално снапирање по застанување на скролот
+    });
+
+    items.forEach(item=>{
+      item.addEventListener('click', ()=>{
+        item.scrollIntoView({ behavior:'smooth', block:'center' });
+      });
+    });
+
+    function setValue(v){
+      const idx = options.indexOf(v);
+      if(idx === -1) return;
+      // веднaш скролувaj (без smooth) за да е точно позиционирано при прв приказ
+      track.scrollTop = items[idx].offsetTop - track.clientHeight/2 + items[idx].offsetHeight/2;
+      requestAnimationFrame(updateSelectedStyling);
+    }
+    setValue(initialValue || options[0]);
+
+    return { getValue: ()=>currentValue, setValue };
+  }
+
   function nowStr(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
 
   /* ===================== LOGIN LOGIC ===================== */
@@ -2830,18 +2897,17 @@
       dateInput.value = tomorrow.toISOString().slice(0,10);
     }
 
-    // 15-минутни термини, целото работно време (09:00–20:45)
-    const timeSelect = document.getElementById('profAvailTime');
-    if(!timeSelect.dataset.filled){
+    // 15-минутни термини, целото работно време (09:00–20:45) — iPhone-стил picker
+    const timeContainer = document.getElementById('profAvailTime');
+    if(!timeContainer.dataset.filled){
       const opts = [];
       for(let h=9; h<=20; h++){
         for(const m of ['00','15','30','45']){
           opts.push(`${String(h).padStart(2,'0')}:${m}`);
         }
       }
-      timeSelect.innerHTML = opts.map(t=>`<option value="${t}">${t}</option>`).join('');
-      timeSelect.value = '14:30';
-      timeSelect.dataset.filled = '1';
+      window._profAvailWheel = createWheelPicker(timeContainer, opts, '14:30');
+      timeContainer.dataset.filled = '1';
     }
 
     // dropdown со сите инструменти на кои е доделен овоj professor
@@ -2879,7 +2945,7 @@
   document.getElementById('profAvailAddBtn').addEventListener('click', async ()=>{
     const instrument = document.getElementById('profAvailInstrument').value;
     const slot_date = document.getElementById('profAvailDate').value;
-    const start_time = document.getElementById('profAvailTime').value;
+    const start_time = window._profAvailWheel.getValue();
     const location = document.getElementById('profAvailLocation').value;
     if(!instrument){ alert('Немаш доделен инструмент — контактирај admin.'); return; }
     if(!slot_date){ alert('Избери датум.'); return; }
@@ -3044,7 +3110,7 @@
           <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Оваa група има само 1 термин неделно:</div>
           <div style="display:flex; gap:6px; margin-bottom:6px;">
             <select class="login-select single-day" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-            <select class="login-select single-time" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
+            <div class="wheel-picker single-time" style="margin-bottom:0; flex:1;"></div>
           </div>
           <select class="login-select single-location" style="margin-bottom:8px;">
             <option value="aerodrom">📍 Аеродром</option>
@@ -3058,11 +3124,11 @@
           <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Секој пакет е 2 часа неделно — избери ги двата дена (и по желба различно време за секој):</div>
           <div style="display:flex; gap:6px; margin-bottom:6px;">
             <select class="login-select pair-day1" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
-            <select class="login-select pair-time1" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
+            <div class="wheel-picker pair-time1" style="margin-bottom:0; flex:1;"></div>
           </div>
           <div style="display:flex; gap:6px; margin-bottom:6px;">
             <select class="login-select pair-day2" style="margin-bottom:0; flex:1;">${days.map((d,i)=>`<option value="${d}" ${i===1?'selected':''}>${d}</option>`).join('')}</select>
-            <select class="login-select pair-time2" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
+            <div class="wheel-picker pair-time2" style="margin-bottom:0; flex:1;"></div>
           </div>
           <select class="login-select pair-location" style="margin-bottom:8px;">
             <option value="aerodrom">📍 Аеродром</option>
@@ -3073,6 +3139,14 @@
         </div>` : ''}
       `;
       wrap.appendChild(card);
+
+      // --- иницијализирaj ги iPhone-стил picker-ите за термин (ако постојат во оваa картичка) ---
+      const singleTimeEl = card.querySelector('.single-time');
+      if(singleTimeEl) card._singleTimeWheel = createWheelPicker(singleTimeEl, hours, '14:30');
+      const pairTime1El = card.querySelector('.pair-time1');
+      if(pairTime1El) card._pairTime1Wheel = createWheelPicker(pairTime1El, hours, '14:30');
+      const pairTime2El = card.querySelector('.pair-time2');
+      if(pairTime2El) card._pairTime2Wheel = createWheelPicker(pairTime2El, hours, '15:15');
 
       // --- уредување (промена на термин) на веќе доделен слот ---
       card.querySelectorAll('.edit-slot-btn').forEach(btn=>{
@@ -3218,8 +3292,8 @@
         if(saveBtn) saveBtn.addEventListener('click', async ()=>{
           const day1 = card.querySelector('.pair-day1').value;
           const day2 = card.querySelector('.pair-day2').value;
-          const start_time1 = card.querySelector('.pair-time1').value;
-          const start_time2 = card.querySelector('.pair-time2').value;
+          const start_time1 = card._pairTime1Wheel.getValue();
+          const start_time2 = card._pairTime2Wheel.getValue();
           const location = card.querySelector('.pair-location').value;
           const errBox = card.querySelector('.pair-error');
           errBox.style.display = 'none';
@@ -3256,7 +3330,7 @@
         const singleSaveBtn = card.querySelector('.single-save-btn');
         if(singleSaveBtn) singleSaveBtn.addEventListener('click', async ()=>{
           const day = card.querySelector('.single-day').value;
-          const start_time = card.querySelector('.single-time').value;
+          const start_time = card._singleTimeWheel.getValue();
           const location = card.querySelector('.single-location').value;
           const errBox = card.querySelector('.single-error');
           errBox.style.display = 'none';
