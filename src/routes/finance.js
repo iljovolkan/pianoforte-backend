@@ -186,4 +186,18 @@ router.get('/professor-revenue', async (req, res) => {
   res.json(rows);
 });
 
+// GET /finance/invoices?from=YYYY-MM-DD&to=YYYY-MM-DD&q=пребарување
+// Целата архива на фактури, пребарлива по период и по име/email.
+router.get('/invoices', async (req, res) => {
+  const { from, to, q } = req.query;
+  let query = 'SELECT * FROM invoices WHERE 1=1';
+  const params = [];
+  if (from) { query += ' AND issued_at >= ?'; params.push(from + ' 00:00:00'); }
+  if (to) { query += ' AND issued_at <= ?'; params.push(to + ' 23:59:59'); }
+  if (q) { query += ' AND (student_name LIKE ? OR parent_email LIKE ? OR invoice_number LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  query += ' ORDER BY issued_at DESC LIMIT 500';
+  const [rows] = await pool.query(query, params);
+  res.json(rows);
+});
+
 module.exports = router;
