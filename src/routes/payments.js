@@ -369,6 +369,27 @@ router.get('/status/:intentId', requireAuth, async (req, res) => {
 });
 
 // ===================================================================
+// Издава и архивира фактура за секое успешно плаќање (се чува трајно,
+// финансискиот персонал може да ja пребарува/печати подоцна).
+async function issueInvoice({ student_id, student_name, parent_email, package_name, amount, cpay_ref }) {
+  try {
+    const year = new Date().getFullYear();
+    const [[{ cnt }]] = await pool.query(
+      'SELECT COUNT(*) AS cnt FROM invoices WHERE invoice_number LIKE ?', [`PF-${year}-%`]
+    );
+    const invoiceNumber = `PF-${year}-${String(cnt + 1).padStart(5, '0')}`;
+    await pool.query(
+      `INSERT INTO invoices (student_id, student_name, parent_email, package_name, amount, cpay_ref, invoice_number)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [student_id || null, student_name, parent_email, package_name, amount, cpay_ref || null, invoiceNumber]
+    );
+    return invoiceNumber;
+  } catch (e) {
+    console.error('issueInvoice error:', e);
+    return null;
+  }
+}
+
 async function completeSubscriptionPurchase(intent, payload, cpayRef) {
   const { child_id, package_id, group_id, payment_plan } = payload;
 
@@ -422,6 +443,11 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
   const groupNoteHtml = !group_id
     ? '<p style="color:#B3555F;">Уплатата е примена — сега влези во апликацијата и избери термин (група) за твojot пакет.</p>' : '';
 
+  const invoiceNumber = await issueInvoice({
+    student_id: child_id, student_name: child.full_name, parent_email: userRow.email,
+    package_name: pkg.name, amount: schedule[0].amount, cpay_ref: cpayRef
+  });
+
   await sendMail({
     to: userRow.email,
     subject: 'Потврда за уплата — PianoForte',
@@ -433,7 +459,7 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
         <p>План на плаќање: <strong>${planLabel}</strong></p>
         <p>Прва рата (платена сега): <strong>${schedule[0].amount} ден.</strong></p>
         ${groupNoteHtml}
-        <p style="color:#888; font-size:13px; margin-top:20px;">Референца (cPay): ${cpayRef || '—'}</p>
+        <p style="color:#888; font-size:13px; margin-top:20px;">Фактура бр.: ${invoiceNumber || '—'} · Референца (cPay): ${cpayRef || '—'}</p>
       </div>
     `
   });
@@ -469,6 +495,12 @@ async function completeInstallmentPayment(intent, payload, cpayRef) {
       [farFuture.toISOString().slice(0, 10), inst.subscription_id]);
   }
 
+  const invoiceNumber = await issueInvoice({
+    student_id: null, student_name: inst.full_name, parent_email: inst.email,
+    package_name: `${inst.package_name} — рата ${inst.installment_number}/${inst.total_installments}`,
+    amount: inst.amount, cpay_ref: cpayRef
+  });
+
   await sendMail({
     to: inst.email,
     subject: `Потврда за рата ${inst.installment_number}/${inst.total_installments} — PianoForte`,
@@ -480,6 +512,7 @@ async function completeInstallmentPayment(intent, payload, cpayRef) {
         <p>Рата: <strong>${inst.installment_number}/${inst.total_installments}</strong></p>
         <p>Износ: <strong>${inst.amount} ден.</strong></p>
         ${nextPending ? `<p>Следна рата доспева на: <strong>${new Date(nextPending.due_date).toLocaleDateString('mk-MK')}</strong></p>` : '<p>Ова беше последната рата — целиот пакет е платен!</p>'}
+        <p style="color:#888; font-size:13px; margin-top:20px;">Фактура бр.: ${invoiceNumber || '—'}</p>
       </div>
     `
   });
@@ -531,11 +564,135 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
   );
   const [[userRow]] = await pool.query('SELECT email FROM users WHERE id = ?', [intent.user_id]);
   const [[prof]] = await pool.query('SELECT full_name FROM users WHERE id = ?', [professor_id]);
+  const [[childRow]] = await pool.query('SELECT full_name FROM children WHERE id = ?', [child_id]);
+  const invoiceNumber = await issueInvoice({
+    student_id: child_id, student_name: childRow ? childRow.full_name : '', parent_email: userRow.email,
+    package_name: `Индивидуален час — ${instrument}`, amount: intent.amount, cpay_ref: cpayRef
+  });
   await sendMail({
     to: userRow.email,
     subject: 'Потврда за индивидуален час — PianoForte',
-    html: `<div style="font-family:sans-serif;"><h2>Часот е закажан!</h2><p>Професор: <strong>${prof.full_name}</strong></p><p>Датум: <strong>${booking_date}</strong> во <strong>${start_time}</strong></p></div>`
+    html: `<div style="font-family:sans-serif;"><h2>Часот е закажан!</h2><p>Професор: <strong>${prof.full_name}</strong></p><p>Датум: <strong>${booking_date}</strong> во <strong>${start_time}</strong></p><p style="color:#888; font-size:13px; margin-top:20px;">Фактура бр.: ${invoiceNumber || '—'}</p></div>`
   });
 }
+
+// ===================================================================
+// СПЕЦИЈАЛНИ ЛИНКОВИ ЗА ПЛАЌАЊЕ — professor/admin рачно поставува цена
+// (без автоматски попусти/рати), за индивидуални случаи (пр. попуст за
+// повеќе деца од исто семејство). Линкот е анонимен/нетрансферлив —
+// само тoj родител што го добил на email треба да го употреби.
+// ===================================================================
+
+router.post('/special-link', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  try {
+    const { student_id, parent_email, description, amount } = req.body;
+    if (!parent_email || !description || !amount) {
+      return res.status(400).json({ error: 'parent_email, description и amount се задолжителни.' });
+    }
+    if (Number(amount) <= 0) return res.status(400).json({ error: 'Износот мора да е позитивен.' });
+
+    const token = crypto.randomBytes(20).toString('hex');
+    await pool.query(
+      `INSERT INTO special_payment_links (token, created_by, student_id, parent_email, description, amount)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [token, req.user.id, student_id || null, parent_email, description, Math.round(Number(amount))]
+    );
+
+    const payLink = `${APP_URL}/app/#special-payment/${token}`;
+    await sendMail({
+      to: parent_email,
+      subject: 'Персонализирана уплата — PianoForte',
+      html: `
+        <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
+          <h2>Персонализирана уплата</h2>
+          <p>${description}</p>
+          <p style="font-size:20px; font-weight:700; margin:16px 0;">${Math.round(Number(amount))} ден.</p>
+          <a href="${payLink}" style="display:inline-block; background:#6B4E8E; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none;">Плати сега</a>
+          <p style="color:#888; font-size:12.5px; margin-top:24px;">⚠️ Овoj линк е наменет исклучиво за тебе и не треба да се препраќа на други лица. Плаќањето преку тoj линк е анонимно и важи само еднaш.</p>
+        </div>
+      `
+    });
+
+    res.status(201).json({ token });
+  } catch (err) {
+    console.error('POST /payments/special-link error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
+router.get('/special-link/:token', async (req, res) => {
+  const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE token = ?', [req.params.token]);
+  if (!link) return res.status(404).json({ error: 'Линкот не постои или е невалиден.' });
+  if (link.status !== 'pending') return res.status(409).json({ error: 'Овoj линк веќе е искористен или истечен.' });
+  res.json({ description: link.description, amount: link.amount });
+});
+
+router.post('/init-special/:token', async (req, res) => {
+  try {
+    if (!CPAY_MERCHANT_ID || !CPAY_CHECKSUM_KEY) {
+      return res.status(500).json({ error: 'CPay сè уште не е целосно конфигуриран на серверот.' });
+    }
+    const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE token = ?', [req.params.token]);
+    if (!link) return res.status(404).json({ error: 'Линкот не постои.' });
+    if (link.status !== 'pending') return res.status(409).json({ error: 'Овoj линк веќе е искористен.' });
+
+    const amount = Math.round(Number(link.amount));
+    const fields = {
+      AmountToPay: String(amount * 100),
+      AmountCurrency: 'MKD',
+      Details1: truncateDetails1(link.description),
+      Details2: 'SP' + link.id,
+      PayToMerchant: CPAY_MERCHANT_ID,
+      MerchantName: CPAY_MERCHANT_NAME,
+      PaymentOKURL: `${APP_URL}/payments/special-ok`,
+      PaymentFailURL: `${APP_URL}/payments/special-fail`,
+      FirstName: '', LastName: '', Address: '', City: '', Zip: '', Country: '', Telephone: '',
+      Email: link.parent_email,
+      OriginalAmount: '', OriginalCurrency: ''
+    };
+    const { header, checksum } = buildRequestChecksum(fields);
+    fields.CheckSumHeader = header;
+    fields.CheckSum = checksum;
+
+    res.json({ cpay_url: CPAY_PAYMENT_URL, fields });
+  } catch (err) {
+    console.error('POST /payments/init-special error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
+router.all('/special-ok', async (req, res) => {
+  const data = { ...req.query, ...req.body };
+  const details2 = String(data.Details2 || '');
+  if (!details2.startsWith('SP')) return respondAndRedirect(res, '/app/#payment-error');
+  const linkId = Number(details2.slice(2));
+
+  try {
+    if (!verifyReturnChecksum(data)) throw new Error('ReturnCheckSum не се совпаѓа.');
+    const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE id = ?', [linkId]);
+    if (!link) throw new Error('Линкот не постои.');
+    if (link.status === 'paid') return respondAndRedirect(res, '/app/#payment-success');
+
+    const cpayRef = data.cPayPaymentRef || null;
+    await pool.query(`UPDATE special_payment_links SET status='paid', cpay_ref=?, paid_at=NOW() WHERE id=?`, [cpayRef, linkId]);
+
+    await issueInvoice({ student_id: link.student_id, student_name: link.description, parent_email: link.parent_email, package_name: link.description, amount: link.amount, cpay_ref: cpayRef });
+
+    respondAndRedirect(res, '/app/#payment-success');
+  } catch (err) {
+    console.error('special-ok error:', err);
+    respondAndRedirect(res, '/app/#payment-error');
+  }
+});
+
+router.all('/special-fail', async (req, res) => {
+  const data = { ...req.query, ...req.body };
+  const details2 = String(data.Details2 || '');
+  if (details2.startsWith('SP')) {
+    const linkId = Number(details2.slice(2));
+    try { await pool.query(`UPDATE special_payment_links SET status='expired' WHERE id=?`, [linkId]); } catch (e) {}
+  }
+  respondAndRedirect(res, '/app/#payment-failed');
+});
 
 module.exports = router;
