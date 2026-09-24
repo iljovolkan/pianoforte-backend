@@ -37,9 +37,19 @@ router.get('/', requireAuth, async (req, res) => {
 router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const { group_id, day1, day2, start_time1, start_time2, location, note } = req.body;
 
-  if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2) || day1 === day2
+  if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2)
       || !TIME_RE.test(start_time1 || '') || !TIME_RE.test(start_time2 || '')) {
-    return res.status(400).json({ error: 'Избери два различни дена и валидни термини (на секои 15 мин) за секој ден.' });
+    return res.status(400).json({ error: 'Избери валидни денови и термини (на секои 15 мин).' });
+  }
+  if (day1 === day2 && start_time1 === start_time2) {
+    return res.status(400).json({ error: 'Ако е ист ден, изберете различни времиња.' });
+  }
+  if (day1 === day2) {
+    const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const s1 = toMin(start_time1), s2 = toMin(start_time2);
+    if (s1 < s2 + 45 && s2 < s1 + 45) {
+      return res.status(400).json({ error: 'Термините се преклопуваат (секој час трае 45 мин).' });
+    }
   }
   if (location && !VALID_LOCATIONS.includes(location)) {
     return res.status(400).json({ error: 'Невалидна локација.' });
