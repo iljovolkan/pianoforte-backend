@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const [groups] = await pool.query(
-      `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, g.location, u.full_name AS professor_name
+      `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, g.location, g.is_closed, g.sessions_per_week, u.full_name AS professor_name
        FROM groups_table g JOIN users u ON u.id = g.professor_id`
     );
 
@@ -56,7 +56,7 @@ router.get('/', requireAuth, async (req, res) => {
 // случајно (или намерно) да создаде група за гитара.
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
-    const { name, capacity, age_range, level, instrument, location } = req.body;
+    const { name, capacity, age_range, level, instrument, location, sessions_per_week } = req.body;
     if (!name) return res.status(400).json({ error: 'Името на групата е задолжително.' });
     const cap = capacity || 6;
     if (cap < 1 || cap > 6) return res.status(400).json({ error: 'Капацитетот мора да биде помеѓу 1 и 6.' });
@@ -66,6 +66,7 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
     if (location && !['aerodrom', 'taftalidze'].includes(location)) {
       return res.status(400).json({ error: 'Невалидна локација.' });
     }
+    const spw = sessions_per_week === 1 ? 1 : 2; // само 1 или 2 термини неделно
 
     let finalInstrument = instrument;
     if (req.user.role === 'professor') {
@@ -84,10 +85,10 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
     }
 
     const [result] = await pool.query(
-      'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level, location) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, cap, req.user.id, finalInstrument, age_range || '7-10', level || 'pocetnik', location || null]
+      'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level, location, sessions_per_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, cap, req.user.id, finalInstrument, age_range || '7-10', level || 'pocetnik', location || null, spw]
     );
-    res.status(201).json({ id: result.insertId, name, capacity: cap, instrument: finalInstrument, age_range, level, location });
+    res.status(201).json({ id: result.insertId, name, capacity: cap, instrument: finalInstrument, age_range, level, location, sessions_per_week: spw });
   } catch (err) {
     console.error('POST /groups error:', err);
     res.status(500).json({ error: 'Грешка при создавање група: ' + err.message });
@@ -172,6 +173,66 @@ router.delete('/:id', requireAuth, requireRole('professor', 'admin'), async (req
     console.error('DELETE /groups/:id error:', err);
     res.status(500).json({ error: 'Грешка при бришење група: ' + err.message });
   }
+});
+
+// POST /groups/:id/move-member  { student_id, new_group_id }
+// Ja префрла детето од оваa група во НОВА група (можно да е и кај друг
+// professor, дури и различен инструмент — admin/professor одлучува).
+// Ги ажурира и member-ствата и активната претплата (за идните рати).
+router.post('/:id/move-member', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  const { student_id, new_group_id } = req.body;
+  if (!student_id || !new_group_id) {
+    return res.status(400).json({ error: 'student_id и new_group_id се задолжителни.' });
+  }
+  const oldGroupId = req.params.id;
+
+  try {
+    const [[oldGroup]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [oldGroupId]);
+    const [[newGroup]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [new_group_id]);
+    if (!oldGroup || !newGroup) return res.status(404).json({ error: 'Групата не постои.' });
+    if (req.user.role === 'professor' && oldGroup.professor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Можеш да преместуваш деца само од сопствени групи.' });
+    }
+
+    const [[member]] = await pool.query('SELECT * FROM group_members WHERE group_id = ? AND student_id = ?', [oldGroupId, student_id]);
+    if (!member) return res.status(404).json({ error: 'Детето не е во оваa група.' });
+
+    const [newMembers] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [new_group_id]);
+    if (newMembers.length >= newGroup.capacity) {
+      return res.status(409).json({ error: 'Новата група е веќе пополнета.' });
+    }
+    if (newMembers.some(m => m.student_id === Number(student_id))) {
+      return res.status(409).json({ error: 'Детето е веќе во новата група.' });
+    }
+
+    await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [oldGroupId, student_id]);
+    await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [new_group_id, student_id]);
+
+    // ажурирaj ja и активната претплата (пакетот и цената остануваат исти —
+    // само групата/терминот/professor-от се менуваат за идните рати)
+    await pool.query(
+      `UPDATE subscriptions SET group_id = ? WHERE student_id = ? AND group_id = ? AND released = FALSE`,
+      [new_group_id, student_id, oldGroupId]
+    );
+
+    res.json({ ok: true, moved_to: newGroup.name, new_professor_id: newGroup.professor_id });
+  } catch (err) {
+    console.error('POST /groups/:id/move-member error:', err);
+    res.status(500).json({ error: 'Грешка при преместување: ' + err.message });
+  }
+});
+
+// PUT /groups/:id/close  { is_closed }  — professor рано ja затвора/отвора
+// групата (не прима повеќе нови деца, дури и да има уште слободно место)
+router.put('/:id/close', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  const { is_closed } = req.body;
+  const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [req.params.id]);
+  if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+  if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Оваa група не е твoja.' });
+  }
+  await pool.query('UPDATE groups_table SET is_closed = ? WHERE id = ?', [is_closed ? 1 : 0, req.params.id]);
+  res.json({ ok: true });
 });
 
 module.exports = router;
