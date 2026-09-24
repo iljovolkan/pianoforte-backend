@@ -412,6 +412,23 @@
 </head>
 <body>
 
+<!-- ================= СПЕЦИЈАЛНО ПЛАЌАЊЕ (jaвна страница, без најава) ================= -->
+<div id="specialPaymentScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px;">
+  <div class="login-card">
+    <div class="login-brand"><h1>Piano<span>Forte</span></h1><p>Персонализирана уплата</p></div>
+    <div id="specialPaymentLoading" style="text-align:center; padding:20px 0; color:var(--mist);">Се вчитува...</div>
+    <div id="specialPaymentContent" style="display:none;">
+      <div style="background:var(--surface-2); border-radius:12px; padding:18px; margin:20px 0; text-align:center;">
+        <div id="specialPaymentDesc" style="font-size:14px; color:var(--ink); margin-bottom:10px;"></div>
+        <div id="specialPaymentAmount" style="font-size:26px; font-weight:700; color:var(--lilac-deep);"></div>
+      </div>
+      <p style="font-size:12px; color:var(--mist); text-align:center; margin-bottom:16px;">⚠️ Овoj линк е наменет исклучиво за тебе. Ве молиме не го препраќajте на други лица.</p>
+      <button class="login-btn" id="specialPaymentPayBtn">Плати сега</button>
+    </div>
+    <div id="specialPaymentError" style="display:none; text-align:center; color:var(--wine); padding:20px 0;"></div>
+  </div>
+</div>
+
 <!-- ================= LOGIN ================= -->
 <div id="loginScreen">
   <div class="login-card">
@@ -1071,6 +1088,20 @@
         <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="admin_all_indiv">Сите закажани индивидуални часови</h3>
         <div id="adminIndivBookingsList"></div>
       </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Согласности за фотографирање</h3>
+        <table class="fin-table"><thead><tr><th>Дете</th><th>Родител</th><th>Email</th><th>Согласност</th></tr></thead>
+          <tbody id="adminPhotoConsentList"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Архива на отпишани ученици</h3>
+        <table class="fin-table"><thead><tr><th>Дете</th><th>Родител</th><th>Професор</th><th>Причина</th><th>Датум</th></tr></thead>
+          <tbody id="adminWithdrawnList"></tbody>
+        </table>
+      </div>
     </section>
 
     <!-- ---- FINANCE PAGE ---- -->
@@ -1171,6 +1202,22 @@
           </table>
         </div>
       </div>
+      <!-- АРХИВА НА ФАКТУРИ -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Архива на фактури</h3></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <input type="text" id="invoiceSearchQ" class="login-input" placeholder="пребарaj по име/email/бр. фактура" style="margin-bottom:0; flex:1; min-width:180px;">
+          <input type="date" id="invoiceFrom" class="login-input" style="margin-bottom:0; width:auto;">
+          <input type="date" id="invoiceTo" class="login-input" style="margin-bottom:0; width:auto;">
+          <button class="send-btn" id="invoiceSearchBtn" style="width:auto; padding:0 18px;">Пребарaj</button>
+        </div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Бр. фактура</th><th>Ученик</th><th>Пакет</th><th>Износ</th><th>Датум</th><th></th></tr></thead>
+            <tbody id="invoiceListTbody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
     <section class="page" id="page-billing">
       <div class="billing-subtabs" id="billingSubtabs" style="display:none;">
@@ -1186,6 +1233,15 @@
       <div class="card" id="billingIndivBookingsCard" style="margin-top:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:14px;" id="billingIndivBookingsTitle">Закажани индивидуални часови</h3>
         <div id="billingIndivBookingsList"></div>
+      </div>
+      <div class="card" id="specialPaymentLinkCard" style="margin-top:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:6px;">Испрати персонализирана уплата</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">За индивидуални случаи (пр. попуст за повеќе деца од исто семејство) — ти ja поставуваш цената рачно, без автоматски попусти/рати.</p>
+        <div class="form-row"><label>Email на родителот</label><input type="email" id="spLinkEmail" class="login-input" placeholder="родител@email.com"></div>
+        <div class="form-row"><label>Опис (родителот ќе го види)</label><input type="text" id="spLinkDesc" class="login-input" placeholder="пр. Пакет пијано — 2 деца, семеен попуст"></div>
+        <div class="form-row"><label>Износ (ден.)</label><input type="number" id="spLinkAmount" class="login-input" min="1"></div>
+        <button class="send-btn" id="spLinkSendBtn">Испрати линк за плаќање</button>
+        <div id="spLinkMsg" style="display:none; margin-top:10px; font-size:12.5px;"></div>
       </div>
     </section>
 
@@ -1779,6 +1835,34 @@
     }
   });
 
+  document.getElementById('spLinkSendBtn').addEventListener('click', async ()=>{
+    const parent_email = document.getElementById('spLinkEmail').value.trim();
+    const description = document.getElementById('spLinkDesc').value.trim();
+    const amount = document.getElementById('spLinkAmount').value;
+    const msgBox = document.getElementById('spLinkMsg');
+    msgBox.style.display = 'none';
+    if(!parent_email || !description || !amount){
+      msgBox.style.color = 'var(--wine)'; msgBox.textContent = 'Сите полиња се задолжителни.'; msgBox.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('spLinkSendBtn');
+    btn.disabled = true; btn.textContent = 'Се испраќа...';
+    try{
+      await authApiCall('/payments/special-link', {
+        method:'POST',
+        body: JSON.stringify({ parent_email, description, amount })
+      });
+      document.getElementById('spLinkEmail').value = '';
+      document.getElementById('spLinkDesc').value = '';
+      document.getElementById('spLinkAmount').value = '';
+      msgBox.style.color = 'var(--leaf)'; msgBox.textContent = '✓ Линкот за плаќање е испратен до родителот.'; msgBox.style.display = 'block';
+    } catch(err){
+      msgBox.style.color = 'var(--wine)'; msgBox.textContent = err.message || 'Грешка при испраќање.'; msgBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Испрати линк за плаќање';
+    }
+  });
+
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     try{ await authApiCall('/auth/logout', { method:'POST' }); } catch(e){}
     session = null;
@@ -2128,9 +2212,26 @@
         </div>
         <button class="mc-btn" style="flex:none;" onclick="editChild(${c.id})">Уреди</button>
         <button class="mc-btn" style="flex:none;" data-gen-code="${c.id}">${c.access_code ? t('regenerate_code_btn') : t('generate_code_btn')}</button>
+        <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-withdraw="${c.id}" data-name="${escapeHtml(c.full_name)}">Прекини услуга</button>
         ${children.length>1 ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteChild(${c.id})">Избриши</button>` : ''}
       </div>
     `).join('');
+    list.querySelectorAll('button[data-withdraw]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const name = btn.dataset.name;
+        if(!confirm(`Дали сте сигурни дека сакате да ja прекинете услугата за „${name}"?`)) return;
+        const reason = prompt('PianoForte настojува да ги подобрува своите услуги, па ве молиме наведете ja причината за прекинот на услугата (не е задолжително):');
+        (async ()=>{
+          btn.disabled = true;
+          try{
+            await authApiCall('/children/' + btn.dataset.withdraw + '/withdraw', { method:'POST', body: JSON.stringify({ reason }) });
+            alert('Услугата е прекината. Испративме потврда на email.');
+            await loadChildren();
+            renderMyChildren();
+          } catch(err){ alert(err.message || 'Грешка.'); btn.disabled = false; }
+        })();
+      });
+    });
     list.querySelectorAll('button[data-gen-code]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         const childId = btn.dataset.genCode;
@@ -2851,6 +2952,14 @@
           <option value="6" selected>6 деца</option>
         </select>
       </div>
+      <div style="height:8px;"></div>
+      <div class="form-row">
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Термини неделно</label>
+        <select id="newGroupSessionsPerWeek" class="login-select" style="margin-bottom:0;">
+          <option value="1">1 термин неделно</option>
+          <option value="2" selected>2 термини неделно</option>
+        </select>
+      </div>
       <button class="send-btn" id="newGroupBtn" style="margin-top:6px;">Создади група</button>
     `;
     wrap.appendChild(createCard);
@@ -2871,8 +2980,9 @@
       const level = document.getElementById('newGroupLevel').value;
       const location = document.getElementById('newGroupLocation').value;
       const capacity = Number(document.getElementById('newGroupCapacity').value);
+      const sessions_per_week = Number(document.getElementById('newGroupSessionsPerWeek').value);
       try{
-        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level, instrument, location }) });
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level, instrument, location, sessions_per_week }) });
         await loadGroups();
         renderSchedulePage();
       } catch(err){ alert('Грешка: ' + err.message); }
@@ -2884,9 +2994,11 @@
       const memberCount = g.members ? g.members.length : 0;
       const full = memberCount >= g.capacity;
       const card = document.createElement('div'); card.className='group-ov-card';
-      const needsSlots = slots.length < 2;
+      const needsSlots = slots.length < (g.sessions_per_week || 2);
+      const isSingleSession = (g.sessions_per_week || 2) === 1;
       card.innerHTML = `
-        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span><button class="del-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Избриши група" style="background:none; border:1px solid var(--wine-pale); color:var(--wine); font-size:11px; padding:4px 9px; border-radius:20px; cursor:pointer; margin-left:6px;">✕</button></div>
+        <div class="group-ov-top"><h4>${g.name}</h4><span class="fill-pill ${full?'full':'ok'}">${memberCount}/${g.capacity}</span><button class="close-group-btn" data-group-id="${g.id}" data-closed="${g.is_closed?1:0}" title="${g.is_closed?'Отвори група':'Затвори група'}" style="background:none; border:1px solid var(--line); color:${g.is_closed?'var(--leaf)':'var(--mist)'}; font-size:11px; padding:4px 9px; border-radius:20px; cursor:pointer; margin-left:6px;">${g.is_closed?'🔓':'🔒'}</button><button class="del-group-btn" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}" title="Избриши група" style="background:none; border:1px solid var(--wine-pale); color:var(--wine); font-size:11px; padding:4px 9px; border-radius:20px; cursor:pointer; margin-left:6px;">✕</button></div>
+        ${g.is_closed ? '<div style="font-size:11px; color:var(--wine); margin-bottom:4px;">🔒 Групата е затворена — не прима нови деца</div>' : ''}
         <div class="tag-row">
           <span class="tag age">${instrumentLabel(g.instrument)}</span>
           <span class="tag age">${ageLabel(g.age_range)}</span>
@@ -2920,7 +3032,21 @@
             <div class="add-student-results" style="max-height:160px; overflow-y:auto;"></div>
           </div>
         </div>` : ''}
-        ${needsSlots ? `
+        ${needsSlots && isSingleSession ? `
+        <div class="assign-slot-box single-slot-box" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+          <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Оваa група има само 1 термин неделно:</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <select class="login-select single-day" style="margin-bottom:0; flex:1;">${days.map(d=>`<option value="${d}">${d}</option>`).join('')}</select>
+            <select class="login-select single-time" style="margin-bottom:0; flex:1;">${hours.map(h=>`<option value="${h}">${h}</option>`).join('')}</select>
+          </div>
+          <select class="login-select single-location" style="margin-bottom:8px;">
+            <option value="aerodrom">📍 Аеродром</option>
+            <option value="taftalidze">📍 Тафталиџе</option>
+          </select>
+          <button class="send-btn single-save-btn" data-group="${g.id}" style="padding:9px;">Додели го терминот</button>
+          <div class="single-error" style="display:none; color:var(--wine); font-size:11.5px; margin-top:6px;"></div>
+        </div>` : ''}
+        ${needsSlots && !isSingleSession ? `
         <div class="assign-slot-box" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
           <div style="font-size:11px; color:var(--mist); margin-bottom:6px;">Секој пакет е 2 часа неделно — избери ги двата дена (и по желба различно време за секој):</div>
           <div style="display:flex; gap:6px; margin-bottom:6px;">
@@ -2970,6 +3096,21 @@
       });
 
       // --- бришење група (по грешка формирана) ---
+      const closeGroupBtn = card.querySelector('.close-group-btn');
+      if(closeGroupBtn){
+        closeGroupBtn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const currentlyClosed = closeGroupBtn.dataset.closed === '1';
+          try{
+            await authApiCall('/groups/' + closeGroupBtn.dataset.groupId + '/close', {
+              method:'PUT', body: JSON.stringify({ is_closed: !currentlyClosed })
+            });
+            await loadGroups();
+            renderSchedulePage();
+          } catch(err){ alert('Грешка: ' + err.message); }
+        });
+      }
+
       const delGroupBtn = card.querySelector('.del-group-btn');
       if(delGroupBtn){
         delGroupBtn.addEventListener('click', async (e)=>{
@@ -3031,7 +3172,7 @@
 
       if(needsSlots){
         const saveBtn = card.querySelector('.pair-save-btn');
-        saveBtn.addEventListener('click', async ()=>{
+        if(saveBtn) saveBtn.addEventListener('click', async ()=>{
           const day1 = card.querySelector('.pair-day1').value;
           const day2 = card.querySelector('.pair-day2').value;
           const start_time1 = card.querySelector('.pair-time1').value;
@@ -3056,6 +3197,28 @@
             errBox.textContent = err.message;
             errBox.style.display = 'block';
             saveBtn.disabled = false; saveBtn.textContent = 'Додели ги двата термина';
+          }
+        });
+
+        const singleSaveBtn = card.querySelector('.single-save-btn');
+        if(singleSaveBtn) singleSaveBtn.addEventListener('click', async ()=>{
+          const day = card.querySelector('.single-day').value;
+          const start_time = card.querySelector('.single-time').value;
+          const location = card.querySelector('.single-location').value;
+          const errBox = card.querySelector('.single-error');
+          errBox.style.display = 'none';
+          singleSaveBtn.disabled = true; singleSaveBtn.textContent = 'Се зачувува...';
+          try{
+            await authApiCall('/schedule', {
+              method:'POST',
+              body: JSON.stringify({ group_id: g.id, day_of_week: MK_TO_EN_DAY[day], start_time, location })
+            });
+            await loadSchedule();
+            renderSchedulePage();
+          } catch(err){
+            errBox.textContent = err.message;
+            errBox.style.display = 'block';
+            singleSaveBtn.disabled = false; singleSaveBtn.textContent = 'Додели го терминот';
           }
         });
       }
@@ -3323,6 +3486,9 @@
     if(session.role === 'student') renderStudentIndivBookings();
     else document.getElementById('billingIndivBookingsCard').style.display = 'none';
 
+    document.getElementById('specialPaymentLinkCard').style.display =
+      (session.role === 'professor' || session.role === 'admin') && !session.restrictedChildId ? 'block' : 'none';
+
     if(session.role === 'professor'){
       document.getElementById('billingTitle').textContent = t('billing_title_prof');
       document.getElementById('billingSub').textContent = t('billing_sub_prof');
@@ -3574,9 +3740,62 @@
   }
   function fmtMoney(n){ return Number(n||0).toLocaleString('mk-MK') + ' ден.'; }
 
+  async function loadInvoices(){
+    const tbody = document.getElementById('invoiceListTbody');
+    tbody.innerHTML = '<tr><td colspan="6">Се вчитува...</td></tr>';
+    const q = document.getElementById('invoiceSearchQ').value.trim();
+    const from = document.getElementById('invoiceFrom').value;
+    const to = document.getElementById('invoiceTo').value;
+    const params = new URLSearchParams();
+    if(q) params.set('q', q);
+    if(from) params.set('from', from);
+    if(to) params.set('to', to);
+    try{
+      const rows = await authApiCall('/finance/invoices?' + params.toString());
+      tbody.innerHTML = rows.length === 0 ? '<tr><td colspan="6">Нема фактури.</td></tr>' : rows.map(r => `
+        <tr>
+          <td>${escapeHtml(r.invoice_number)}</td>
+          <td>${escapeHtml(r.student_name)}</td>
+          <td>${escapeHtml(r.package_name)}</td>
+          <td>${Number(r.amount).toLocaleString('mk-MK')} ден.</td>
+          <td>${fmtDate(r.issued_at)}</td>
+          <td><button class="mc-btn" style="flex:none; font-size:11px;" data-print-inv="${r.id}">Печати</button></td>
+        </tr>
+      `).join('');
+      window._invoicesData = rows;
+      tbody.querySelectorAll('button[data-print-inv]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const inv = window._invoicesData.find(x => String(x.id) === btn.dataset.printInv);
+          if(!inv) return;
+          const w = window.open('', '_blank');
+          w.document.write(`
+            <html><head><title>Фактура ${inv.invoice_number}</title></head>
+            <body style="font-family:sans-serif; padding:40px;">
+              <h1>PianoForte</h1>
+              <h3>Фактура бр. ${inv.invoice_number}</h3>
+              <p>Датум: ${fmtDate(inv.issued_at)}</p>
+              <hr>
+              <p><strong>Ученик:</strong> ${inv.student_name}</p>
+              <p><strong>Email на родител:</strong> ${inv.parent_email}</p>
+              <p><strong>Услуга:</strong> ${inv.package_name}</p>
+              <p><strong>Износ:</strong> ${Number(inv.amount).toLocaleString('mk-MK')} ден.</p>
+              ${inv.cpay_ref ? `<p><strong>Референца (cPay):</strong> ${inv.cpay_ref}</p>` : ''}
+            </body></html>
+          `);
+          w.document.close();
+          w.print();
+        });
+      });
+    } catch(err){
+      tbody.innerHTML = `<tr><td colspan="6">Грешка: ${err.message}</td></tr>`;
+    }
+  }
+  document.getElementById('invoiceSearchBtn').addEventListener('click', loadInvoices);
+
   async function renderFinancePage(){
     const month = currentFinanceMonth();
     document.getElementById('financeMonth').onchange = renderFinancePage;
+    loadInvoices();
 
     // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
     const accessCard = document.getElementById('financeAccessCard');
@@ -3746,9 +3965,48 @@
     } catch(err){ alert(err.message || 'Грешка.'); }
   });
 
+  async function renderAdminPhotoConsents(){
+    const tbody = document.getElementById('adminPhotoConsentList');
+    tbody.innerHTML = '<tr><td colspan="4">Се вчитува...</td></tr>';
+    try{
+      const rows = await authApiCall('/admin/photo-consents');
+      tbody.innerHTML = rows.length === 0 ? '<tr><td colspan="4">Нема деца.</td></tr>' : rows.map(r => `
+        <tr>
+          <td>${escapeHtml(r.student_name)}</td>
+          <td>${escapeHtml(r.parent_name)}</td>
+          <td>${escapeHtml(r.parent_email)}</td>
+          <td>${r.photo_consent ? '✅ Да' : '❌ Не'}</td>
+        </tr>
+      `).join('');
+    } catch(err){
+      tbody.innerHTML = `<tr><td colspan="4">Грешка: ${err.message}</td></tr>`;
+    }
+  }
+
+  async function renderAdminWithdrawn(){
+    const tbody = document.getElementById('adminWithdrawnList');
+    tbody.innerHTML = '<tr><td colspan="5">Се вчитува...</td></tr>';
+    try{
+      const rows = await authApiCall('/admin/withdrawn-students');
+      tbody.innerHTML = rows.length === 0 ? '<tr><td colspan="5">Нема отпишани ученици.</td></tr>' : rows.map(r => `
+        <tr>
+          <td>${escapeHtml(r.student_name)}</td>
+          <td>${escapeHtml(r.parent_name)} (${escapeHtml(r.parent_email)})</td>
+          <td>${r.professor_name ? escapeHtml(r.professor_name) : '—'}</td>
+          <td>${r.reason ? escapeHtml(r.reason) : '—'}</td>
+          <td>${fmtDate(r.withdrawn_at)}</td>
+        </tr>
+      `).join('');
+    } catch(err){
+      tbody.innerHTML = `<tr><td colspan="5">Грешка: ${err.message}</td></tr>`;
+    }
+  }
+
   async function renderAdminPage(){
     renderAdminIndivBookings();
     renderAdminOverview();
+    renderAdminPhotoConsents();
+    renderAdminWithdrawn();
     const listBox = document.getElementById('adminProfList');
     listBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
     try{
@@ -4335,6 +4593,48 @@
   });
 
   /* ---- примени го зачуваниот јазик уште на почетниот приказ (login екран) ---- */
+  /* ---- Специjaлно плаќање — jaвна страница, работи БЕЗ најава ---- */
+  const specialPaymentMatch = window.location.hash.match(/^#special-payment\/([a-f0-9]+)$/);
+  if(specialPaymentMatch){
+    const spToken = specialPaymentMatch[1];
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('specialPaymentScreen').style.display = 'flex';
+    (async ()=>{
+      try{
+        const data = await apiCall('/payments/special-link/' + spToken);
+        document.getElementById('specialPaymentLoading').style.display = 'none';
+        document.getElementById('specialPaymentContent').style.display = 'block';
+        document.getElementById('specialPaymentDesc').textContent = data.description;
+        document.getElementById('specialPaymentAmount').textContent = Number(data.amount).toLocaleString('mk-MK') + ' ден.';
+        document.getElementById('specialPaymentPayBtn').addEventListener('click', async ()=>{
+          const btn = document.getElementById('specialPaymentPayBtn');
+          btn.disabled = true; btn.textContent = 'Те носиме кон плаќање...';
+          try{
+            const initResult = await apiCall('/payments/init-special/' + spToken, { method:'POST' });
+            const form = document.createElement('form');
+            form.method = 'POST'; form.action = initResult.cpay_url;
+            Object.entries(initResult.fields).forEach(([key, value])=>{
+              if(value === null || value === undefined) return;
+              const input = document.createElement('input');
+              input.type = 'hidden'; input.name = key; input.value = value;
+              form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
+          } catch(err){
+            alert(err.message || 'Грешка при иницирање плаќање.');
+            btn.disabled = false; btn.textContent = 'Плати сега';
+          }
+        });
+      } catch(err){
+        document.getElementById('specialPaymentLoading').style.display = 'none';
+        document.getElementById('specialPaymentError').style.display = 'block';
+        document.getElementById('specialPaymentError').textContent = err.message || 'Линкот не е валиден.';
+      }
+    })();
+    // прекини ja натамошната иницијализација — ова е самостojна страница
+  } else {
+
   applyLanguage();
 
   /* ---- зачувај го #packages/<instrument> во localStorage, за да не се изгуби
@@ -4360,6 +4660,8 @@
       clearSessionStorage();
     }
   })();
+
+  } // затворање на "else" блокот за специjaлно плаќање (спротивно на #special-payment проверката горе)
 
 })();
 
