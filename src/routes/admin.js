@@ -7,7 +7,7 @@ const { runDailyMaintenance } = require('../cron');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
-const VALID_INSTRUMENTS = ['piano', 'gitara', 'el-gitara', 'bas-gitara', 'tapani', 'peenje', 'violina', 'ran-razvoj'];
+const VALID_INSTRUMENTS = ['piano', 'gitara', 'el-gitara', 'bas-gitara', 'tapani', 'peenje', 'violina', 'ran-razvoj', 'solfez'];
 const VALID_LOCATIONS = ['aerodrom', 'taftalidze'];
 
 function generateTempPassword(){
