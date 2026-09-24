@@ -105,7 +105,7 @@ function respondAndRedirect(res, targetPath) {
 // ===================================================================
 router.post('/init-subscription', requireAuth, requireRole('student'), async (req, res) => {
   try {
-    const { package_id, group_id, child_id } = req.body;
+    const { package_id, group_id, secondary_group_id, child_id } = req.body;
     let { payment_plan } = req.body;
 
     if (!package_id || !child_id) {
@@ -124,6 +124,10 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
       return res.status(400).json({ error: 'Индивидуалните часови се закажуваат преку /individual-bookings.' });
     }
 
+    if (pkg.is_combo && (!group_id || !secondary_group_id)) {
+      return res.status(400).json({ error: 'Овoj пакет е комбиниран — избери и двете групи (инструмент + солфеж).' });
+    }
+
     if (group_id) {
       const [[g]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [group_id]);
       if (!g) return res.status(404).json({ error: 'Групата не постои.' });
@@ -135,13 +139,24 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
       if (members.some(m => m.student_id === child_id)) return res.status(409).json({ error: 'Детето е веќе во оваа група.' });
     }
 
+    if (secondary_group_id) {
+      const [[sg]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [secondary_group_id]);
+      if (!sg) return res.status(404).json({ error: 'Солфеж групата не постои.' });
+      if (sg.instrument !== 'solfez') {
+        return res.status(400).json({ error: 'Втората група мора да е по солфеж.' });
+      }
+      const [members2] = await pool.query('SELECT student_id FROM group_members WHERE group_id = ?', [secondary_group_id]);
+      if (members2.length >= sg.capacity) return res.status(409).json({ error: 'Солфеж групата е веќе пополнета.' });
+      if (members2.some(m => m.student_id === child_id)) return res.status(409).json({ error: 'Детето е веќе во таa солфеж група.' });
+    }
+
     const plan = pkg.package_type === 'trial' ? 'trial' : (['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight');
     const schedule = plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
       : buildAnnualSchedule(plan, Number(pkg.price_mkd));
     const firstAmount = Math.round(schedule[0].amount); // цели денари — AmountToPay мора да завршува на 00
 
-    const payload = { child_id, package_id, group_id: group_id || null, payment_plan: plan };
+    const payload = { child_id, package_id, group_id: group_id || null, secondary_group_id: secondary_group_id || null, payment_plan: plan };
     const [result] = await pool.query(
       `INSERT INTO payment_intents (kind, user_id, payload, amount, status) VALUES ('subscription', ?, ?, ?, 'pending')`,
       [req.user.id, JSON.stringify(payload), firstAmount]
@@ -391,7 +406,7 @@ async function issueInvoice({ student_id, student_name, parent_email, package_na
 }
 
 async function completeSubscriptionPurchase(intent, payload, cpayRef) {
-  const { child_id, package_id, group_id, payment_plan } = payload;
+  const { child_id, package_id, group_id, secondary_group_id, payment_plan } = payload;
 
   const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
   const [[child]] = await pool.query('SELECT full_name FROM children WHERE id = ?', [child_id]);
@@ -406,6 +421,9 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
   if (group_id) {
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [group_id, child_id]);
   }
+  if (secondary_group_id) {
+    await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [secondary_group_id, child_id]);
+  }
 
   const schedule = payment_plan === 'trial'
     ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
@@ -415,9 +433,9 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
   const firstDueDate = today.toISOString().slice(0, 10);
 
   const [subResult] = await pool.query(
-    `INSERT INTO subscriptions (student_id, package_id, group_id, next_due_date, released, payment_plan)
-     VALUES (?, ?, ?, ?, FALSE, ?)`,
-    [child_id, package_id, group_id, firstDueDate, payment_plan]
+    `INSERT INTO subscriptions (student_id, package_id, group_id, secondary_group_id, next_due_date, released, payment_plan)
+     VALUES (?, ?, ?, ?, ?, FALSE, ?)`,
+    [child_id, package_id, group_id, secondary_group_id || null, firstDueDate, payment_plan]
   );
 
   let nextPendingDueDate = null;
