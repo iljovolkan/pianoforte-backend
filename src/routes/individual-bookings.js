@@ -33,7 +33,7 @@ const TIME_15MIN_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 // Само professor додава сопствени термини, само за инструмент(и) на кои е доделен.
 router.post('/availability', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само професор може да додава термини.' });
-  const { instrument, slot_date, start_time, location } = req.body;
+  const { instrument, slot_date, start_time, location, repeat_weekly } = req.body;
   if (!instrument || !slot_date || !start_time) {
     return res.status(400).json({ error: 'instrument, slot_date и start_time се задолжителни.' });
   }
@@ -51,29 +51,47 @@ router.post('/availability', requireAuth, async (req, res) => {
   if (day === 0 || day === 6) return res.status(400).json({ error: 'Не работиме за викенд.' });
   if (dateObj < new Date(new Date().toDateString())) return res.status(400).json({ error: 'Не можеш да понудиш термин во минатото.' });
 
-  // Провери дали овoj термин преклопува со веќе РЕЗЕРВИРАН час на истиот
-  // ден (секој час трае 45 мин) — за да не понудиш нешто што физички не
-  // може да се одржи.
-  const [bookedSlots] = await pool.query(
-    'SELECT start_time FROM individual_availability WHERE professor_id = ? AND slot_date = ? AND is_booked = 1',
-    [req.user.id, slot_date]
-  );
   const toMinutes = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
   const newStart = toMinutes(start_time);
   const newEnd = newStart + 45;
-  const overlapsBooked = bookedSlots.some(s => { const st = toMinutes(s.start_time); return st < newEnd && (st + 45) > newStart; });
-  if (overlapsBooked) {
-    return res.status(409).json({ error: 'Овoj термин преклопува со веќе резервиран час (секој час трае 45 мин).' });
+
+  // Ако "повторувaj секоja недела" е избрано — генерирaj го истиот термин
+  // (ист ден во неделата, исто време) за наредните 12 недели одеднaш.
+  const WEEKS_AHEAD = repeat_weekly ? 12 : 1;
+  const datesToCreate = [];
+  for (let w = 0; w < WEEKS_AHEAD; w++) {
+    const d = new Date(dateObj);
+    d.setDate(d.getDate() + w * 7);
+    datesToCreate.push(d.toISOString().slice(0, 10));
   }
 
   try {
-    const [result] = await pool.query(
-      'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, instrument, slot_date, start_time, location || null]
-    );
-    res.status(201).json({ id: result.insertId });
+    const createdIds = [];
+    const skippedDates = [];
+    for (const date of datesToCreate) {
+      const [bookedSlots] = await pool.query(
+        'SELECT start_time FROM individual_availability WHERE professor_id = ? AND slot_date = ? AND is_booked = 1',
+        [req.user.id, date]
+      );
+      const overlapsBooked = bookedSlots.some(s => { const st = toMinutes(s.start_time); return st < newEnd && (st + 45) > newStart; });
+      if (overlapsBooked) { skippedDates.push(date); continue; }
+
+      try {
+        const [result] = await pool.query(
+          'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location) VALUES (?, ?, ?, ?, ?)',
+          [req.user.id, instrument, date, start_time, location || null]
+        );
+        createdIds.push(result.insertId);
+      } catch (e) {
+        if (e.code === 'ER_DUP_ENTRY') { skippedDates.push(date); continue; }
+        throw e;
+      }
+    }
+    if (createdIds.length === 0) {
+      return res.status(409).json({ error: 'Ниту еден од термините не можеше да се додаде (сите преклопуваат или веќе постојат).' });
+    }
+    res.status(201).json({ ids: createdIds, created_count: createdIds.length, skipped_count: skippedDates.length });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Веќе имаш понудено овoj термин.' });
     console.error(err);
     res.status(500).json({ error: 'Грешка на серверот.' });
   }
