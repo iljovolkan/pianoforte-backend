@@ -1664,6 +1664,7 @@
   let chosenPackage = null;
   let preselectedPlan = null; // кој конкретен ред (рата/полугодишен/целогодишен) е кликнат во табелата
   let chooseGroupMode = null; // {subscriptionId} кога родителот избира термин за веќе платена претплата
+  let comboFirstPickedGroupId = null; // за комбо пакети (пр. Изворче) — ja памти првата (инструмент) група додека се избира и втората (солфеж)
   let selectedBillingSubId = null; // кој пакет е избран за приказ во Наплата (кога има повеќе од еден)
   let pendingBooking = null; // {groupId}
   let pendingIndividualBooking = null; // {professor_id, instrument, booking_date, start_time}
@@ -3023,7 +3024,13 @@
             </div>
           `).join('')}
         </div>
-        <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip">${escapeHtml(m.full_name)}</span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip" style="display:inline-flex; align-items:center; gap:4px;">${escapeHtml(m.full_name)}<button class="move-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Премести во друга група" style="background:none; border:none; color:var(--lilac-deep); cursor:pointer; font-size:11px; padding:0;">↔️</button></span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        <div class="move-child-panel" data-for-group="${g.id}" style="display:none; margin-top:8px; padding:10px; background:var(--surface-2); border-radius:8px;">
+          <div style="font-size:12px; margin-bottom:6px;">Премести го <strong class="move-child-name"></strong> во:</div>
+          <select class="login-select move-target-group" style="margin-bottom:8px;"></select>
+          <button class="send-btn move-confirm-btn" style="padding:8px; font-size:12.5px;">Потврди преместување</button>
+          <button class="mc-btn move-cancel-btn" style="margin-top:6px; width:100%;">Откажи</button>
+        </div>
         ${!full ? `
         <div class="add-student-box" style="margin-top:10px;">
           <button class="add-student-toggle" data-group="${g.id}" style="background:none; border:1px dashed var(--line); color:var(--lilac-deep); font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%;">+ Додади ученик</button>
@@ -3096,6 +3103,42 @@
       });
 
       // --- бришење група (по грешка формирана) ---
+      // --- преместување дете во друга група ---
+      card.querySelectorAll('.move-child-btn').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const panel = card.querySelector('.move-child-panel');
+          panel.dataset.childId = btn.dataset.childId;
+          panel.querySelector('.move-child-name').textContent = btn.dataset.childName;
+          const select = panel.querySelector('.move-target-group');
+          const sameInstrumentGroups = groups.filter(gr => gr.instrument === g.instrument && gr.id !== g.id && !gr.is_closed);
+          select.innerHTML = sameInstrumentGroups.length === 0
+            ? '<option value="">Нема други достапни групи за овoj инструмент</option>'
+            : sameInstrumentGroups.map(gr => `<option value="${gr.id}">${escapeHtml(gr.name)} (${gr.members ? gr.members.length : 0}/${gr.capacity})</option>`).join('');
+          panel.style.display = 'block';
+        });
+      });
+      const moveCancelBtn = card.querySelector('.move-cancel-btn');
+      if(moveCancelBtn) moveCancelBtn.addEventListener('click', ()=>{ card.querySelector('.move-child-panel').style.display = 'none'; });
+      const moveConfirmBtn = card.querySelector('.move-confirm-btn');
+      if(moveConfirmBtn) moveConfirmBtn.addEventListener('click', async ()=>{
+        const panel = card.querySelector('.move-child-panel');
+        const newGroupId = panel.querySelector('.move-target-group').value;
+        if(!newGroupId){ alert('Избери група.'); return; }
+        moveConfirmBtn.disabled = true; moveConfirmBtn.textContent = 'Се преместува...';
+        try{
+          await authApiCall('/groups/' + g.id + '/move-member', {
+            method:'POST',
+            body: JSON.stringify({ student_id: panel.dataset.childId, new_group_id: newGroupId })
+          });
+          await loadGroups();
+          renderSchedulePage();
+        } catch(err){
+          alert('Грешка: ' + err.message);
+          moveConfirmBtn.disabled = false; moveConfirmBtn.textContent = 'Потврди преместување';
+        }
+      });
+
       const closeGroupBtn = card.querySelector('.close-group-btn');
       if(closeGroupBtn){
         closeGroupBtn.addEventListener('click', async (e)=>{
@@ -3180,10 +3223,20 @@
           const location = card.querySelector('.pair-location').value;
           const errBox = card.querySelector('.pair-error');
           errBox.style.display = 'none';
-          if(day1 === day2){
-            errBox.textContent = 'Избери два различни дена.';
+          if(day1 === day2 && start_time1 === start_time2){
+            errBox.textContent = 'Ако е ист ден, изберете различни времиња (блок-час).';
             errBox.style.display = 'block';
             return;
+          }
+          if(day1 === day2){
+            const toMin = (t)=>{ const [h,m]=t.split(':').map(Number); return h*60+m; };
+            const s1 = toMin(start_time1), s2 = toMin(start_time2);
+            const overlap = s1 < s2+45 && s2 < s1+45;
+            if(overlap){
+              errBox.textContent = 'Термините се преклопуваат (секој час трае 45 мин) — избери подалечно време.';
+              errBox.style.display = 'block';
+              return;
+            }
           }
           saveBtn.disabled = true; saveBtn.textContent = 'Се зачувува...';
           try{
@@ -3602,7 +3655,8 @@
           </div>`;
         section.appendChild(cta);
         cta.querySelector('.choose-group-btn').addEventListener('click', ()=>{
-          chooseGroupMode = { subscriptionId: sub.id };
+          chooseGroupMode = { subscriptionId: sub.id, isCombo: sub.package_name === 'Изворче' };
+          comboFirstPickedGroupId = null;
           selectedPkgInstrument = sub.instrument;
           filterInstrument = sub.instrument;
           filterAge = 'all'; filterLevel = 'all';
@@ -4340,13 +4394,26 @@
       btn.addEventListener('click', async ()=>{
         const gid = Number(btn.dataset.group);
         if(chooseGroupMode){
+          // комбо пакет (пр. Изворче) — прв чекор избира инструмент-група,
+          // потоa автоматски префрла на избор на солфеж-група
+          if(chooseGroupMode.isCombo && !comboFirstPickedGroupId){
+            comboFirstPickedGroupId = gid;
+            filterInstrument = 'solfez';
+            alert('Инструмент-групата е избрана! Сега избери солфеж-група.');
+            renderBookingStep();
+            return;
+          }
           btn.disabled = true; btn.textContent = 'Се зачувува...';
           try{
+            const body = chooseGroupMode.isCombo
+              ? { group_id: comboFirstPickedGroupId, secondary_group_id: gid }
+              : { group_id: gid };
             await authApiCall('/subscriptions/'+chooseGroupMode.subscriptionId+'/choose-group', {
-              method:'POST', body: JSON.stringify({ group_id: gid })
+              method:'POST', body: JSON.stringify(body)
             });
             const finishedFor = chooseGroupMode;
             chooseGroupMode = null;
+            comboFirstPickedGroupId = null;
             await loadGroups(); await loadSubscriptions();
             alert('Терминот е избран! 🎉');
             showPage('billing');
