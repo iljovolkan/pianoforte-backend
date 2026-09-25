@@ -713,4 +713,15 @@ router.all('/special-fail', async (req, res) => {
   respondAndRedirect(res, '/app/#payment-failed');
 });
 
+// GET /payments/my-special-payments — родителот гледа сопствени специjaлни
+// плаќања (совпаѓање по email на сметката)
+router.get('/my-special-payments', requireAuth, requireRole('student'), async (req, res) => {
+  const [[user]] = await pool.query('SELECT email FROM users WHERE id = ?', [req.user.id]);
+  const [rows] = await pool.query(
+    'SELECT id, token, description, amount, status, created_at, paid_at FROM special_payment_links WHERE parent_email = ? ORDER BY created_at DESC',
+    [user.email]
+  );
+  res.json(rows);
+});
+
 module.exports = router;
