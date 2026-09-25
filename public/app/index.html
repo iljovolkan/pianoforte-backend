@@ -1245,6 +1245,10 @@
         <h3 style="font-size:15px; margin-bottom:14px;" id="billingIndivBookingsTitle">Закажани индивидуални часови</h3>
         <div id="billingIndivBookingsList"></div>
       </div>
+      <div class="card" id="mySpecialPaymentsCard" style="margin-top:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:14px;">Персонализирани уплати</h3>
+        <div id="mySpecialPaymentsList"></div>
+      </div>
       <div class="card" id="specialPaymentLinkCard" style="margin-top:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:6px;">Испрати персонализирана уплата</h3>
         <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">За индивидуални случаи (пр. попуст за повеќе деца од исто семејство) — ти ja поставуваш цената рачно, без автоматски попусти/рати.</p>
@@ -2966,6 +2970,29 @@
     list.innerHTML = individualBookings.map(b=>indivBookingRow(b, 'кај ' + b.professor_name)).join('');
   }
 
+  async function renderMySpecialPayments(){
+    const card = document.getElementById('mySpecialPaymentsCard');
+    const list = document.getElementById('mySpecialPaymentsList');
+    try{
+      const rows = await authApiCall('/payments/my-special-payments');
+      if(rows.length === 0){ card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      const statusLabel = { pending: '⏳ Чека плаќање', paid: '✅ Платено', expired: '⚠️ Истечено' };
+      list.innerHTML = rows.map(r => `
+        <div class="sent-item">
+          <div class="sent-icon">💳</div>
+          <div class="sent-meta">
+            <div class="t">${escapeHtml(r.description)}</div>
+            <div class="sub">${Number(r.amount).toLocaleString('mk-MK')} ден. · ${statusLabel[r.status] || r.status} · ${fmtDate(r.created_at)}</div>
+          </div>
+          ${r.status === 'pending' ? `<a class="mc-btn" style="flex:none; text-decoration:none;" href="/app/#special-payment/${r.token||''}">Плати</a>` : ''}
+        </div>
+      `).join('');
+    } catch(err){
+      card.style.display = 'none';
+    }
+  }
+
   async function renderAdminIndivBookings(){
     const list = document.getElementById('adminIndivBookingsList');
     if(!list) return;
@@ -3615,8 +3642,13 @@
   function renderBillingPage(){
     const wrap = document.getElementById('billingContent');
     wrap.innerHTML = '';
-    if(session.role === 'student') renderStudentIndivBookings();
-    else document.getElementById('billingIndivBookingsCard').style.display = 'none';
+    if(session.role === 'student'){
+      renderStudentIndivBookings();
+      renderMySpecialPayments();
+    } else {
+      document.getElementById('billingIndivBookingsCard').style.display = 'none';
+      document.getElementById('mySpecialPaymentsCard').style.display = 'none';
+    }
 
     document.getElementById('specialPaymentLinkCard').style.display =
       (session.role === 'professor' || session.role === 'admin') && !session.restrictedChildId ? 'block' : 'none';
