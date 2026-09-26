@@ -4,7 +4,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 const VALID_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri']; // саботите/неделите се секогаш неработни
-const TIME_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/; // само на секои 15 мин
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // секоj можен минут
 const VALID_LOCATIONS = ['aerodrom', 'taftalidze'];
 
 // GET /schedule — целиот неделен распоред со група + членови по термин
@@ -39,7 +39,7 @@ router.post('/pair', requireAuth, requireRole('professor', 'admin'), async (req,
 
   if (!group_id || !VALID_DAYS.includes(day1) || !VALID_DAYS.includes(day2)
       || !TIME_RE.test(start_time1 || '') || !TIME_RE.test(start_time2 || '')) {
-    return res.status(400).json({ error: 'Избери валидни денови и термини (на секои 15 мин).' });
+    return res.status(400).json({ error: 'Избери валидни денови и термини.' });
   }
   if (day1 === day2 && start_time1 === start_time2) {
     return res.status(400).json({ error: 'Ако е ист ден, изберете различни времиња.' });
@@ -90,7 +90,7 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
   const { group_id, day_of_week, start_time, location, note } = req.body;
 
   if (!group_id || !VALID_DAYS.includes(day_of_week) || !TIME_RE.test(start_time || '')) {
-    return res.status(400).json({ error: 'Невалидни податоци за термин (ден или време на секои 15 мин).' });
+    return res.status(400).json({ error: 'Невалидни податоци за термин (ден или време).' });
   }
   if (location && !VALID_LOCATIONS.includes(location)) {
     return res.status(400).json({ error: 'Невалидна локација.' });
@@ -133,7 +133,7 @@ router.put('/:id', requireAuth, requireRole('professor', 'admin'), async (req, r
     return res.status(400).json({ error: 'Невалиден ден.' });
   }
   if (start_time !== undefined && !TIME_RE.test(start_time)) {
-    return res.status(400).json({ error: 'Времето мора да е на секои 15 минути.' });
+    return res.status(400).json({ error: 'Внеси валидно време (ЧЧ:ММ).' });
   }
   if (location !== undefined && location !== null && !VALID_LOCATIONS.includes(location)) {
     return res.status(400).json({ error: 'Невалидна локација.' });
