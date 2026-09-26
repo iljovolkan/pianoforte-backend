@@ -27,7 +27,7 @@ router.get('/professors', requireAuth, async (req, res) => {
 // термините што ги нуди (на секои 15 мин, било кое време во работно
 // време), ученикот бира само од понудените.
 // ===================================================================
-const TIME_15MIN_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/;
+const TIME_15MIN_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // секоj можен минут
 
 // POST /individual-bookings/availability  { instrument, slot_date, start_time, location }
 // Само professor додава сопствени термини, само за инструмент(и) на кои е доделен.
@@ -38,7 +38,7 @@ router.post('/availability', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'instrument, slot_date и start_time се задолжителни.' });
   }
   if (!TIME_15MIN_RE.test(start_time)) {
-    return res.status(400).json({ error: 'Времето мора да е на секои 15 минути (пр. 15:00, 15:15, 15:30...).' });
+    return res.status(400).json({ error: 'Внеси валидно време (ЧЧ:ММ).' });
   }
   if (location && !['aerodrom', 'taftalidze'].includes(location)) {
     return res.status(400).json({ error: 'Невалидна локација.' });
