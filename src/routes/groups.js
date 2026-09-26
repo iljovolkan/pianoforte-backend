@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const [groups] = await pool.query(
-      `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, g.location, g.is_closed, g.sessions_per_week, u.full_name AS professor_name
+      `SELECT g.id, g.name, g.capacity, g.professor_id, g.instrument, g.age_range, g.level, g.location, g.is_closed, g.sessions_per_week, g.duration_minutes, u.full_name AS professor_name
        FROM groups_table g JOIN users u ON u.id = g.professor_id`
     );
 
@@ -56,7 +56,7 @@ router.get('/', requireAuth, async (req, res) => {
 // случајно (или намерно) да создаде група за гитара.
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
-    const { name, capacity, age_range, level, instrument, location, sessions_per_week } = req.body;
+    const { name, capacity, age_range, level, instrument, location, sessions_per_week, duration_minutes } = req.body;
     if (!name) return res.status(400).json({ error: 'Името на групата е задолжително.' });
     const cap = capacity || 6;
     if (cap < 1 || cap > 6) return res.status(400).json({ error: 'Капацитетот мора да биде помеѓу 1 и 6.' });
@@ -67,6 +67,7 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
       return res.status(400).json({ error: 'Невалидна локација.' });
     }
     const spw = sessions_per_week === 1 ? 1 : 2; // само 1 или 2 термини неделно
+    const durMin = [30, 45].includes(Number(duration_minutes)) ? Number(duration_minutes) : 45;
 
     let finalInstrument = instrument;
     if (req.user.role === 'professor') {
@@ -85,10 +86,10 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
     }
 
     const [result] = await pool.query(
-      'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level, location, sessions_per_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, cap, req.user.id, finalInstrument, age_range || '7-10', level || 'pocetnik', location || null, spw]
+      'INSERT INTO groups_table (name, capacity, professor_id, instrument, age_range, level, location, sessions_per_week, duration_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, cap, req.user.id, finalInstrument, age_range || '7-10', level || 'pocetnik', location || null, spw, durMin]
     );
-    res.status(201).json({ id: result.insertId, name, capacity: cap, instrument: finalInstrument, age_range, level, location, sessions_per_week: spw });
+    res.status(201).json({ id: result.insertId, name, capacity: cap, instrument: finalInstrument, age_range, level, location, sessions_per_week: spw, duration_minutes: durMin });
   } catch (err) {
     console.error('POST /groups error:', err);
     res.status(500).json({ error: 'Грешка при создавање група: ' + err.message });
