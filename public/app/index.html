@@ -1662,7 +1662,7 @@
   const materials = {}; // кеш по studentId, вчитува се на барање од GET /materials/:id
 
   const days = ['Пон','Вто','Сре','Чет','Пет']; // саботите се неработни, нема термини таму
-  const hours = (()=>{ const arr=[]; for(let h=9; h<=20; h++){ for(const m of ['00','15','30','45']){ arr.push(`${String(h).padStart(2,'0')}:${m}`); } } return arr; })();
+  const hours = (()=>{ const arr=[]; for(let h=9; h<=20; h++){ for(let m=0; m<60; m++){ arr.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); } } return arr; })();
   const MK_TO_EN_DAY = {'Пон':'mon','Вто':'tue','Сре':'wed','Чет':'thu','Пет':'fri'};
   const EN_TO_MK_DAY = {mon:'Пон', tue:'Вто', wed:'Сре', thu:'Чет', fri:'Пет'};
 
@@ -2932,13 +2932,13 @@
       dateInput.value = tomorrow.toISOString().slice(0,10);
     }
 
-    // 15-минутни термини, целото работно време (09:00–20:45) — iPhone-стил picker
+    // секоj можен минут, целото работно време (09:00–20:59) — iPhone-стил picker
     const timeContainer = document.getElementById('profAvailTime');
     if(!timeContainer.dataset.filled){
       const opts = [];
       for(let h=9; h<=20; h++){
-        for(const m of ['00','15','30','45']){
-          opts.push(`${String(h).padStart(2,'0')}:${m}`);
+        for(let m=0; m<60; m++){
+          opts.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
         }
       }
       window._profAvailWheel = createWheelPicker(timeContainer, opts, '14:30');
