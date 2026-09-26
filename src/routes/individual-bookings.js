@@ -33,7 +33,7 @@ const TIME_15MIN_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 // Само professor додава сопствени термини, само за инструмент(и) на кои е доделен.
 router.post('/availability', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само професор може да додава термини.' });
-  const { instrument, slot_date, start_time, location, repeat_weekly } = req.body;
+  const { instrument, slot_date, start_time, location, repeat_weekly, duration_minutes } = req.body;
   if (!instrument || !slot_date || !start_time) {
     return res.status(400).json({ error: 'instrument, slot_date и start_time се задолжителни.' });
   }
@@ -53,7 +53,8 @@ router.post('/availability', requireAuth, async (req, res) => {
 
   const toMinutes = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
   const newStart = toMinutes(start_time);
-  const newEnd = newStart + 45;
+  const durMin = [30, 45].includes(Number(duration_minutes)) ? Number(duration_minutes) : 45;
+  const newEnd = newStart + durMin;
 
   // Ако "повторувaj секоja недела" е избрано — генерирaj го истиот термин
   // (ист ден во неделата, исто време) за наредните 12 недели одеднaш.
@@ -70,16 +71,16 @@ router.post('/availability', requireAuth, async (req, res) => {
     const skippedDates = [];
     for (const date of datesToCreate) {
       const [bookedSlots] = await pool.query(
-        'SELECT start_time FROM individual_availability WHERE professor_id = ? AND slot_date = ? AND is_booked = 1',
+        'SELECT start_time, duration_minutes FROM individual_availability WHERE professor_id = ? AND slot_date = ? AND is_booked = 1',
         [req.user.id, date]
       );
-      const overlapsBooked = bookedSlots.some(s => { const st = toMinutes(s.start_time); return st < newEnd && (st + 45) > newStart; });
+      const overlapsBooked = bookedSlots.some(s => { const st = toMinutes(s.start_time); return st < newEnd && (st + (s.duration_minutes || 45)) > newStart; });
       if (overlapsBooked) { skippedDates.push(date); continue; }
 
       try {
         const [result] = await pool.query(
-          'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location) VALUES (?, ?, ?, ?, ?)',
-          [req.user.id, instrument, date, start_time, location || null]
+          'INSERT INTO individual_availability (professor_id, instrument, slot_date, start_time, location, duration_minutes) VALUES (?, ?, ?, ?, ?, ?)',
+          [req.user.id, instrument, date, start_time, location || null, durMin]
         );
         createdIds.push(result.insertId);
       } catch (e) {
@@ -103,7 +104,7 @@ router.get('/availability', requireAuth, async (req, res) => {
   const { professor_id, instrument } = req.query;
   if (!professor_id || !instrument) return res.status(400).json({ error: 'professor_id и instrument се задолжителни.' });
   const [rows] = await pool.query(
-    `SELECT id, slot_date, start_time, location FROM individual_availability
+    `SELECT id, slot_date, start_time, location, duration_minutes FROM individual_availability
      WHERE professor_id = ? AND instrument = ? AND is_booked = 0 AND slot_date >= CURDATE()
      ORDER BY slot_date ASC, start_time ASC`,
     [professor_id, instrument]
