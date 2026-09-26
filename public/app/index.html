@@ -939,9 +939,23 @@
               <option value="taftalidze" data-i18n="loc_taftalidze">Тафталиџе</option>
             </select>
           </div>
+          <div style="min-width:120px;">
+            <label>Времетраење</label>
+            <select id="profAvailDuration" class="login-select" style="margin-bottom:0;">
+              <option value="30">30 мин</option>
+              <option value="45" selected>45 мин</option>
+            </select>
+          </div>
           <button class="send-btn" id="profAvailAddBtn" style="width:auto; padding:0 20px;" data-i18n="add_slot_btn">Додади термин</button>
         </div>
         <div id="profAvailList"></div>
+      </div>
+
+      <div class="card" id="attendanceCard" style="margin-bottom:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:6px;">Евиденција на одржани часови</h3>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">Ова е важно — финансискиот тим го користи ова за да знае колку да ти исплати. Означи го секоj час штом ќе се одржи (или не).</p>
+        <div id="attendanceGroupsList"></div>
+        <div id="attendanceIndivList" style="margin-top:14px;"></div>
       </div>
 
       <div class="card" id="indivBookingsCard" style="margin-bottom:24px; display:none;">
@@ -1226,6 +1240,23 @@
           <table class="fin-table">
             <thead><tr><th>Бр. фактура</th><th>Ученик</th><th>Пакет</th><th>Износ</th><th>Датум</th><th></th></tr></thead>
             <tbody id="invoiceListTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ЕВИДЕНЦИЈА НА ОДРЖАНИ ЧАСОВИ -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Евиденција на одржани часови</h3></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Проверка колку часови одржал секоj professor — за пресметка на исплати.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <select id="attendanceProfFilter" class="login-select" style="margin-bottom:0; flex:1; min-width:160px;"><option value="">Сите професори</option></select>
+          <input type="date" id="attendanceFrom" class="login-input" style="margin-bottom:0; width:auto;">
+          <input type="date" id="attendanceTo" class="login-input" style="margin-bottom:0; width:auto;">
+          <button class="send-btn" id="attendanceSearchBtn" style="width:auto; padding:0 18px;">Пребарaj</button>
+        </div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Датум</th><th>Professor</th><th>Час</th><th>Одржан</th><th>Присуство</th></tr></thead>
+            <tbody id="attendanceListTbody"></tbody>
           </table>
         </div>
       </div>
@@ -2951,12 +2982,13 @@
     const slot_date = document.getElementById('profAvailDate').value;
     const start_time = window._profAvailWheel.getValue();
     const location = document.getElementById('profAvailLocation').value;
+    const duration_minutes = Number(document.getElementById('profAvailDuration').value);
     if(!instrument){ alert('Немаш доделен инструмент — контактирај admin.'); return; }
     if(!slot_date){ alert('Избери датум.'); return; }
     try{
       await authApiCall('/individual-bookings/availability', {
         method:'POST',
-        body: JSON.stringify({ instrument, slot_date, start_time, location })
+        body: JSON.stringify({ instrument, slot_date, start_time, location, duration_minutes })
       });
       renderProfAvailability();
     } catch(err){ alert(err.message || 'Грешка.'); }
@@ -3054,6 +3086,14 @@
           <option value="2" selected>2 термини неделно</option>
         </select>
       </div>
+      <div style="height:8px;"></div>
+      <div class="form-row">
+        <label style="font-size:11px; color:var(--mist); display:block; margin-bottom:4px;">Времетраење на час</label>
+        <select id="newGroupDuration" class="login-select" style="margin-bottom:0;">
+          <option value="30">30 минути</option>
+          <option value="45" selected>45 минути</option>
+        </select>
+      </div>
       <button class="send-btn" id="newGroupBtn" style="margin-top:6px;">Создади група</button>
     `;
     wrap.appendChild(createCard);
@@ -3075,8 +3115,9 @@
       const location = document.getElementById('newGroupLocation').value;
       const capacity = Number(document.getElementById('newGroupCapacity').value);
       const sessions_per_week = Number(document.getElementById('newGroupSessionsPerWeek').value);
+      const duration_minutes = Number(document.getElementById('newGroupDuration').value);
       try{
-        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level, instrument, location, sessions_per_week }) });
+        await authApiCall('/groups', { method:'POST', body: JSON.stringify({ name, capacity, age_range, level, instrument, location, sessions_per_week, duration_minutes }) });
         await loadGroups();
         renderSchedulePage();
       } catch(err){ alert('Грешка: ' + err.message); }
@@ -3408,10 +3449,114 @@
   let monthCursor = new Date(today.getFullYear(), today.getMonth(), 1);
   let yearCursor = today.getFullYear();
 
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  function renderAttendanceCard(){
+    const card = document.getElementById('attendanceCard');
+    if(session.role !== 'professor'){ card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const myGroups = groups.filter(g=>g.professor_id===session.realUserId);
+    const groupsList = document.getElementById('attendanceGroupsList');
+    groupsList.innerHTML = myGroups.length === 0 ? '<div class="empty-state">Немаш групи сè уште.</div>' : myGroups.map(g => `
+      <div class="sent-item" style="flex-wrap:wrap;">
+        <div class="sent-icon">${instrumentInfo(g.instrument).icon}</div>
+        <div class="sent-meta"><div class="t">${escapeHtml(g.name)}</div><div class="sub">${g.members ? g.members.length : 0} деца</div></div>
+        <button class="mc-btn attendance-open-btn" style="flex:none;" data-group-id="${g.id}">Одбележи час</button>
+      </div>
+      <div class="attendance-panel" data-for-group="${g.id}" style="display:none; margin:8px 0 16px; padding:12px; background:var(--surface-2); border-radius:10px;"></div>
+    `).join('');
+
+    groupsList.querySelectorAll('.attendance-open-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>openAttendancePanel(btn.dataset.groupId));
+    });
+
+    // Индивидуални часови — листа со копче „Одбележи" по секоj
+    const indivList = document.getElementById('attendanceIndivList');
+    const myIndiv = (individualBookings || []).filter(b => new Date(b.booking_date) <= new Date());
+    if(myIndiv.length > 0){
+      indivList.innerHTML = '<div style="font-size:12px; color:var(--mist); margin-bottom:8px; font-weight:600;">ИНДИВИДУАЛНИ ЧАСОВИ</div>' + myIndiv.map(b => `
+        <div class="sent-item">
+          <div class="sent-icon">🎵</div>
+          <div class="sent-meta"><div class="t">${escapeHtml(b.student_name || '')}</div><div class="sub">${fmtDate(b.booking_date)} · ${String(b.start_time).slice(0,5)}</div></div>
+          <button class="mc-btn" style="flex:none;" data-indiv-attendance="${b.id}" data-date="${b.booking_date}">Одбележи</button>
+        </div>
+      `).join('');
+      indivList.querySelectorAll('button[data-indiv-attendance]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const held = confirm('Дали часот беше одржан? (Во ред = Да, Откажи = Не)');
+          try{
+            await authApiCall('/attendance/log', {
+              method:'POST',
+              body: JSON.stringify({ individual_booking_id: btn.dataset.indivAttendance, lesson_date: btn.dataset.date, was_held: held })
+            });
+            alert('Зачувано!');
+          } catch(err){ alert(err.message || 'Грешка.'); }
+        });
+      });
+    } else {
+      indivList.innerHTML = '';
+    }
+  }
+
+  async function openAttendancePanel(groupId){
+    const panel = document.querySelector(`.attendance-panel[data-for-group="${groupId}"]`);
+    const isOpen = panel.style.display === 'block';
+    document.querySelectorAll('.attendance-panel').forEach(p=>p.style.display='none');
+    if(isOpen) return; // toggle затвори
+    panel.style.display = 'block';
+    panel.innerHTML = '<div style="font-size:12.5px; color:var(--mist);">Се вчитува...</div>';
+    try{
+      const date = todayISO();
+      const data = await authApiCall(`/attendance/group/${groupId}/roster?lesson_date=${date}`);
+      const existing = data.existing;
+      panel.innerHTML = `
+        <div class="form-row"><label style="font-size:11px;">Датум</label><input type="date" class="login-input att-date" value="${date}" style="margin-bottom:8px;"></div>
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; font-size:13px;">
+          <input type="checkbox" class="att-held" ${!existing || existing.was_held ? 'checked' : ''}> Часот беше одржан
+        </label>
+        <div class="att-children" style="margin-bottom:10px;">
+          ${data.members.map(m => {
+            const prev = existing && existing.attendance ? existing.attendance.find(a=>a.child_id===m.id) : null;
+            const checked = prev ? prev.attended : true;
+            return `<label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" class="att-child-check" data-child-id="${m.id}" ${checked?'checked':''}> ${escapeHtml(m.full_name)}
+            </label>`;
+          }).join('')}
+        </div>
+        <button class="send-btn att-save-btn" style="padding:9px;" data-group-id="${groupId}">Зачувaj евиденција</button>
+        <div class="att-msg" style="display:none; margin-top:8px; font-size:12px;"></div>
+      `;
+      panel.querySelector('.att-save-btn').addEventListener('click', async ()=>{
+        const btn = panel.querySelector('.att-save-btn');
+        const lesson_date = panel.querySelector('.att-date').value;
+        const was_held = panel.querySelector('.att-held').checked;
+        const attendance = Array.from(panel.querySelectorAll('.att-child-check')).map(cb=>({ child_id: Number(cb.dataset.childId), attended: cb.checked }));
+        btn.disabled = true; btn.textContent = 'Се зачувува...';
+        try{
+          await authApiCall('/attendance/log', {
+            method:'POST',
+            body: JSON.stringify({ group_id: groupId, lesson_date, was_held, attendance })
+          });
+          const msg = panel.querySelector('.att-msg');
+          msg.style.color = 'var(--leaf)'; msg.textContent = '✓ Евиденцијата е зачувана.'; msg.style.display = 'block';
+        } catch(err){
+          const msg = panel.querySelector('.att-msg');
+          msg.style.color = 'var(--wine)'; msg.textContent = err.message || 'Грешка.'; msg.style.display = 'block';
+        } finally {
+          btn.disabled = false; btn.textContent = 'Зачувaj евиденција';
+        }
+      });
+    } catch(err){
+      panel.innerHTML = `<div style="color:var(--wine); font-size:12.5px;">Грешка: ${err.message}</div>`;
+    }
+  }
+
   function renderSchedulePage(){
     renderGroupsOverview();
     renderProfessorIndivBookings();
     renderProfAvailability();
+    renderAttendanceCard();
 
     document.querySelectorAll('.view-toggle-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===calendarView));
     document.getElementById('weekViewWrap').style.display = calendarView==='week' ? 'block' : 'none';
@@ -3957,10 +4102,51 @@
   }
   document.getElementById('invoiceSearchBtn').addEventListener('click', loadInvoices);
 
+  async function loadAttendanceRecords(){
+    const tbody = document.getElementById('attendanceListTbody');
+    tbody.innerHTML = '<tr><td colspan="5">Се вчитува...</td></tr>';
+    const profFilter = document.getElementById('attendanceProfFilter');
+    const params = new URLSearchParams();
+    const from = document.getElementById('attendanceFrom').value;
+    const to = document.getElementById('attendanceTo').value;
+    const profId = profFilter.value;
+    if(from) params.set('from', from);
+    if(to) params.set('to', to);
+    if(profId) params.set('professor_id', profId);
+    try{
+      const rows = await authApiCall('/attendance/all?' + params.toString());
+      // пополни го филтерот со професорите што реално се појавуваат во записите
+      if(profFilter.children.length <= 1){
+        const uniqueProfs = new Map();
+        rows.forEach(r => uniqueProfs.set(r.professor_id, r.professor_name));
+        profFilter.innerHTML = '<option value="">Сите професори</option>' +
+          Array.from(uniqueProfs.entries()).map(([id, name]) => `<option value="${id}">${escapeHtml(name)}</option>`).join('');
+      }
+      tbody.innerHTML = rows.length === 0 ? '<tr><td colspan="5">Нема евиденции.</td></tr>' : rows.map(r => {
+        const lessonLabel = r.group_id ? escapeHtml(r.group_name) : `Индивидуален — ${escapeHtml(r.indiv_student_name||'')}`;
+        const attSummary = r.group_id && r.attendance
+          ? r.attendance.map(a=>`${a.attended?'✅':'❌'} ${escapeHtml(a.child_name)}`).join(', ')
+          : '—';
+        return `<tr>
+          <td>${fmtDate(r.lesson_date)}</td>
+          <td>${escapeHtml(r.professor_name)}</td>
+          <td>${lessonLabel}</td>
+          <td>${r.was_held ? '✅ Да' : '❌ Не'}</td>
+          <td style="font-size:12px;">${attSummary}</td>
+        </tr>`;
+      }).join('');
+    } catch(err){
+      tbody.innerHTML = `<tr><td colspan="5">Грешка: ${err.message}</td></tr>`;
+    }
+  }
+  document.getElementById('attendanceSearchBtn').addEventListener('click', loadAttendanceRecords);
+
+
   async function renderFinancePage(){
     const month = currentFinanceMonth();
     document.getElementById('financeMonth').onchange = renderFinancePage;
     loadInvoices();
+    loadAttendanceRecords();
 
     // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
     const accessCard = document.getElementById('financeAccessCard');
