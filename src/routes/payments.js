@@ -538,6 +538,7 @@ async function completeInstallmentPayment(intent, payload, cpayRef) {
 
 async function completeIndividualBooking(intent, payload, cpayRef) {
   const { child_id, professor_id, instrument, booking_date, start_time, availability_id } = payload;
+  let bookedSlotInfo = null;
 
   if (availability_id) {
     const [updateResult] = await pool.query(
@@ -552,22 +553,23 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
       console.error(`Колизија: availability_id ${availability_id} веќе е зафатена, но плаќање помина (intent ${intent.id}).`);
     }
 
-    // Секој час трае 45 мин — ако professor-от одделно понудил и други
-    // 15-минутни термини што ПРЕКЛОПУВААТ со овoj веќе резервиран час
-    // (пр. резервирано 19:00→19:45, а понудено е и 19:15), тие автоматски
-    // се означуваат како зафатени исто, за да веќе не се нудат на никого.
-    const [[bookedDate]] = await pool.query('SELECT slot_date FROM individual_availability WHERE id = ?', [availability_id]);
-    if (bookedDate) {
+    // Ако professor-от одделно понудил и други термини што ПРЕКЛОПУВААТ со
+    // овoj веќе резервиран час (според вистинското времетраење — 30 или 45
+    // мин), тие автоматски се означуваат како зафатени исто, за да веќе не
+    // се нудат на никого.
+    const [[fetchedSlotInfo]] = await pool.query('SELECT slot_date, duration_minutes FROM individual_availability WHERE id = ?', [availability_id]);
+    bookedSlotInfo = fetchedSlotInfo;
+    if (bookedSlotInfo) {
       const [sameDaySlots] = await pool.query(
-        `SELECT id, start_time FROM individual_availability
+        `SELECT id, start_time, duration_minutes FROM individual_availability
          WHERE professor_id = ? AND slot_date = ? AND is_booked = 0 AND id != ?`,
-        [professor_id, bookedDate.slot_date, availability_id]
+        [professor_id, bookedSlotInfo.slot_date, availability_id]
       );
       const toMinutes = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
       const bookedStart = toMinutes(start_time);
-      const bookedEnd = bookedStart + 45;
+      const bookedEnd = bookedStart + (bookedSlotInfo.duration_minutes || 45);
       const overlappingIds = sameDaySlots
-        .filter(s => { const st = toMinutes(s.start_time); return st < bookedEnd && (st + 45) > bookedStart; })
+        .filter(s => { const st = toMinutes(s.start_time); return st < bookedEnd && (st + (s.duration_minutes || 45)) > bookedStart; })
         .map(s => s.id);
       if (overlappingIds.length > 0) {
         await pool.query('UPDATE individual_availability SET is_booked = 1 WHERE id IN (?)', [overlappingIds]);
@@ -576,9 +578,9 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
   }
 
   await pool.query(
-    `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [child_id, professor_id, instrument, booking_date, start_time, intent.amount, cpayRef]
+    `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref, duration_minutes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [child_id, professor_id, instrument, booking_date, start_time, intent.amount, cpayRef, bookedSlotInfo ? bookedSlotInfo.duration_minutes : 45]
   );
   const [[userRow]] = await pool.query('SELECT email FROM users WHERE id = ?', [intent.user_id]);
   const [[prof]] = await pool.query('SELECT full_name FROM users WHERE id = ?', [professor_id]);
