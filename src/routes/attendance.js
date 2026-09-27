@@ -79,15 +79,17 @@ router.get('/my-logs', requireAuth, requireRole('professor'), async (req, res) =
   query += ' ORDER BY l.lesson_date DESC';
   const [rows] = await pool.query(query, params);
 
-  for (const row of rows) {
-    if (row.group_id) {
-      const [att] = await pool.query(
-        `SELECT la.child_id, la.attended, c.full_name AS child_name
-         FROM lesson_attendance la JOIN children c ON c.id = la.child_id
-         WHERE la.lesson_log_id = ?`, [row.id]
-      );
-      row.attendance = att;
-    }
+  // еден batch-барање за сите присуства одеднaш (наместо по-ред барање)
+  const groupLogIds = rows.filter(r => r.group_id).map(r => r.id);
+  if (groupLogIds.length > 0) {
+    const [allAtt] = await pool.query(
+      `SELECT la.lesson_log_id, la.child_id, la.attended, c.full_name AS child_name
+       FROM lesson_attendance la JOIN children c ON c.id = la.child_id
+       WHERE la.lesson_log_id IN (?)`, [groupLogIds]
+    );
+    const attByLog = {};
+    allAtt.forEach(a => { (attByLog[a.lesson_log_id] = attByLog[a.lesson_log_id] || []).push(a); });
+    rows.forEach(r => { if (r.group_id) r.attendance = attByLog[r.id] || []; });
   }
   res.json(rows);
 });
@@ -134,15 +136,17 @@ router.get('/all', requireAuth, requireFinanceOrAdmin, async (req, res) => {
   query += ' ORDER BY l.lesson_date DESC';
   const [rows] = await pool.query(query, params);
 
-  for (const row of rows) {
-    if (row.group_id) {
-      const [att] = await pool.query(
-        `SELECT la.child_id, la.attended, c.full_name AS child_name
-         FROM lesson_attendance la JOIN children c ON c.id = la.child_id
-         WHERE la.lesson_log_id = ?`, [row.id]
-      );
-      row.attendance = att;
-    }
+  // еден batch-барање за сите присуства одеднaш (наместо по-ред барање)
+  const groupLogIds = rows.filter(r => r.group_id).map(r => r.id);
+  if (groupLogIds.length > 0) {
+    const [allAtt] = await pool.query(
+      `SELECT la.lesson_log_id, la.child_id, la.attended, c.full_name AS child_name
+       FROM lesson_attendance la JOIN children c ON c.id = la.child_id
+       WHERE la.lesson_log_id IN (?)`, [groupLogIds]
+    );
+    const attByLog = {};
+    allAtt.forEach(a => { (attByLog[a.lesson_log_id] = attByLog[a.lesson_log_id] || []).push(a); });
+    rows.forEach(r => { if (r.group_id) r.attendance = attByLog[r.id] || []; });
   }
   res.json(rows);
 });
