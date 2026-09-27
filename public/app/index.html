@@ -235,20 +235,20 @@
   .mini-cell.blank{background:transparent;}
   .year-legend{display:flex; gap:16px; margin-top:16px; font-size:11.5px; color:var(--mist); align-items:center;}
   .year-legend .lg-swatch{width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle;}
-  .cal-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fff; width:100%; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;}
-  .cal-grid{display:grid; grid-template-columns:70px repeat(5, 1fr); min-width:680px;}
-  .cal-cell{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:8px 6px; font-size:12px; min-height:56px;}
-  .cal-head{background:var(--surface-2); font-weight:600; text-align:center; padding:10px 6px; font-size:12.5px; position:sticky; top:0;}
-  .cal-time{background:var(--surface-2); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--mist); display:flex; align-items:flex-start; justify-content:center; padding-top:8px;}
-  .cal-slot{cursor:pointer; transition:.15s; display:flex; flex-direction:column; gap:3px;}
-  .cal-slot:hover{background:var(--lilac-pale);}
-  .cal-slot.booked{background:var(--sand-pale);}
-  .cal-slot.selected{background:var(--lilac-deep) !important;}
-  .cal-slot.selected .slot-group, .cal-slot.selected .slot-note-flag, .cal-slot.selected .slot-count{color:#fff;}
-  .slot-group{font-weight:600; font-size:11.5px; color:var(--sand-deep);}
-  .slot-count{font-size:10px; color:var(--mist);}
-  .slot-note-flag{font-size:10px; color:var(--lilac-deep);}
-  .slot-empty{color:var(--mist); font-size:11px;}
+  .cal-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:#fff; width:100%; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;}
+  .cal-grid{display:grid; grid-template-columns:52px repeat(5, 1fr); min-width:520px;}
+  .cal-cell{border-bottom:1px solid var(--line); border-right:1px solid var(--line); padding:2px; font-size:11px; min-height:30px; position:relative; display:flex; flex-direction:column; gap:2px;}
+  .cal-head{background:var(--surface-2); font-weight:600; text-align:center; padding:7px 4px; font-size:11.5px; position:sticky; top:0; z-index:2;}
+  .cal-time{background:var(--surface-2); font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--mist); display:flex; align-items:flex-start; justify-content:center; padding-top:5px;}
+  .cal-event{cursor:pointer; transition:.12s; display:flex; flex-direction:column; background:var(--lilac-pale); border-left:3px solid var(--lilac-deep); border-radius:5px; padding:3px 5px; line-height:1.25;}
+  .cal-event:hover{background:var(--lilac-deep); }
+  .cal-event:hover .cal-event-title, .cal-event:hover .cal-event-time, .cal-event:hover .cal-event-sub{color:#fff;}
+  .cal-event.selected{background:var(--lilac-deep) !important; box-shadow:0 0 0 2px var(--lilac-deep);}
+  .cal-event.selected .cal-event-title, .cal-event.selected .cal-event-time, .cal-event.selected .cal-event-sub{color:#fff;}
+  .cal-event-time{font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--lilac-deep); font-weight:600;}
+  .cal-event-title{font-weight:600; font-size:10.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cal-event-sub{font-size:9px; color:var(--mist);}
+  .slot-empty{color:var(--line); font-size:10px; text-align:center; margin:auto;}
   .sched-panel h3{font-size:15px; margin-bottom:4px;}
   .sched-panel .slot-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--mist); margin-bottom:16px; display:block;}
   .panel-members{margin:12px 0; padding:12px; background:var(--surface-2); border-radius:8px;}
@@ -374,7 +374,7 @@
   @media(max-width:960px){
     .index-layout, .sched-wrap{grid-template-columns:1fr;}
     .slot-pick-grid, .groups-overview{grid-template-columns:1fr;}
-    .cal-grid{min-width:680px;}
+    .cal-grid{min-width:480px;}
     .billing-row{grid-template-columns:1fr; gap:4px;}
     .year-grid{grid-template-columns:1fr;}
   }
@@ -398,11 +398,12 @@
     .page-head h2{font-size:21px;}
 
     /* Распоред — потесен и почитливо скролувачки календар на телефон */
-    .cal-grid{grid-template-columns:52px repeat(5, 1fr); min-width:460px;}
-    .cal-cell{padding:6px 4px; font-size:10.5px; min-height:48px;}
-    .cal-head{padding:8px 4px; font-size:11px;}
-    .cal-time{font-size:9.5px;}
-    .slot-group{font-size:10px;}
+    .cal-grid{grid-template-columns:44px repeat(5, 1fr); min-width:380px;}
+    .cal-cell{padding:2px; font-size:9.5px; min-height:26px;}
+    .cal-head{padding:6px 3px; font-size:10px;}
+    .cal-time{font-size:8.5px;}
+    .cal-event{padding:2px 4px;}
+    .cal-event-title{font-size:9.5px;}
     .slot-count{font-size:9px;}
     .view-toggle-row{gap:6px;}
     .view-toggle-btn{padding:7px 11px; font-size:12.5px;}
@@ -961,6 +962,22 @@
       <div class="card" id="indivBookingsCard" style="margin-bottom:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:14px;" data-i18n="scheduled_indiv_lessons">Закажани индивидуални часови</h3>
         <div id="indivBookingsList"></div>
+        <button class="add-student-toggle" id="manualIndivToggle" style="background:none; border:1px dashed var(--line); color:var(--lilac-deep); font-size:12px; font-weight:600; padding:7px 12px; border-radius:8px; cursor:pointer; width:100%; margin-top:10px;">+ Додади ученик рачно</button>
+        <div id="manualIndivBox" style="display:none; margin-top:12px; padding:12px; background:var(--surface-2); border-radius:10px;">
+          <input type="text" id="manualIndivSearch" class="login-input" placeholder="Барaj дете по име..." style="margin-bottom:8px;">
+          <div id="manualIndivResults" style="max-height:140px; overflow-y:auto; margin-bottom:8px;"></div>
+          <input type="hidden" id="manualIndivChildId">
+          <div id="manualIndivSelected" style="display:none; font-size:12.5px; margin-bottom:8px; padding:8px; background:var(--surface); border-radius:6px;"></div>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input type="date" id="manualIndivDate" class="login-input" style="margin-bottom:0; flex:1;">
+            <input type="time" id="manualIndivTime" class="login-input" style="margin-bottom:0; flex:1;">
+          </div>
+          <select id="manualIndivDuration" class="login-select" style="margin-bottom:8px;">
+            <option value="30">30 минути</option>
+            <option value="45" selected>45 минути</option>
+          </select>
+          <button class="send-btn" id="manualIndivSaveBtn" style="padding:9px;">Зачувaj</button>
+        </div>
       </div>
 
       <div class="view-toggle-row">
@@ -1163,14 +1180,34 @@
             <label data-i18n="label_amount">Износ (ден.)</label>
             <input type="number" id="financeSalaryAmount" class="login-input" style="margin-bottom:0;">
           </div>
+          <div style="width:140px;">
+            <label>Данок (ден.)</label>
+            <input type="number" id="financeSalaryTax" class="login-input" style="margin-bottom:0;" value="0">
+          </div>
           <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;" data-i18n="save_btn">Зачувaj</button>
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th data-i18n="th_amount">Износ</th><th data-i18n="th_note">Белешка</th><th></th></tr></thead>
+            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th>Бруто</th><th>Данок</th><th>Нето (за исплата)</th><th data-i18n="th_note">Белешка</th><th></th></tr></thead>
             <tbody id="financeSalaryTbody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- ДЕЦА ПО ПРОФЕСОР -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Деца по professor</h3></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">За секоj professor — список на деца и дали плаќаат, за да знaeш точно колку да му исплатиш.</p>
+        <select id="profStudentsSelect" class="login-select" style="margin-bottom:14px;"></select>
+        <div id="profStudentsResult"></div>
+      </div>
+
+      <!-- АРХИВА НА ОТПИСИ (истата видлива и од Финансии) -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Архива на отпишани ученици</h3></div>
+        <table class="fin-table"><thead><tr><th>Дете</th><th>Родител</th><th>Professor</th><th>Причина</th><th>Датум</th></tr></thead>
+          <tbody id="financeWithdrawnList"></tbody>
+        </table>
       </div>
 
       <!-- ТРОШОЦИ И МАРКЕТИНГ -->
@@ -1663,6 +1700,7 @@
 
   const days = ['Пон','Вто','Сре','Чет','Пет']; // саботите се неработни, нема термини таму
   const hours = (()=>{ const arr=[]; for(let h=9; h<=20; h++){ for(let m=0; m<60; m++){ arr.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); } } return arr; })();
+  const calendarHours = (()=>{ const arr=[]; for(let h=9; h<=20; h++){ arr.push(`${String(h).padStart(2,'0')}:00`); } return arr; })(); // календарскиот приказ останува чист, по цел час (не по секоj минут — тоa е само за picker-от)
   const MK_TO_EN_DAY = {'Пон':'mon','Вто':'tue','Сре':'wed','Чет':'thu','Пет':'fri'};
   const EN_TO_MK_DAY = {mon:'Пон', tue:'Вто', wed:'Сре', thu:'Чет', fri:'Пет'};
 
@@ -2263,6 +2301,14 @@
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('spinning'); btn.disabled = true;
     try{
+      if(!session.restrictedChildId){
+        try{
+          const freshUser = await authApiCall('/auth/me');
+          session.financeAccess = !!freshUser.finance_access;
+          saveSessionToStorage();
+          buildNav();
+        } catch(e){}
+      }
       if(session.role==='admin'){
         await renderAdminPage();
       } else {
@@ -2914,10 +2960,63 @@
     if(session.role !== 'professor') return;
     const card = document.getElementById('indivBookingsCard');
     const list = document.getElementById('indivBookingsList');
-    const upcoming = individualBookings.filter(b=>b.status!=='cancelled');
-    if(upcoming.length===0){ card.style.display='none'; return; }
     card.style.display = 'block';
-    list.innerHTML = upcoming.map(b=>indivBookingRow(b, b.student_name)).join('');
+    const upcoming = individualBookings.filter(b=>b.status!=='cancelled');
+    list.innerHTML = upcoming.length === 0 ? '<div class="empty-state">Нема закажани часови сè уште.</div>' : upcoming.map(b=>indivBookingRow(b, b.student_name)).join('');
+
+    if(!card.dataset.manualWired){
+      card.dataset.manualWired = '1';
+      const toggleBtn = document.getElementById('manualIndivToggle');
+      const box = document.getElementById('manualIndivBox');
+      toggleBtn.addEventListener('click', ()=>{ box.style.display = box.style.display==='none' ? 'block' : 'none'; });
+
+      const searchInput = document.getElementById('manualIndivSearch');
+      let searchTimer;
+      searchInput.addEventListener('input', ()=>{
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(async ()=>{
+          const q = searchInput.value.trim();
+          const resultsBox = document.getElementById('manualIndivResults');
+          if(q.length < 2){ resultsBox.innerHTML=''; return; }
+          try{
+            const results = await authApiCall('/groups/search-students?q=' + encodeURIComponent(q));
+            resultsBox.innerHTML = results.map(c=>`<div class="search-result-item" data-child-id="${c.id}" data-child-name="${escapeHtml(c.full_name)}" style="padding:8px; cursor:pointer; border-radius:6px;">${escapeHtml(c.full_name)}</div>`).join('') || '<div style="font-size:12px; color:var(--mist); padding:6px;">Нема резултати.</div>';
+            resultsBox.querySelectorAll('.search-result-item').forEach(item=>{
+              item.addEventListener('click', ()=>{
+                document.getElementById('manualIndivChildId').value = item.dataset.childId;
+                const sel = document.getElementById('manualIndivSelected');
+                sel.style.display = 'block'; sel.textContent = '✓ ' + item.dataset.childName;
+                resultsBox.innerHTML=''; searchInput.value='';
+              });
+            });
+          } catch(e){}
+        }, 300);
+      });
+
+      document.getElementById('manualIndivSaveBtn').addEventListener('click', async ()=>{
+        const child_id = document.getElementById('manualIndivChildId').value;
+        const booking_date = document.getElementById('manualIndivDate').value;
+        const start_time = document.getElementById('manualIndivTime').value;
+        const duration_minutes = Number(document.getElementById('manualIndivDuration').value);
+        if(!child_id){ alert('Избери дете.'); return; }
+        if(!booking_date || !start_time){ alert('Внеси датум и време.'); return; }
+        const btn = document.getElementById('manualIndivSaveBtn');
+        btn.disabled = true; btn.textContent = 'Се зачувува...';
+        try{
+          await authApiCall('/individual-bookings/manual', {
+            method:'POST',
+            body: JSON.stringify({ child_id, instrument: session.instrument, booking_date, start_time, duration_minutes })
+          });
+          await loadIndividualBookings();
+          renderProfessorIndivBookings();
+          document.getElementById('manualIndivBox').style.display = 'none';
+          document.getElementById('manualIndivSelected').style.display = 'none';
+          document.getElementById('manualIndivDate').value = '';
+          document.getElementById('manualIndivTime').value = '';
+        } catch(err){ alert(err.message || 'Грешка.'); }
+        finally { btn.disabled = false; btn.textContent = 'Зачувaj'; }
+      });
+    }
   }
 
   async function renderProfAvailability(){
@@ -3181,8 +3280,8 @@
             <div class="wheel-picker single-time" style="margin-bottom:0; flex:1;"></div>
           </div>
           <select class="login-select single-location" style="margin-bottom:8px;">
-            <option value="aerodrom">📍 Аеродром</option>
-            <option value="taftalidze">📍 Тафталиџе</option>
+            <option value="aerodrom" ${g.location==='aerodrom'?'selected':''}>📍 Аеродром</option>
+            <option value="taftalidze" ${g.location==='taftalidze'?'selected':''}>📍 Тафталиџе</option>
           </select>
           <button class="send-btn single-save-btn" data-group="${g.id}" style="padding:9px;">Додели го терминот</button>
           <div class="single-error" style="display:none; color:var(--wine); font-size:11.5px; margin-top:6px;"></div>
@@ -3199,8 +3298,8 @@
             <div class="wheel-picker pair-time2" style="margin-bottom:0; flex:1;"></div>
           </div>
           <select class="login-select pair-location" style="margin-bottom:8px;">
-            <option value="aerodrom">📍 Аеродром</option>
-            <option value="taftalidze">📍 Тафталиџе</option>
+            <option value="aerodrom" ${g.location==='aerodrom'?'selected':''}>📍 Аеродром</option>
+            <option value="taftalidze" ${g.location==='taftalidze'?'selected':''}>📍 Тафталиџе</option>
           </select>
           <button class="send-btn pair-save-btn" data-group="${g.id}" style="padding:9px;">Додели ги двата термина</button>
           <div class="pair-error" style="display:none; color:var(--wine); font-size:11.5px; margin-top:6px;"></div>
@@ -3598,29 +3697,42 @@
     grid.appendChild(makeCell('', 'cal-head'));
     days.forEach(d => grid.appendChild(makeCell(d, 'cal-head')));
 
-    hours.forEach(h=>{
+    calendarHours.forEach(h=>{
+      const hourNum = Number(h.split(':')[0]);
       grid.appendChild(makeCell(h, 'cal-time'));
       days.forEach(d=>{
-        const key = d+'-'+h;
-        const rawEntry = schedule[session.realUserId + '_' + key];
-        const entry = rawEntry || null;
+        // најди сите термини за овoj professor, овoj ден, чиj час (без разлика на минутите) паѓа во овoj ред
+        const entriesInHour = Object.entries(schedule).filter(([k, e]) => {
+          if(e.professorId !== session.realUserId || e.day !== d) return false;
+          return Number(String(e.time).split(':')[0]) === hourNum;
+        });
         const cell = document.createElement('div');
-        cell.className = 'cal-cell cal-slot' + (entry?' booked':'') + (selectedSlotKey===key?' selected':'');
-        if(entry){
-          const g = groups.find(x=>x.id===entry.groupId);
-          const memberCount = g.members ? g.members.length : 0;
-          cell.innerHTML = `<span class="slot-group">${g.name}</span><span class="slot-count">${memberCount}/${g.capacity} деца</span>${entry.note?'<span class="slot-note-flag">✎ белешка</span>':''}`;
+        cell.className = 'cal-cell';
+        if(entriesInHour.length === 0){
+          cell.innerHTML = `<span class="slot-empty">·</span>`;
         } else {
-          cell.innerHTML = `<span class="slot-empty">Слободно</span>`;
+          cell.innerHTML = entriesInHour.map(([k, entry])=>{
+            const key = d + '-' + entry.time;
+            const g = groups.find(x=>x.id===entry.groupId);
+            const memberCount = g && g.members ? g.members.length : 0;
+            const isSelected = selectedSlotKey === key;
+            return `<div class="cal-event${isSelected?' selected':''}" data-slot-key="${key}">
+              <span class="cal-event-time">${String(entry.time).slice(0,5)}</span>
+              <span class="cal-event-title">${g ? escapeHtml(g.name) : '—'}</span>
+              ${g ? `<span class="cal-event-sub">${memberCount}/${g.capacity}</span>` : ''}
+            </div>`;
+          }).join('');
         }
-        cell.addEventListener('click', ()=>{ selectedSlotKey = key; renderSchedulePage(); });
+        cell.querySelectorAll('.cal-event').forEach(el=>{
+          el.addEventListener('click', (ev)=>{ ev.stopPropagation(); selectedSlotKey = el.dataset.slotKey; renderSchedulePage(); });
+        });
         grid.appendChild(cell);
       });
     });
   }
 
   function lessonsOnWeekday(dayAbbr){
-    // сите термини (за овој професор) чиј ден-абревијатура одговара
+    // сите термини (за овоj professor) чиja ден-абревијатура одговара
     return Object.values(schedule)
       .filter(e => e.day === dayAbbr && e.professorId === session.realUserId)
       .map(e => ({key: e.day+'-'+e.time, hour: e.time, group: groups.find(g=>g.id===e.groupId)}));
@@ -4194,7 +4306,7 @@
 
     // --- плати и хонорари: пополни dropdown со професори ---
     try{
-      const profs = await authApiCall('/admin/professors');
+      const profs = await authApiCall('/finance/professors');
       const sel = document.getElementById('financeSalaryProf');
       sel.innerHTML = profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
 
@@ -4202,23 +4314,67 @@
       const salBody = document.getElementById('financeSalaryTbody');
       let salTotal = 0;
       salBody.innerHTML = salaries.length === 0
-        ? `<tr><td colspan="5" class="fin-table-empty">Сè уште нема внесени плати за овoj месец.</td></tr>`
-        : salaries.map(s => { salTotal += Number(s.amount);
+        ? `<tr><td colspan="7" class="fin-table-empty">Сè уште нема внесени плати за овoj месец.</td></tr>`
+        : salaries.map(s => { salTotal += Number(s.amount) - Number(s.tax_amount || 0);
           return `<tr>
             <td>${escapeHtml(s.professor_name)}</td>
             <td>${s.instrument ? instrumentLabel(s.instrument) : '—'}</td>
             <td class="num">${fmtMoney(s.amount)}</td>
+            <td class="num">${fmtMoney(s.tax_amount || 0)}</td>
+            <td class="num" style="font-weight:700;">${fmtMoney(Number(s.amount) - Number(s.tax_amount || 0))}</td>
             <td>${escapeHtml(s.notes || '—')}</td>
             <td><button class="del-btn" data-sal-id="${s.id}">Избриши</button></td>
           </tr>`;
         }).join('');
-      document.getElementById('financeSalaryTotal').textContent = salaries.length ? 'Вкупно: ' + fmtMoney(salTotal) : '';
+      document.getElementById('financeSalaryTotal').textContent = salaries.length ? 'Вкупно за исплата (нето): ' + fmtMoney(salTotal) : '';
       salBody.querySelectorAll('button[data-sal-id]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           await authApiCall('/finance/salaries/' + btn.dataset.salId, { method:'DELETE' });
           renderFinancePage();
         });
       });
+
+      // --- деца по professor ---
+      const profSelect = document.getElementById('profStudentsSelect');
+      if(profSelect.children.length === 0){
+        profSelect.innerHTML = '<option value="">Избери professor...</option>' + profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
+        profSelect.addEventListener('change', async ()=>{
+          const resultBox = document.getElementById('profStudentsResult');
+          if(!profSelect.value){ resultBox.innerHTML=''; return; }
+          resultBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+          try{
+            const data = await authApiCall('/finance/professor-students/' + profSelect.value);
+            let html = '';
+            if(data.group_students.length > 0){
+              html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:10px 0 6px;">ГРУПНИ ЧАСОВИ</div>';
+              html += '<table class="fin-table"><thead><tr><th>Дете</th><th>Група</th><th>Статус на плаќање</th></tr></thead><tbody>';
+              html += data.group_students.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${escapeHtml(s.group_name)}</td><td>${escapeHtml(s.payment_status)}</td></tr>`).join('');
+              html += '</tbody></table>';
+            }
+            if(data.individual_students.length > 0){
+              html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:14px 0 6px;">ИНДИВИДУАЛНИ ЧАСОВИ</div>';
+              html += '<table class="fin-table"><thead><tr><th>Дете</th><th>Инструмент</th><th>Последен час</th></tr></thead><tbody>';
+              html += data.individual_students.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${instrumentLabel(s.instrument)}</td><td>${fmtDate(s.last_lesson)}</td></tr>`).join('');
+              html += '</tbody></table>';
+            }
+            resultBox.innerHTML = html || '<div class="empty-state">Нема деца доделени кај овoj professor.</div>';
+          } catch(err){ resultBox.innerHTML = `<div class="empty-state">Грешка: ${err.message}</div>`; }
+        });
+      }
+    } catch(err){ console.error(err); }
+
+    // --- архива на отписи (истата видлива и од Финансии) ---
+    try{
+      const withdrawn = await authApiCall('/finance/withdrawn-students');
+      document.getElementById('financeWithdrawnList').innerHTML = withdrawn.length === 0
+        ? '<tr><td colspan="5" class="fin-table-empty">Нема отпишани ученици.</td></tr>'
+        : withdrawn.map(r => `<tr>
+            <td>${escapeHtml(r.student_name)}</td>
+            <td>${escapeHtml(r.parent_name)} (${escapeHtml(r.parent_email)})</td>
+            <td>${r.professor_name ? escapeHtml(r.professor_name) : '—'}</td>
+            <td>${r.reason ? escapeHtml(r.reason) : '—'}</td>
+            <td>${fmtDate(r.withdrawn_at)}</td>
+          </tr>`).join('');
     } catch(err){ console.error(err); }
 
     // --- трошоци и маркетинг ---
@@ -4288,13 +4444,15 @@
   document.getElementById('financeSalarySaveBtn').addEventListener('click', async ()=>{
     const professor_id = document.getElementById('financeSalaryProf').value;
     const amount = document.getElementById('financeSalaryAmount').value;
+    const tax_amount = document.getElementById('financeSalaryTax').value || 0;
     if(!professor_id || !amount) return;
     try{
       await authApiCall('/finance/salaries', {
         method:'POST',
-        body: JSON.stringify({ professor_id, month: currentFinanceMonth(), amount })
+        body: JSON.stringify({ professor_id, month: currentFinanceMonth(), amount, tax_amount })
       });
       document.getElementById('financeSalaryAmount').value = '';
+      document.getElementById('financeSalaryTax').value = '0';
       renderFinancePage();
     } catch(err){ alert(err.message || 'Грешка.'); }
   });
@@ -5017,7 +5175,11 @@
     if(!stored || !stored.token) return;
     session = stored;
     try{
-      await authApiCall('/auth/me'); // проверка дали токенот (или refresh) сè уште важи
+      const freshUser = await authApiCall('/auth/me'); // проверка дали токенот важи + освежи ги полињата (пр. finance_access, кои admin може да ги смени по последната најава)
+      session.financeAccess = !!freshUser.finance_access;
+      session.instrument = freshUser.instrument;
+      session.name = freshUser.full_name;
+      saveSessionToStorage();
       await startApp();
     } catch(err){
       session = null;
