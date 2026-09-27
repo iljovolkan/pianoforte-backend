@@ -51,16 +51,16 @@ router.get('/salaries', async (req, res) => {
 
 // POST /finance/salaries — внес/ажурирање на плата за професор за конкретен месец
 router.post('/salaries', async (req, res) => {
-  const { professor_id, month, amount, notes } = req.body;
+  const { professor_id, month, amount, tax_amount, notes } = req.body;
   if (!professor_id || !month || amount === undefined) {
     return res.status(400).json({ error: 'professor_id, month и amount се задолжителни.' });
   }
   const monthDate = month.length === 7 ? month + '-01' : month;
   await pool.query(
-    `INSERT INTO staff_salaries (professor_id, month, amount, notes, created_by)
-     VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE amount = VALUES(amount), notes = VALUES(notes)`,
-    [professor_id, monthDate, amount, notes || null, req.user.id]
+    `INSERT INTO staff_salaries (professor_id, month, amount, tax_amount, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE amount = VALUES(amount), tax_amount = VALUES(tax_amount), notes = VALUES(notes)`,
+    [professor_id, monthDate, amount, tax_amount || 0, notes || null, req.user.id]
   );
   res.status(201).json({ ok: true });
 });
@@ -197,6 +197,54 @@ router.get('/invoices', async (req, res) => {
   if (q) { query += ' AND (student_name LIKE ? OR parent_email LIKE ? OR invoice_number LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   query += ' ORDER BY issued_at DESC LIMIT 500';
   const [rows] = await pool.query(query, params);
+  res.json(rows);
+});
+
+// GET /finance/professor-students/:professorId — сите деца доделени кај овoj
+// professor (преку групи И индивидуални часови), со статус на плаќање
+router.get('/professor-students/:professorId', async (req, res) => {
+  const profId = req.params.professorId;
+
+  const [groupStudents] = await pool.query(`
+    SELECT c.id AS child_id, c.full_name AS child_name, g.name AS group_name,
+           s.id AS subscription_id, s.next_due_date, s.released
+    FROM group_members gm
+    JOIN children c ON c.id = gm.student_id
+    JOIN groups_table g ON g.id = gm.group_id
+    LEFT JOIN subscriptions s ON s.student_id = c.id AND (s.group_id = g.id OR s.secondary_group_id = g.id) AND s.released = FALSE
+    WHERE g.professor_id = ?
+    ORDER BY g.name, c.full_name
+  `, [profId]);
+
+  const [indivStudents] = await pool.query(`
+    SELECT DISTINCT c.id AS child_id, c.full_name AS child_name, ib.instrument, MAX(ib.booking_date) AS last_lesson
+    FROM individual_bookings ib
+    JOIN children c ON c.id = ib.student_id
+    WHERE ib.professor_id = ?
+    GROUP BY c.id, c.full_name, ib.instrument
+    ORDER BY c.full_name
+  `, [profId]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const groupRows = groupStudents.map(r => ({
+    ...r,
+    payment_status: !r.subscription_id ? 'нема претплата' : (r.next_due_date && r.next_due_date <= today ? 'доспеано' : 'платено')
+  }));
+
+  res.json({ group_students: groupRows, individual_students: indivStudents });
+});
+
+// GET /finance/withdrawn-students — истиот преглед достапен и од Финансии
+// (не само Admin), за 3-те со finance_access
+router.get('/withdrawn-students', async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM withdrawn_students ORDER BY withdrawn_at DESC');
+  res.json(rows);
+});
+
+// GET /finance/professors — листа на професори (само основни податоци),
+// достапна за admin И за 3-те со finance_access (не само admin)
+router.get('/professors', async (req, res) => {
+  const [rows] = await pool.query(`SELECT id, full_name, instrument FROM users WHERE role = 'professor' ORDER BY full_name ASC`);
   res.json(rows);
 });
 
