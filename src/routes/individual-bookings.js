@@ -182,4 +182,27 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /individual-bookings/manual — professor рачно додава ученик за
+// индивидуален час (без онлajн плаќање — пр. кога плаќањето е решено
+// одделно, преку специjaлен линк или готовина).
+router.post('/manual', requireAuth, requireRole('professor'), async (req, res) => {
+  const { child_id, instrument, booking_date, start_time, duration_minutes } = req.body;
+  if (!child_id || !instrument || !booking_date || !start_time) {
+    return res.status(400).json({ error: 'child_id, instrument, booking_date и start_time се задолжителни.' });
+  }
+  const [[allowed]] = await pool.query('SELECT 1 FROM professor_instruments WHERE professor_id = ? AND instrument = ?', [req.user.id, instrument]);
+  if (!allowed) return res.status(403).json({ error: 'Не си доделен за тоj инструмент.' });
+
+  const [[child]] = await pool.query('SELECT id FROM children WHERE id = ?', [child_id]);
+  if (!child) return res.status(404).json({ error: 'Детето не постои.' });
+
+  const durMin = [30, 45].includes(Number(duration_minutes)) ? Number(duration_minutes) : 45;
+  const [result] = await pool.query(
+    `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref, duration_minutes)
+     VALUES (?, ?, ?, ?, ?, 0, 'manual', ?)`,
+    [child_id, req.user.id, instrument, booking_date, start_time, durMin]
+  );
+  res.status(201).json({ id: result.insertId });
+});
+
 module.exports = router;
