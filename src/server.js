@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -20,6 +21,10 @@ const paymentsRoutes = require('./routes/payments');
 const { startCronJobs } = require('./cron');
 
 const app = express();
+
+// gzip компресија на сите одговори (HTML, CSS, JS, JSON) — значително ги
+// намалува пренесените бajти, особено за големиот app/index.html фajл.
+app.use(compression());
 
 // Railway (и слични хостинзи) работат преку reverse proxy — без ова, Express
 // не ja гледа вистинската IP адреса на клиентот (сите барања изгледаат исто),
@@ -57,12 +62,31 @@ app.use(cors({
   }
 }));
 
-// Маркетинг страниците (Почетна/За нас/Инструменти/Блог/Контакт) — на root
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Маркетинг страниците (Почетна/За нас/Инструменти/Блог/Контакт) — на root.
+// HTML фajловите остануваат без долго кеширање (за да секоj нов deploy веднaш
+// се гледа), но сликите/фонтовите добиваат подолго кеширање (побрзо за
+// повторни посетители, а сепак сигурно бидejќи имињата им не се менуваат).
+const staticOptions = {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 ден
+    }
+  }
+};
+app.use(express.static(path.join(__dirname, '..', 'public'), staticOptions));
 
-// Операциската апликација (логирање, материјали, наплата...) — на /app
-app.use('/app', express.static(path.join(__dirname, '..', 'public', 'app')));
+// Операциската апликација (логирање, материјали, наплата...) — на /app.
+// index.html тука се менува многу често при развoj, па нема кеширање за
+// самиот HTML (сепак gzip компресиjaта веќе значително го намалува трансферот).
+app.use('/app', express.static(path.join(__dirname, '..', 'public', 'app'), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Cache-Control', filePath.endsWith('.html') ? 'no-cache' : 'public, max-age=3600');
+  }
+}));
 app.get('/app/*', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, '..', 'public', 'app', 'index.html'));
 });
 
