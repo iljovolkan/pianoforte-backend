@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const compression = require('compression');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
@@ -21,10 +20,6 @@ const paymentsRoutes = require('./routes/payments');
 const { startCronJobs } = require('./cron');
 
 const app = express();
-
-// gzip компресија на сите одговори (HTML, CSS, JS, JSON) — значително ги
-// намалува пренесените бajти, особено за големиот app/index.html фajл.
-app.use(compression());
 
 // Railway (и слични хостинзи) работат преку reverse proxy — без ова, Express
 // не ja гледа вистинската IP адреса на клиентот (сите барања изгледаат исто),
