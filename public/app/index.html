@@ -1177,19 +1177,24 @@
             <label data-i18n="label_professor">Професор</label>
             <select id="financeSalaryProf" class="login-select" style="margin-bottom:0;"></select>
           </div>
-          <div style="width:160px;">
-            <label data-i18n="label_amount">Износ (ден.)</label>
+          <div style="width:150px;">
+            <label>Бруто износ (ден.)</label>
             <input type="number" id="financeSalaryAmount" class="login-input" style="margin-bottom:0;">
           </div>
-          <div style="width:140px;">
-            <label>Данок (ден.)</label>
-            <input type="number" id="financeSalaryTax" class="login-input" style="margin-bottom:0;" value="0">
+          <div style="width:100px;">
+            <label>Данок (%)</label>
+            <input type="number" id="financeSalaryTaxPct" class="login-input" style="margin-bottom:0;" value="10" min="0" max="100" step="0.1">
           </div>
+          <div style="width:150px;">
+            <label>Кеш (ден.) <span style="font-weight:400;opacity:.7;">— само за нас</span></label>
+            <input type="number" id="financeSalaryCash" class="login-input" style="margin-bottom:0;" value="0" min="0">
+          </div>
+          <div id="financeSalaryPreview" style="flex-basis:100%; font-size:13px; color:var(--ink-soft,#666);"></div>
           <button class="send-btn" id="financeSalarySaveBtn" style="width:auto; padding:0 20px;" data-i18n="save_btn">Зачувaj</button>
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th>Бруто</th><th>Данок</th><th>Нето (за исплата)</th><th data-i18n="th_note">Белешка</th><th></th></tr></thead>
+            <thead><tr><th data-i18n="th_professor">Професор</th><th data-i18n="th_instrument">Инструмент</th><th>Бруто</th><th>Данок</th><th>Нето (по данок)</th><th>Кеш</th><th>Вкупно на професор</th><th data-i18n="th_note">Белешка</th><th></th></tr></thead>
             <tbody id="financeSalaryTbody"></tbody>
           </table>
         </div>
@@ -4326,19 +4331,21 @@
       const salBody = document.getElementById('financeSalaryTbody');
       let salTotal = 0;
       salBody.innerHTML = salaries.length === 0
-        ? `<tr><td colspan="7" class="fin-table-empty">Сè уште нема внесени плати за овoj месец.</td></tr>`
-        : salaries.map(s => { salTotal += Number(s.amount) - Number(s.tax_amount || 0);
+        ? `<tr><td colspan="9" class="fin-table-empty">Сè уште нема внесени плати за овoj месец.</td></tr>`
+        : salaries.map(s => { salTotal += Number(s.amount) - Number(s.tax_amount || 0) + Number(s.cash_amount || 0);
           return `<tr>
             <td>${escapeHtml(s.professor_name)}</td>
             <td>${s.instrument ? instrumentLabel(s.instrument) : '—'}</td>
             <td class="num">${fmtMoney(s.amount)}</td>
             <td class="num">${fmtMoney(s.tax_amount || 0)}</td>
-            <td class="num" style="font-weight:700;">${fmtMoney(Number(s.amount) - Number(s.tax_amount || 0))}</td>
+            <td class="num">${fmtMoney(Number(s.amount) - Number(s.tax_amount || 0))}</td>
+            <td class="num">${fmtMoney(s.cash_amount || 0)}</td>
+            <td class="num" style="font-weight:700;">${fmtMoney(Number(s.amount) - Number(s.tax_amount || 0) + Number(s.cash_amount || 0))}</td>
             <td>${escapeHtml(s.notes || '—')}</td>
             <td><button class="del-btn" data-sal-id="${s.id}">Избриши</button></td>
           </tr>`;
         }).join('');
-      document.getElementById('financeSalaryTotal').textContent = salaries.length ? 'Вкупно за исплата (нето): ' + fmtMoney(salTotal) : '';
+      document.getElementById('financeSalaryTotal').textContent = salaries.length ? 'Вкупно за исплата (нето + кеш): ' + fmtMoney(salTotal) : '';
       salBody.querySelectorAll('button[data-sal-id]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           await authApiCall('/finance/salaries/' + btn.dataset.salId, { method:'DELETE' });
@@ -4453,18 +4460,33 @@
     } catch(err){ console.error(err); }
   }
 
+  function salaryCalc(){
+    const amount = Number(document.getElementById('financeSalaryAmount').value) || 0;
+    const pct = Number(document.getElementById('financeSalaryTaxPct').value) || 0;
+    const cash = Number(document.getElementById('financeSalaryCash').value) || 0;
+    const tax = Math.round(amount * pct) / 100;
+    return { amount, pct, cash, tax, net: amount - tax, total: amount - tax + cash };
+  }
+  function updateSalaryPreview(){
+    const c = salaryCalc();
+    document.getElementById('financeSalaryPreview').innerHTML = c.amount
+      ? `Данок: <b>${fmtMoney(c.tax)}</b> · Нето: <b>${fmtMoney(c.net)}</b> · Кеш: <b>${fmtMoney(c.cash)}</b> · Вкупно на професорот: <b>${fmtMoney(c.total)}</b>`
+      : '';
+  }
+  ['financeSalaryAmount','financeSalaryTaxPct','financeSalaryCash'].forEach(id=>document.getElementById(id).addEventListener('input', updateSalaryPreview));
+
   document.getElementById('financeSalarySaveBtn').addEventListener('click', async ()=>{
     const professor_id = document.getElementById('financeSalaryProf').value;
-    const amount = document.getElementById('financeSalaryAmount').value;
-    const tax_amount = document.getElementById('financeSalaryTax').value || 0;
-    if(!professor_id || !amount){ alert('Избери професор и внеси износ.'); return; }
+    const c = salaryCalc();
+    if(!professor_id || !c.amount){ alert('Избери професор и внеси износ.'); return; }
     try{
       await authApiCall('/finance/salaries', {
         method:'POST',
-        body: JSON.stringify({ professor_id, month: currentFinanceMonth(), amount, tax_amount })
+        body: JSON.stringify({ professor_id, month: currentFinanceMonth(), amount: c.amount, tax_amount: c.tax, cash_amount: c.cash })
       });
       document.getElementById('financeSalaryAmount').value = '';
-      document.getElementById('financeSalaryTax').value = '0';
+      document.getElementById('financeSalaryCash').value = '0';
+      updateSalaryPreview();
       renderFinancePage();
     } catch(err){ alert(err.message || 'Грешка.'); }
   });
