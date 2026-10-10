@@ -6,6 +6,7 @@
 <title>PianoForte</title>
 <link rel="manifest" href="/app/manifest.json">
 <meta name="theme-color" content="#A97E33">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PianoForte">
@@ -1930,6 +1931,7 @@
     try{ individualBookings = await authApiCall('/individual-bookings'); } catch(err){ individualBookings = []; }
   }
   async function loadChildren(){
+    if(session && session.role !== 'student'){ children = []; activeChildId = null; return; }
     try{ children = await authApiCall('/children'); } catch(err){ children = []; }
     if(!children.find(c=>c.id===activeChildId)) activeChildId = children.length ? children[0].id : null;
   }
