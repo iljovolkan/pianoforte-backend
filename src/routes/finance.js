@@ -51,16 +51,16 @@ router.get('/salaries', async (req, res) => {
 
 // POST /finance/salaries — внес/ажурирање на плата за професор за конкретен месец
 router.post('/salaries', async (req, res) => {
-  const { professor_id, month, amount, tax_amount, notes } = req.body;
+  const { professor_id, month, amount, tax_amount, cash_amount, notes } = req.body;
   if (!professor_id || !month || amount === undefined) {
     return res.status(400).json({ error: 'professor_id, month и amount се задолжителни.' });
   }
   const monthDate = month.length === 7 ? month + '-01' : month;
   await pool.query(
-    `INSERT INTO staff_salaries (professor_id, month, amount, tax_amount, notes, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE amount = VALUES(amount), tax_amount = VALUES(tax_amount), notes = VALUES(notes)`,
-    [professor_id, monthDate, amount, tax_amount || 0, notes || null, req.user.id]
+    `INSERT INTO staff_salaries (professor_id, month, amount, tax_amount, cash_amount, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE amount = VALUES(amount), tax_amount = VALUES(tax_amount), cash_amount = VALUES(cash_amount), notes = VALUES(notes)`,
+    [professor_id, monthDate, amount, tax_amount || 0, cash_amount || 0, notes || null, req.user.id]
   );
   res.status(201).json({ ok: true });
 });
@@ -124,7 +124,7 @@ router.get('/summary', async (req, res) => {
      WHERE status='paid' AND DATE_FORMAT(paid_at, '%Y-%m') = ?`, [month]
   );
   const [[salaryRow]] = await pool.query(
-    `SELECT COALESCE(SUM(amount),0) AS total FROM staff_salaries WHERE DATE_FORMAT(month, '%Y-%m') = ?`, [month]
+    `SELECT COALESCE(SUM(amount + cash_amount),0) AS total FROM staff_salaries WHERE DATE_FORMAT(month, '%Y-%m') = ?`, [month]
   );
   const [[expenseRow]] = await pool.query(
     `SELECT
