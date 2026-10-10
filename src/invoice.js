@@ -9,7 +9,8 @@ const SCHOOL = {
   bank: process.env.SCHOOL_BANK_ACCOUNT || '',   // жиро сметка
   phone: process.env.SCHOOL_PHONE || '',
   email: process.env.SCHOOL_EMAIL || process.env.EMAIL_FROM || 'info@pianoforte.edu.mk',
-  web: 'www.pianoforte.edu.mk'
+  web: 'www.pianoforte.edu.mk',
+  vatNote: process.env.SCHOOL_VAT_NOTE || '' // пр. „Ослободено од ДДВ согласно ...“ — го дава сметководителот
 };
 
 const METHOD_LABELS = {
@@ -86,7 +87,8 @@ function renderInvoiceHtml(inv) {
   <hr style="border:none;border-top:2px solid #7a2e3a;margin:22px 0;">
   <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Купувач</div>
   <div style="font-size:14px;line-height:1.6;margin:4px 0 22px;">
-   Родител/старател: <strong>${esc(inv.parent_email)}</strong><br>
+   ${inv.parent_name ? `Име и презиме: <strong>${esc(inv.parent_name)}</strong><br>` : ''}
+   Email: ${esc(inv.parent_email)}<br>
    Ученик: <strong>${esc(inv.student_name)}</strong>
   </div>
   <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;">
@@ -101,9 +103,11 @@ function renderInvoiceHtml(inv) {
     <td align="right" style="padding:14px 10px;font-weight:700;font-size:16px;">${money(inv.amount)}</td></tr></tfoot>
   </table>
   <div style="font-size:13px;line-height:1.7;margin-top:18px;color:#444;">
+   Датум на уплата/услуга: <strong>${dateMk(inv.issued_at)}</strong><br>
    Начин на плаќање: <strong>${method}</strong><br>
    ${inv.cpay_ref ? `Референца на трансакција (cPay): <strong>${esc(inv.cpay_ref)}</strong><br>` : ''}
    Статус: <strong style="color:#2f7d4f;">ПЛАТЕНО</strong>
+   ${SCHOOL.vatNote ? `<br><span style="font-size:12px;color:#666;">${esc(SCHOOL.vatNote)}</span>` : ''}
   </div>
   <hr style="border:none;border-top:1px solid #e3ddd3;margin:26px 0 14px;">
   <div style="font-size:11px;color:#888;line-height:1.6;">
@@ -114,7 +118,9 @@ function renderInvoiceHtml(inv) {
 }
 
 async function getInvoice(id) {
-  const [[inv]] = await pool.query('SELECT * FROM invoices WHERE id = ?', [id]);
+  const [[inv]] = await pool.query(
+    `SELECT i.*, (SELECT u.full_name FROM users u WHERE u.email = i.parent_email LIMIT 1) AS parent_name
+     FROM invoices i WHERE i.id = ?`, [id]);
   return inv || null;
 }
 
