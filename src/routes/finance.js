@@ -1,6 +1,8 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const invoiceLib = require('../invoice');
+const payments = require('./payments');
 
 const router = express.Router();
 
@@ -246,6 +248,214 @@ router.get('/withdrawn-students', async (req, res) => {
 router.get('/professors', async (req, res) => {
   const [rows] = await pool.query(`SELECT id, full_name, instrument FROM users WHERE role = 'professor' ORDER BY full_name ASC`);
   res.json(rows);
+});
+
+
+// =====================================================================
+// РАЧНА ЕВИДЕНЦИЈА НА ПЛАЌАЊА (Искра / финансиски пристап)
+// За деца што плаќаат кеш/банка или што веќе платиле пред онлајн системот.
+// =====================================================================
+const MANUAL_METHODS = ['cash', 'bank', 'other'];
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const addDays = (dateStr, n) => { const d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+
+// GET /finance/payment-board?q= — активни претплати со сите рати
+router.get('/payment-board', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const params = [];
+    let where = 's.released = FALSE';
+    if (q) { where += ' AND (c.full_name LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+    const [subs] = await pool.query(
+      `SELECT s.id AS subscription_id, s.payment_plan, p.name AS package_name,
+              c.id AS child_id, c.full_name AS child_name, u.email AS parent_email, u.full_name AS parent_name
+       FROM subscriptions s
+       JOIN children c ON c.id = s.student_id
+       JOIN users u ON u.id = c.parent_id
+       JOIN packages p ON p.id = s.package_id
+       WHERE ${where} ORDER BY c.full_name ASC LIMIT 300`, params
+    );
+    if (!subs.length) return res.json([]);
+    const [inst] = await pool.query(
+      `SELECT id, subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note
+       FROM installments WHERE subscription_id IN (?) ORDER BY subscription_id, installment_number`,
+      [subs.map(x => x.subscription_id)]
+    );
+    const bySub = {};
+    inst.forEach(i => { (bySub[i.subscription_id] = bySub[i.subscription_id] || []).push(i); });
+    res.json(subs.map(x => ({ ...x, installments: bySub[x.subscription_id] || [] })));
+  } catch (err) {
+    console.error('GET /finance/payment-board error:', err);
+    res.status(500).json({ error: 'Грешка при вчитување на плаќањата.' });
+  }
+});
+
+// GET /finance/unenrolled-children?q= — деца без активна претплата
+router.get('/unenrolled-children', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const params = [];
+    let extra = '';
+    if (q) { extra = ' AND (c.full_name LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+    const [rows] = await pool.query(
+      `SELECT c.id, c.full_name, u.email AS parent_email, u.full_name AS parent_name,
+              GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') AS groups_list
+       FROM children c
+       JOIN users u ON u.id = c.parent_id
+       LEFT JOIN group_members gm ON gm.student_id = c.id
+       LEFT JOIN groups_table g ON g.id = gm.group_id
+       WHERE NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.student_id = c.id AND s.released = FALSE) ${extra}
+       GROUP BY c.id ORDER BY c.full_name ASC LIMIT 200`, params
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /finance/unenrolled-children error:', err);
+    res.status(500).json({ error: 'Грешка при вчитување на децата.' });
+  }
+});
+
+// POST /finance/manual-enrollment
+// body: { child_id, package_id, payment_plan: full|two|eight|trial, paid_count, method, paid_date, start_date, note, send_invoice }
+router.post('/manual-enrollment', async (req, res) => {
+  const { child_id, package_id, payment_plan, paid_count, method, paid_date, start_date, note, send_invoice } = req.body;
+  if (!child_id || !package_id || !['full', 'two', 'eight', 'trial'].includes(payment_plan)) {
+    return res.status(400).json({ error: 'Избери дете, пакет и начин на плаќање.' });
+  }
+  const paidN = Number(paid_count);
+  if (!Number.isInteger(paidN) || paidN < 0) return res.status(400).json({ error: 'Невалиден број на платени рати.' });
+  if (paidN > 0 && !MANUAL_METHODS.includes(method)) return res.status(400).json({ error: 'Избери начин на плаќање (кеш/банка/друго).' });
+  const start = isDate(start_date) ? start_date : todayStr();
+  const paidOn = isDate(paid_date) ? paid_date : start;
+
+  const conn = await pool.getConnection();
+  const toInvoice = [];
+  try {
+    const [[child]] = await conn.query(
+      `SELECT c.id, c.full_name, u.email FROM children c JOIN users u ON u.id = c.parent_id WHERE c.id = ?`, [child_id]);
+    const [[pkg]] = await conn.query('SELECT * FROM packages WHERE id = ?', [package_id]);
+    if (!child) { conn.release(); return res.status(404).json({ error: 'Детето не постои.' }); }
+    if (!pkg) { conn.release(); return res.status(404).json({ error: 'Пакетот не постои.' }); }
+
+    const [[existing]] = await conn.query('SELECT id FROM subscriptions WHERE student_id = ? AND released = FALSE LIMIT 1', [child_id]);
+    if (existing) { conn.release(); return res.status(409).json({ error: 'Ова дете веќе има активна претплата. Означи ги ратите во листата.' }); }
+
+    const schedule = payment_plan === 'trial'
+      ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
+      : payments.buildAnnualSchedule(payment_plan, Number(pkg.price_mkd));
+    if (paidN > schedule.length) { conn.release(); return res.status(400).json({ error: `Овој план има само ${schedule.length} рат(и).` }); }
+
+    // групи на детето (ако е веќе вклучено во група)
+    const [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY id ASC LIMIT 2', [child_id]);
+    const groupId = groups[0] ? groups[0].group_id : null;
+    const secondaryId = pkg.is_combo && groups[1] ? groups[1].group_id : null;
+
+    await conn.beginTransaction();
+    const [sub] = await conn.query(
+      `INSERT INTO subscriptions (student_id, package_id, group_id, secondary_group_id, next_due_date, released, payment_plan)
+       VALUES (?, ?, ?, ?, ?, FALSE, ?)`,
+      [child_id, package_id, groupId, secondaryId, start, payment_plan]
+    );
+    let nextDue = null;
+    for (const it of schedule) {
+      const due = addDays(start, it.offsetDays);
+      const paid = it.number <= paidN;
+      const [r] = await conn.query(
+        `INSERT INTO installments (subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note, marked_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [sub.insertId, it.number, it.total, it.amount, due, paid ? 'paid' : 'pending',
+         paid ? paidOn + ' 12:00:00' : null, paid ? method : null, paid ? (note || null) : null, req.user.id]
+      );
+      if (paid) toInvoice.push({ installment_id: r.insertId, number: it.number, total: it.total, amount: it.amount });
+      else if (!nextDue) nextDue = due;
+    }
+    await conn.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?', [nextDue || addDays(start, 365), sub.insertId]);
+    await conn.commit();
+    conn.release();
+
+    let invoices = 0;
+    if (send_invoice && toInvoice.length) {
+      for (const t of toInvoice) {
+        const inv = await invoiceLib.issueInvoice({
+          student_id: child_id, student_name: child.full_name, parent_email: child.email,
+          package_name: schedule.length > 1 ? `${pkg.name} — рата ${t.number}/${t.total}` : pkg.name,
+          amount: t.amount, payment_method: method, installment_id: t.installment_id, issued_at: paidOn + ' 12:00:00'
+        });
+        if (inv) { invoices++; await invoiceLib.emailInvoice(await invoiceLib.getInvoice(inv.id)); }
+      }
+    }
+    res.status(201).json({ ok: true, subscription_id: sub.insertId, invoices_sent: invoices, group_linked: !!groupId });
+  } catch (err) {
+    try { await conn.rollback(); } catch (e) {}
+    conn.release();
+    console.error('POST /finance/manual-enrollment error:', err);
+    res.status(500).json({ error: 'Грешка при запишување: ' + err.message });
+  }
+});
+
+// POST /finance/installments/:id/mark-paid  body: { method, paid_date, note, send_invoice }
+router.post('/installments/:id/mark-paid', async (req, res) => {
+  try {
+    const { method, paid_date, note } = req.body;
+    const sendInvoice = req.body.send_invoice !== false;
+    if (!MANUAL_METHODS.includes(method)) return res.status(400).json({ error: 'Избери начин на плаќање (кеш/банка/друго).' });
+    const paidOn = isDate(paid_date) ? paid_date : todayStr();
+
+    const [[inst]] = await pool.query(
+      `SELECT i.*, c.id AS child_id, c.full_name, u.email, p.name AS package_name
+       FROM installments i
+       JOIN subscriptions s ON s.id = i.subscription_id
+       JOIN children c ON c.id = s.student_id
+       JOIN users u ON u.id = c.parent_id
+       JOIN packages p ON p.id = s.package_id
+       WHERE i.id = ?`, [req.params.id]);
+    if (!inst) return res.status(404).json({ error: 'Ратата не постои.' });
+    if (inst.status === 'paid') return res.status(409).json({ error: 'Ратата е веќе платена.' });
+
+    const [upd] = await pool.query(
+      `UPDATE installments SET status = 'paid', paid_at = ?, paid_method = ?, paid_note = ?, marked_by = ?
+       WHERE id = ? AND status <> 'paid'`,
+      [paidOn + ' 12:00:00', method, note || null, req.user.id, inst.id]);
+    if (!upd.affectedRows) return res.status(409).json({ error: 'Ратата е веќе платена.' });
+
+    const [[nextPending]] = await pool.query(
+      `SELECT due_date FROM installments WHERE subscription_id = ? AND status <> 'paid' ORDER BY due_date ASC LIMIT 1`, [inst.subscription_id]);
+    await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
+      [nextPending ? nextPending.due_date : addDays(todayStr(), 365), inst.subscription_id]);
+
+    let invoice_number = null, emailed = false;
+    if (sendInvoice) {
+      const inv = await invoiceLib.issueInvoice({
+        student_id: inst.child_id, student_name: inst.full_name, parent_email: inst.email,
+        package_name: inst.total_installments > 1 ? `${inst.package_name} — рата ${inst.installment_number}/${inst.total_installments}` : inst.package_name,
+        amount: inst.amount, payment_method: method, installment_id: inst.id, issued_at: paidOn + ' 12:00:00'
+      });
+      if (inv) {
+        invoice_number = inv.invoice_number;
+        emailed = await invoiceLib.emailInvoice(await invoiceLib.getInvoice(inv.id));
+      }
+    }
+    res.json({ ok: true, invoice_number, emailed });
+  } catch (err) {
+    console.error('POST /finance/installments/:id/mark-paid error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
+// GET /finance/invoices/:id/html — готова HTML фактура за печатење
+router.get('/invoices/:id/html', async (req, res) => {
+  const inv = await invoiceLib.getInvoice(req.params.id);
+  if (!inv) return res.status(404).json({ error: 'Фактурата не постои.' });
+  res.json({ html: invoiceLib.renderInvoiceHtml(inv) });
+});
+
+// POST /finance/invoices/:id/resend — повторно испраќање на фактурата на родителот
+router.post('/invoices/:id/resend', async (req, res) => {
+  const inv = await invoiceLib.getInvoice(req.params.id);
+  if (!inv) return res.status(404).json({ error: 'Фактурата не постои.' });
+  const ok = await invoiceLib.emailInvoice(inv);
+  if (!ok) return res.status(502).json({ error: 'Мејлот не беше испратен. Провери ја email конфигурацијата.' });
+  res.json({ ok: true });
 });
 
 module.exports = router;
