@@ -1270,6 +1270,18 @@
           </table>
         </div>
       </div>
+      <!-- ЕВИДЕНЦИЈА НА ПЛАЌАЊА (рачно означување) -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Евиденција на плаќања по ученик</h3></div>
+        <p style="font-size:13px;opacity:.75;margin:0 0 12px;">Означи рата како платена (кеш/банка) или запиши дете што веќе плаќа. Родителот автоматски добива фактура на мејл.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <input type="text" id="payBoardQ" class="login-input" placeholder="пребарај по име на дете/родител/email" style="margin-bottom:0; flex:1; min-width:180px;">
+          <button class="send-btn" id="payBoardSearchBtn" style="width:auto; padding:0 18px;">Пребарај</button>
+          <button class="send-btn" id="payBoardAddBtn" style="width:auto; padding:0 18px; background:var(--leaf,#2f7d4f);">＋ Запиши дете што плаќа</button>
+        </div>
+        <div id="payBoardList"></div>
+      </div>
+
       <!-- АРХИВА НА ФАКТУРИ -->
       <div class="card" style="margin-top:20px;">
         <div class="fin-section-title"><h3>Архива на фактури</h3></div>
@@ -4188,31 +4200,30 @@
           <td>${escapeHtml(r.package_name)}</td>
           <td>${Number(r.amount).toLocaleString('mk-MK')} ден.</td>
           <td>${fmtDate(r.issued_at)}</td>
-          <td><button class="mc-btn" style="flex:none; font-size:11px;" data-print-inv="${r.id}">Печати</button></td>
+          <td style="white-space:nowrap;"><button class="mc-btn" style="flex:none; font-size:11px;" data-print-inv="${r.id}">Печати</button> <button class="mc-btn" style="flex:none; font-size:11px;" data-resend-inv="${r.id}">Прати на мејл</button></td>
         </tr>
       `).join('');
       window._invoicesData = rows;
       tbody.querySelectorAll('button[data-print-inv]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const inv = window._invoicesData.find(x => String(x.id) === btn.dataset.printInv);
-          if(!inv) return;
-          const w = window.open('', '_blank');
-          w.document.write(`
-            <html><head><title>Фактура ${inv.invoice_number}</title></head>
-            <body style="font-family:sans-serif; padding:40px;">
-              <h1>PianoForte</h1>
-              <h3>Фактура бр. ${inv.invoice_number}</h3>
-              <p>Датум: ${fmtDate(inv.issued_at)}</p>
-              <hr>
-              <p><strong>Ученик:</strong> ${inv.student_name}</p>
-              <p><strong>Email на родител:</strong> ${inv.parent_email}</p>
-              <p><strong>Услуга:</strong> ${inv.package_name}</p>
-              <p><strong>Износ:</strong> ${Number(inv.amount).toLocaleString('mk-MK')} ден.</p>
-              ${inv.cpay_ref ? `<p><strong>Референца (cPay):</strong> ${inv.cpay_ref}</p>` : ''}
-            </body></html>
-          `);
-          w.document.close();
-          w.print();
+        btn.addEventListener('click', async ()=>{
+          try{
+            const { html } = await authApiCall('/finance/invoices/' + btn.dataset.printInv + '/html');
+            const w = window.open('', '_blank');
+            w.document.write(html);
+            w.document.close();
+            setTimeout(()=>w.print(), 300);
+          } catch(err){ alert(err.message || 'Грешка.'); }
+        });
+      });
+      tbody.querySelectorAll('button[data-resend-inv]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          if(!confirm('Да се испрати фактурата повторно на мејлот на родителот?')) return;
+          btn.disabled = true;
+          try{
+            await authApiCall('/finance/invoices/' + btn.dataset.resendInv + '/resend', { method:'POST' });
+            alert('Фактурата е испратена.');
+          } catch(err){ alert(err.message || 'Грешка.'); }
+          finally { btn.disabled = false; }
         });
       });
     } catch(err){
@@ -4220,6 +4231,153 @@
     }
   }
   document.getElementById('invoiceSearchBtn').addEventListener('click', loadInvoices);
+
+
+  /* ===================== ЕВИДЕНЦИЈА НА ПЛАЌАЊА (Искра) ===================== */
+  const PAY_METHODS = { cash:'Кеш', bank:'Банка', other:'Друго', card:'Картичка (онлајн)' };
+  const PLAN_LABELS = { full:'Целосно (1 уплата, −5%)', two:'2 полугодишни рати (−3%)', eight:'8 месечни рати', trial:'Пробен (1 уплата)' };
+
+  function finModal(title, bodyHtml, submitLabel, onSubmit){
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = `<div style="background:var(--card,#fff);color:inherit;border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:22px;">
+      <h3 style="margin:0 0 14px;">${title}</h3>
+      <div id="finModalBody">${bodyHtml}</div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="send-btn" id="finModalOk" style="flex:1;">${submitLabel}</button>
+        <button class="mc-btn" id="finModalCancel" style="flex:none;padding:0 16px;">Откажи</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    const close = ()=>ov.remove();
+    ov.querySelector('#finModalCancel').onclick = close;
+    ov.addEventListener('click', e=>{ if(e.target===ov) close(); });
+    const ok = ov.querySelector('#finModalOk');
+    ok.onclick = async ()=>{
+      ok.disabled = true;
+      try{ const keep = await onSubmit(ov); if(!keep) close(); }
+      catch(err){ alert(err.message || 'Грешка.'); }
+      finally { ok.disabled = false; }
+    };
+    return ov;
+  }
+  const todayIso = ()=> new Date().toISOString().slice(0,10);
+
+  async function loadPaymentBoard(){
+    const box = document.getElementById('payBoardList');
+    if(!box) return;
+    box.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    const q = document.getElementById('payBoardQ').value.trim();
+    try{
+      const rows = await authApiCall('/finance/payment-board' + (q ? '?q=' + encodeURIComponent(q) : ''));
+      if(!rows.length){ box.innerHTML = '<div class="empty-state">Нема ученици со претплата. Користи „Запиши дете што плаќа“.</div>'; return; }
+      box.innerHTML = rows.map(r=>{
+        const paid = r.installments.filter(i=>i.status==='paid').length;
+        const chips = r.installments.map(i=>{
+          const isPaid = i.status==='paid';
+          const overdue = !isPaid && new Date(i.due_date) < new Date(new Date().toDateString());
+          const label = `${i.installment_number}/${i.total_installments} · ${fmtMoney(i.amount)}`;
+          return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid rgba(128,128,128,.15);font-size:13px;">
+            <span style="min-width:150px;">${label}</span>
+            ${isPaid
+              ? `<span style="color:var(--leaf,#2f7d4f);font-weight:600;">✓ платена ${fmtDate(i.paid_at)} · ${PAY_METHODS[i.paid_method]||'Картичка (онлајн)'}</span>`
+              : `<span style="color:${overdue?'var(--wine,#B3555F)':'inherit'};">${overdue?'⚠ доспеала':'доспева'} ${fmtDate(i.due_date)}</span>
+                 <button class="mc-btn" style="flex:none;font-size:11px;" data-mark-inst="${i.id}" data-amount="${i.amount}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Означи платена</button>`}
+          </div>`;
+        }).join('');
+        return `<div style="border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div><strong>${escapeHtml(r.child_name)}</strong> <span style="opacity:.7;font-size:12px;">· ${escapeHtml(r.parent_email)}</span></div>
+            <div style="font-size:12px;opacity:.8;">${escapeHtml(r.package_name)} · ${PLAN_LABELS[r.payment_plan]||r.payment_plan} · платени ${paid}/${r.installments.length}</div>
+          </div>${chips}</div>`;
+      }).join('');
+      box.querySelectorAll('button[data-mark-inst]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          finModal('Означи рата како платена',
+            `<p style="margin:0 0 10px;font-size:14px;"><strong>${btn.dataset.label}</strong> · ${fmtMoney(btn.dataset.amount)}</p>
+             <label>Начин на плаќање</label>
+             <select id="fmMethod" class="login-select"><option value="cash">Кеш</option><option value="bank">Банка</option><option value="other">Друго</option></select>
+             <label>Датум на уплата</label>
+             <input type="date" id="fmDate" class="login-input" value="${todayIso()}">
+             <label>Белешка (незадолжително)</label>
+             <input type="text" id="fmNote" class="login-input" maxlength="200">
+             <label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="fmInvoice" checked> Испрати фактура на мејл на родителот</label>`,
+            'Означи платена',
+            async (ov)=>{
+              const out = await authApiCall('/finance/installments/' + btn.dataset.markInst + '/mark-paid', {
+                method:'POST',
+                body: JSON.stringify({
+                  method: ov.querySelector('#fmMethod').value,
+                  paid_date: ov.querySelector('#fmDate').value,
+                  note: ov.querySelector('#fmNote').value.trim(),
+                  send_invoice: ov.querySelector('#fmInvoice').checked
+                })
+              });
+              alert(out.invoice_number ? `Означено како платено. Фактура ${out.invoice_number}${out.emailed ? ' е испратена на мејл.' : ' е издадена, но мејлот не е испратен.'}` : 'Означено како платено.');
+              renderFinancePage();
+            });
+        });
+      });
+    } catch(err){ box.innerHTML = `<div class="empty-state">Грешка: ${escapeHtml(err.message)}</div>`; }
+  }
+
+  async function openManualEnrollment(){
+    let packages = [];
+    try{ packages = await authApiCall('/packages'); } catch(e){}
+    const pkgOpts = packages.filter(p=>p.package_type!=='individual').map(p=>`<option value="${p.id}">${escapeHtml(p.name)} — ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.</option>`).join('');
+    const ov = finModal('Запиши дете што плаќа',
+      `<label>Најди дете</label>
+       <div style="display:flex;gap:6px;"><input type="text" id="meQ" class="login-input" placeholder="име на дете/родител/email" style="margin-bottom:0;flex:1;"><button class="mc-btn" id="meSearch" style="flex:none;">Барај</button></div>
+       <select id="meChild" class="login-select" style="margin-top:8px;"><option value="">— прво пребарај —</option></select>
+       <label>Пакет</label><select id="mePkg" class="login-select">${pkgOpts}</select>
+       <label>План на плаќање</label>
+       <select id="mePlan" class="login-select">
+         <option value="eight">8 месечни рати</option><option value="two">2 полугодишни рати (−3%)</option>
+         <option value="full">Целосно (1 уплата, −5%)</option><option value="trial">Пробен (1 уплата)</option></select>
+       <label>Колку рати се веќе платени?</label>
+       <input type="number" id="mePaid" class="login-input" min="0" value="1">
+       <label>Како се платени</label>
+       <select id="meMethod" class="login-select"><option value="cash">Кеш</option><option value="bank">Банка</option><option value="other">Друго</option></select>
+       <label>Датум на прва рата / почеток</label>
+       <input type="date" id="meStart" class="login-input" value="2026-09-01">
+       <label>Датум на уплата</label>
+       <input type="date" id="mePaidDate" class="login-input" value="2026-09-01">
+       <label>Белешка (незадолжително)</label>
+       <input type="text" id="meNote" class="login-input" maxlength="200">
+       <label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="meInvoice"> Издади и испрати фактура за веќе платените рати</label>
+       <p style="font-size:12px;opacity:.7;">Останатите рати ќе бидат „на чекање“ — родителот ги плаќа онлајн преку сајтот.</p>`,
+      'Запиши',
+      async (ov)=>{
+        const child_id = ov.querySelector('#meChild').value;
+        if(!child_id){ alert('Избери дете.'); return true; }
+        const out = await authApiCall('/finance/manual-enrollment', {
+          method:'POST',
+          body: JSON.stringify({
+            child_id, package_id: ov.querySelector('#mePkg').value, payment_plan: ov.querySelector('#mePlan').value,
+            paid_count: ov.querySelector('#mePaid').value, method: ov.querySelector('#meMethod').value,
+            start_date: ov.querySelector('#meStart').value, paid_date: ov.querySelector('#mePaidDate').value,
+            note: ov.querySelector('#meNote').value.trim(), send_invoice: ov.querySelector('#meInvoice').checked
+          })
+        });
+        alert('Запишано.' + (out.invoices_sent ? ` Испратени фактури: ${out.invoices_sent}.` : '') + (out.group_linked ? '' : '\nДетето нема група — родителот може да избере термин во апликацијата.'));
+        renderFinancePage();
+      });
+    const doSearch = async ()=>{
+      const sel = ov.querySelector('#meChild');
+      sel.innerHTML = '<option value="">Се бара...</option>';
+      try{
+        const rows = await authApiCall('/finance/unenrolled-children?q=' + encodeURIComponent(ov.querySelector('#meQ').value.trim()));
+        sel.innerHTML = rows.length
+          ? rows.map(c=>`<option value="${c.id}">${escapeHtml(c.full_name)} — ${escapeHtml(c.parent_email)}${c.groups_list ? ' ('+escapeHtml(c.groups_list)+')' : ''}</option>`).join('')
+          : '<option value="">Нема деца без претплата</option>';
+      } catch(err){ sel.innerHTML = '<option value="">Грешка</option>'; }
+    };
+    ov.querySelector('#meSearch').onclick = doSearch;
+    ov.querySelector('#meQ').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doSearch(); } });
+    doSearch();
+  }
+  document.getElementById('payBoardSearchBtn').addEventListener('click', loadPaymentBoard);
+  document.getElementById('payBoardQ').addEventListener('keydown', e=>{ if(e.key==='Enter') loadPaymentBoard(); });
+  document.getElementById('payBoardAddBtn').addEventListener('click', openManualEnrollment);
 
   async function loadAttendanceRecords(){
     const tbody = document.getElementById('attendanceListTbody');
@@ -4275,6 +4433,7 @@
     _go('revenue','/finance/professor-revenue');
     document.getElementById('financeMonth').onchange = renderFinancePage;
     loadInvoices();
+    loadPaymentBoard();
     loadAttendanceRecords();
 
     // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
