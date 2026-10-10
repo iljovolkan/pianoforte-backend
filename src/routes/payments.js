@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { sendMail } = require('../mailer');
+const invoiceLib = require('../invoice');
 
 const router = express.Router();
 
@@ -386,23 +387,14 @@ router.get('/status/:intentId', requireAuth, async (req, res) => {
 // ===================================================================
 // Издава и архивира фактура за секое успешно плаќање (се чува трајно,
 // финансискиот персонал може да ja пребарува/печати подоцна).
-async function issueInvoice({ student_id, student_name, parent_email, package_name, amount, cpay_ref }) {
+async function issueInvoice(args) {
+  const inv = await invoiceLib.issueInvoice({ ...args, payment_method: 'card' });
+  if (!inv) return null;
   try {
-    const year = new Date().getFullYear();
-    const [[{ cnt }]] = await pool.query(
-      'SELECT COUNT(*) AS cnt FROM invoices WHERE invoice_number LIKE ?', [`PF-${year}-%`]
-    );
-    const invoiceNumber = `PF-${year}-${String(cnt + 1).padStart(5, '0')}`;
-    await pool.query(
-      `INSERT INTO invoices (student_id, student_name, parent_email, package_name, amount, cpay_ref, invoice_number)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [student_id || null, student_name, parent_email, package_name, amount, cpay_ref || null, invoiceNumber]
-    );
-    return invoiceNumber;
-  } catch (e) {
-    console.error('issueInvoice error:', e);
-    return null;
-  }
+    const full = await invoiceLib.getInvoice(inv.id);
+    await invoiceLib.emailInvoice(full); // целосна фактура на email на родителот
+  } catch (e) { console.error('invoice email error:', e); }
+  return inv.invoice_number;
 }
 
 async function completeSubscriptionPurchase(intent, payload, cpayRef) {
@@ -727,3 +719,4 @@ router.get('/my-special-payments', requireAuth, requireRole('student'), async (r
 });
 
 module.exports = router;
+module.exports.buildAnnualSchedule = buildAnnualSchedule;
