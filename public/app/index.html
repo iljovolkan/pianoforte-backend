@@ -4457,7 +4457,7 @@
     const professor_id = document.getElementById('financeSalaryProf').value;
     const amount = document.getElementById('financeSalaryAmount').value;
     const tax_amount = document.getElementById('financeSalaryTax').value || 0;
-    if(!professor_id || !amount) return;
+    if(!professor_id || !amount){ alert('Избери професор и внеси износ.'); return; }
     try{
       await authApiCall('/finance/salaries', {
         method:'POST',
@@ -4469,12 +4469,18 @@
     } catch(err){ alert(err.message || 'Грешка.'); }
   });
 
+  (function(){ const d=document.getElementById('financeExpenseDate'); if(d && !d.value) d.value = new Date().toISOString().slice(0,10); })();
   document.getElementById('financeExpenseSaveBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('financeExpenseSaveBtn');
     const description = document.getElementById('financeExpenseDesc').value.trim();
     const category = document.getElementById('financeExpenseCategory').value;
     const amount = document.getElementById('financeExpenseAmount').value;
-    const expense_date = document.getElementById('financeExpenseDate').value;
-    if(!description || !amount || !expense_date) return;
+    const dateEl = document.getElementById('financeExpenseDate');
+    if(!dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+    const expense_date = dateEl.value;
+    if(!description || !amount){ alert('Внеси опис и износ.'); return; }
+    if(btn.disabled) return;
+    btn.disabled = true;
     try{
       await authApiCall('/finance/expenses', {
         method:'POST',
@@ -4482,8 +4488,11 @@
       });
       document.getElementById('financeExpenseDesc').value = '';
       document.getElementById('financeExpenseAmount').value = '';
-      renderFinancePage();
+      // прикажи го месецот во кој е трошокот за да се види веднаш
+      document.getElementById('financeMonth').value = expense_date.slice(0,7);
+      await renderFinancePage();
     } catch(err){ alert(err.message || 'Грешка.'); }
+    finally { btn.disabled = false; }
   });
 
   async function renderAdminPhotoConsents(){
