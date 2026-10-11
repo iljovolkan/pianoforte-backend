@@ -256,6 +256,10 @@
   .cal-daycol .hline{position:absolute; left:0; right:0; border-top:1px solid var(--line);}
   .cal-daycol .hline.half{border-top:1px dashed rgba(128,128,128,.18);}
   .cal-daycol .cal-event{position:absolute; box-sizing:border-box; overflow:hidden; margin:0; padding:2px 5px; justify-content:flex-start; z-index:1;}
+  .cal-daycol .cal-event.indiv{background:#e3f1e8; border-left-color:#2f7d4f; cursor:default;}
+  .cal-daycol .cal-event.indiv .cal-event-time{color:#2f7d4f;}
+  .cal-daycol .cal-event.indiv:hover{background:#d3e9db;}
+  .cal-daycol .cal-event.indiv:hover .cal-event-title, .cal-daycol .cal-event.indiv:hover .cal-event-time, .cal-daycol .cal-event.indiv:hover .cal-event-sub{color:inherit;}
   .cal-daycol .cal-event.short{flex-direction:row; align-items:center; gap:5px;}
   .cal-daycol .cal-event.short .cal-event-sub{display:none;}
   .cal-daycol .cal-event.short.narrow .cal-event-time{display:none;}
@@ -3578,6 +3582,9 @@
   let calendarView = 'week';
   let monthCursor = new Date(today.getFullYear(), today.getMonth(), 1);
   let yearCursor = today.getFullYear();
+  const mondayOf = (d)=>{ const x=new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
+  let weekCursor = mondayOf(today);
+  const isoLocal = (d)=> d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 
   function todayISO(){ return new Date().toISOString().slice(0,10); }
 
@@ -3707,7 +3714,19 @@
 
   function renderCalNav(){
     const nav = document.getElementById('calNav'); nav.innerHTML='';
-    if(calendarView==='week'){ return; }
+    if(calendarView==='week'){
+      const fri = new Date(weekCursor); fri.setDate(fri.getDate()+4);
+      const p = document.createElement('button'); p.textContent='‹';
+      const n = document.createElement('button'); n.textContent='›';
+      const lb = document.createElement('span'); lb.className='cal-nav-label';
+      lb.textContent = `${weekCursor.getDate()} ${MK_MONTHS[weekCursor.getMonth()].slice(0,3)} – ${fri.getDate()} ${MK_MONTHS[fri.getMonth()].slice(0,3)} ${fri.getFullYear()}`;
+      p.addEventListener('click', ()=>{ weekCursor.setDate(weekCursor.getDate()-7); renderSchedulePage(); });
+      n.addEventListener('click', ()=>{ weekCursor.setDate(weekCursor.getDate()+7); renderSchedulePage(); });
+      const t = document.createElement('button'); t.textContent='Денес'; t.style.cssText='width:auto;padding:0 10px;font-size:12px;';
+      t.addEventListener('click', ()=>{ weekCursor = mondayOf(new Date()); renderSchedulePage(); });
+      nav.appendChild(p); nav.appendChild(lb); nav.appendChild(n); nav.appendChild(t);
+      return;
+    }
     const prev = document.createElement('button'); prev.textContent='‹';
     const next = document.createElement('button'); next.textContent='›';
     const label = document.createElement('span'); label.className='cal-nav-label';
@@ -3740,6 +3759,19 @@
       byDay[e.day].push({ entry:e, group:g, start, end:start+dur, dur });
     });
 
+    // индивидуални часови (со точен датум) за избраната недела
+    const weekDates = {};
+    days.forEach((d,i)=>{ const x=new Date(weekCursor); x.setDate(x.getDate()+i); weekDates[d]=isoLocal(x); });
+    (individualBookings||[]).forEach(b=>{
+      if(b.status==='cancelled' || Number(b.professor_id) !== Number(session.realUserId)) return;
+      const bd = String(b.booking_date).slice(0,10);
+      const d = days.find(x=>weekDates[x]===bd);
+      if(!d) return;
+      const start = toMin(b.start_time);
+      const dur = Number(b.duration_minutes) || 45;
+      byDay[d].push({ indiv:b, start, end:start+dur, dur });
+    });
+
     // опсег на часови: најмалку 09–20, се проширува ако има термини надвор
     let startH = 9, endH = 21;
     Object.values(byDay).forEach(list=>list.forEach(ev=>{
@@ -3750,7 +3782,7 @@
 
     // заглавија
     grid.appendChild(makeCell('', 'cal-head'));
-    days.forEach(d => grid.appendChild(makeCell(d, 'cal-head')));
+    days.forEach(d => grid.appendChild(makeCell(d + ' ' + weekDates[d].slice(8,10) + '.' + weekDates[d].slice(5,7), 'cal-head')));
 
     // колона со часови
     const timeCol = document.createElement('div');
@@ -3796,6 +3828,23 @@
       flush();
 
       list.forEach(ev=>{
+        if(ev.indiv){
+          const b = ev.indiv;
+          const el = document.createElement('div');
+          const heightPx = Math.max(18, (ev.dur * HOUR_PX / 60) - 2);
+          el.className = 'cal-event indiv' + (heightPx < 38 ? ' short' : '') + (ev.cols > 1 ? ' narrow' : '');
+          el.style.top = ((ev.start - startH*60) * HOUR_PX / 60 + 1) + 'px';
+          el.style.height = heightPx + 'px';
+          const w = 100 / ev.cols;
+          el.style.left = `calc(${ev.col * w}% + 2px)`;
+          el.style.width = `calc(${w}% - 4px)`;
+          el.title = `Индивидуален · ${b.student_name || ''} · ${fmt(ev.start)}–${fmt(ev.end)}`;
+          el.innerHTML = `<span class="cal-event-time">${fmt(ev.start)}–${fmt(ev.end)}</span>
+            <span class="cal-event-title">${escapeHtml(b.student_name || 'Индивидуален')}</span>
+            <span class="cal-event-sub">Индивидуален</span>`;
+          col.appendChild(el);
+          return;
+        }
         const { entry, group:g } = ev;
         const key = d + '-' + entry.time;
         const memberCount = g && g.members ? g.members.length : 0;
