@@ -4313,7 +4313,7 @@
       const rows = await authApiCall('/finance/invoices?' + params.toString());
       tbody.innerHTML = rows.length === 0 ? '<tr><td colspan="6">Нема фактури.</td></tr>' : rows.map(r => `
         <tr>
-          <td>${escapeHtml(r.invoice_number)}</td>
+          <td>${escapeHtml(r.invoice_number)}${r.cancelled_at ? ' <span style="color:#b3262e;font-weight:700;font-size:11px;">СТОРНИРАНА</span>' : ''}</td>
           <td>${escapeHtml(r.student_name)}</td>
           <td>${escapeHtml(r.package_name)}</td>
           <td>${Number(r.amount).toLocaleString('mk-MK')} ден.</td>
@@ -4397,7 +4397,8 @@
           return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid rgba(128,128,128,.15);font-size:13px;">
             <span style="min-width:150px;">${label}</span>
             ${isPaid
-              ? `<span style="color:var(--leaf,#2f7d4f);font-weight:600;">✓ платена ${fmtDate(i.paid_at)} · ${PAY_METHODS[i.paid_method]||'Картичка (онлајн)'}</span>`
+              ? `<span style="color:var(--leaf,#2f7d4f);font-weight:600;">✓ платена ${fmtDate(i.paid_at)} · ${PAY_METHODS[i.paid_method]||'Картичка (онлајн)'}</span>
+                 ${['cash','bank','other'].includes(i.paid_method) ? `<button class="mc-btn" style="flex:none;font-size:11px;" data-unmark-inst="${i.id}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Поништи</button>` : ''}`
               : `<span style="color:${overdue?'var(--wine,#B3555F)':'inherit'};">${overdue?'⚠ доспеала':'доспева'} ${fmtDate(i.due_date)}</span>
                  <button class="mc-btn" style="flex:none;font-size:11px;" data-mark-inst="${i.id}" data-amount="${i.amount}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Означи платена</button>`}
           </div>`;
@@ -4408,6 +4409,18 @@
             <div style="font-size:12px;opacity:.8;">${escapeHtml(r.package_name)} · ${PLAN_LABELS[r.payment_plan]||r.payment_plan} · платени ${paid}/${r.installments.length}</div>
           </div>${chips}</div>`;
       }).join('');
+      box.querySelectorAll('button[data-unmark-inst]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const reason = prompt('Поништување на уплатата за ' + btn.dataset.label + '.\nФактурата ќе се означи како СТОРНИРАНА (не се брише).\n\nПричина:');
+          if(!reason || !reason.trim()) return;
+          btn.disabled = true;
+          try{
+            const out = await authApiCall('/finance/installments/' + btn.dataset.unmarkInst + '/mark-unpaid', { method:'POST', body: JSON.stringify({ reason: reason.trim() }) });
+            alert('Уплатата е поништена.' + (out.invoices_cancelled ? ' Фактурата е означена како сторнирана.' : ''));
+            renderFinancePage();
+          } catch(err){ alert(err.message || 'Грешка.'); btn.disabled = false; }
+        });
+      });
       box.querySelectorAll('button[data-mark-inst]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           finModal('Означи рата како платена',
