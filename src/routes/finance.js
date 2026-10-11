@@ -318,7 +318,7 @@ router.get('/unenrolled-children', async (req, res) => {
 // POST /finance/manual-enrollment
 // body: { child_id, package_id, payment_plan: full|two|eight|trial, paid_count, method, paid_date, start_date, note, send_invoice }
 router.post('/manual-enrollment', async (req, res) => {
-  const { child_id, package_id, payment_plan, paid_count, method, paid_date, start_date, note, send_invoice } = req.body;
+  const { child_id, package_id, payment_plan, paid_count, method, paid_date, start_date, next_due_date, note, send_invoice } = req.body;
   if (!child_id || !package_id || !['full', 'two', 'eight', 'trial'].includes(payment_plan)) {
     return res.status(400).json({ error: 'Избери дете, пакет и начин на плаќање.' });
   }
@@ -356,10 +356,21 @@ router.post('/manual-enrollment', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, FALSE, ?)`,
       [child_id, package_id, groupId, secondaryId, start, payment_plan]
     );
+    // Рокот на неплатените рати НИКОГАШ не смее да е во минатото (cron би го
+    // ослободил детето од групата). Првата неплатена рата доспева на избраниот
+    // датум (или најрано за 7 дена од денес), а следните одат на истите растојанија.
+    const firstPendingIdx = schedule.findIndex(it => it.number > paidN);
+    const minDue = addDays(todayStr(), 7);
+    let pendingBase = null;
+    if (firstPendingIdx >= 0) {
+      const computed = addDays(start, schedule[firstPendingIdx].offsetDays);
+      pendingBase = isDate(next_due_date) ? next_due_date : (computed < minDue ? minDue : computed);
+    }
     let nextDue = null;
     for (const it of schedule) {
-      const due = addDays(start, it.offsetDays);
       const paid = it.number <= paidN;
+      const due = paid ? addDays(start, it.offsetDays)
+        : addDays(pendingBase, it.offsetDays - schedule[firstPendingIdx].offsetDays);
       const [r] = await conn.query(
         `INSERT INTO installments (subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note, marked_by)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
