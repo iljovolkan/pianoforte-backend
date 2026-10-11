@@ -84,6 +84,7 @@ function renderInvoiceHtml(inv) {
     <div style="font-size:13px;color:#666;margin-top:2px;">Датум: ${dateMk(inv.issued_at)}</div>
    </td>
   </tr></table>
+  ${inv.cancelled_at ? `<div style="margin:16px 0 0;padding:10px 14px;border:2px solid #b3262e;color:#b3262e;font-weight:700;text-align:center;border-radius:4px;">СТОРНИРАНА ФАКТУРА${inv.cancel_reason ? ' — ' + esc(inv.cancel_reason) : ''} (${dateMk(inv.cancelled_at)})</div>` : ''}
   <hr style="border:none;border-top:2px solid #7a2e3a;margin:22px 0;">
   <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Купувач</div>
   <div style="font-size:14px;line-height:1.6;margin:4px 0 22px;">
@@ -106,7 +107,7 @@ function renderInvoiceHtml(inv) {
    Датум на уплата/услуга: <strong>${dateMk(inv.issued_at)}</strong><br>
    Начин на плаќање: <strong>${method}</strong><br>
    ${inv.cpay_ref ? `Референца на трансакција (cPay): <strong>${esc(inv.cpay_ref)}</strong><br>` : ''}
-   Статус: <strong style="color:#2f7d4f;">ПЛАТЕНО</strong>
+   Статус: ${inv.cancelled_at ? '<strong style="color:#b3262e;">СТОРНИРАНА</strong>' : '<strong style="color:#2f7d4f;">ПЛАТЕНО</strong>'}
    ${SCHOOL.vatNote ? `<br><span style="font-size:12px;color:#666;">${esc(SCHOOL.vatNote)}</span>` : ''}
   </div>
   <hr style="border:none;border-top:1px solid #e3ddd3;margin:26px 0 14px;">
