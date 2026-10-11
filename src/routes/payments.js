@@ -325,6 +325,7 @@ router.all('/cpay-ok', async (req, res) => {
   const data = { ...req.query, ...req.body };
   const intentId = Number(data.Details2);
   const cpayRef = data.cPayPaymentRef || null;
+  let claimed = false;
 
   try {
     if (!intentId) throw new Error('Недостасува референца на плаќањето (Details2).');
@@ -346,6 +347,13 @@ router.all('/cpay-ok', async (req, res) => {
       throw new Error('Износот на плаќањето не се совпаѓа со очекуваниот.');
     }
 
+    // Атомско "заклучување": cPay може да го повика овој URL двапати истовремено
+    // (прелистувач + сервер). Само првиот добива право да го заврши плаќањето.
+    const [claim] = await pool.query(
+      `UPDATE payment_intents SET completed_at = NOW() WHERE id = ? AND completed_at IS NULL AND status <> 'completed'`, [intentId]);
+    if (!claim.affectedRows) return respondAndRedirect(res, '/app/#payment-success');
+    claimed = true;
+
     const payload = typeof intent.payload === 'string' ? JSON.parse(intent.payload) : intent.payload;
 
     if (intent.kind === 'subscription') {
@@ -364,7 +372,7 @@ router.all('/cpay-ok', async (req, res) => {
     respondAndRedirect(res, '/app/#payment-success');
   } catch (err) {
     console.error('cPay OK handler error:', err);
-    try { if (intentId) await pool.query(`UPDATE payment_intents SET status='failed' WHERE id=?`, [intentId]); } catch (e) {}
+    try { if (intentId) await pool.query(`UPDATE payment_intents SET status='failed'${claimed ? ', completed_at = NULL' : ''} WHERE id=?`, [intentId]); } catch (e) {}
     respondAndRedirect(res, '/app/#payment-error');
   }
 });
