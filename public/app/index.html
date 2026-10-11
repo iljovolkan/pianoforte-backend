@@ -249,6 +249,18 @@
   .cal-event-time{font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--lilac-deep); font-weight:600;}
   .cal-event-title{font-weight:600; font-size:10.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .cal-event-sub{font-size:9px; color:var(--mist);}
+  /* Teams-стил календар: блокови со вистинска должина и позиција */
+  .cal-timecol{position:relative; background:var(--surface-2); border-right:1px solid var(--line);}
+  .cal-timecol .tlabel{position:absolute; right:5px; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--mist);}
+  .cal-daycol{position:relative; border-right:1px solid var(--line);}
+  .cal-daycol .hline{position:absolute; left:0; right:0; border-top:1px solid var(--line);}
+  .cal-daycol .hline.half{border-top:1px dashed rgba(128,128,128,.18);}
+  .cal-daycol .cal-event{position:absolute; box-sizing:border-box; overflow:hidden; margin:0; padding:2px 5px; justify-content:flex-start; z-index:1;}
+  .cal-daycol .cal-event.short{flex-direction:row; align-items:center; gap:5px;}
+  .cal-daycol .cal-event.short .cal-event-sub{display:none;}
+  .cal-daycol .cal-event.short.narrow .cal-event-time{display:none;}
+  .cal-daycol .cal-event-time{white-space:nowrap;}
+  #calGrid{padding-bottom:10px;}
   .slot-empty{color:var(--line); font-size:10px; text-align:center; margin:auto;}
   .sched-panel h3{font-size:15px; margin-bottom:4px;}
   .sched-panel .slot-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--mist); margin-bottom:16px; display:block;}
@@ -3713,40 +3725,97 @@
 
   function renderWeekView(){
     const grid = document.getElementById('calGrid'); grid.innerHTML='';
+    const HOUR_PX = window.innerWidth <= 600 ? 52 : 60;
+    const toMin = t => { const [h,m] = String(t).split(':').map(Number); return h*60 + (m||0); };
+    const fmt = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+
+    // термини на овој професор, групирани по ден, со вистинска должина
+    const byDay = {};
+    days.forEach(d => byDay[d] = []);
+    Object.values(schedule).forEach(e=>{
+      if(e.professorId !== session.realUserId || !byDay[e.day]) return;
+      const g = groups.find(x=>x.id===e.groupId);
+      const start = toMin(e.time);
+      const dur = (g && Number(g.duration_minutes)) || 45;
+      byDay[e.day].push({ entry:e, group:g, start, end:start+dur, dur });
+    });
+
+    // опсег на часови: најмалку 09–20, се проширува ако има термини надвор
+    let startH = 9, endH = 21;
+    Object.values(byDay).forEach(list=>list.forEach(ev=>{
+      startH = Math.min(startH, Math.floor(ev.start/60));
+      endH = Math.max(endH, Math.ceil(ev.end/60));
+    }));
+    const totalPx = (endH - startH) * HOUR_PX;
+
+    // заглавија
     grid.appendChild(makeCell('', 'cal-head'));
     days.forEach(d => grid.appendChild(makeCell(d, 'cal-head')));
 
-    calendarHours.forEach(h=>{
-      const hourNum = Number(h.split(':')[0]);
-      grid.appendChild(makeCell(h, 'cal-time'));
-      days.forEach(d=>{
-        // најди сите термини за овoj professor, овoj ден, чиj час (без разлика на минутите) паѓа во овoj ред
-        const entriesInHour = Object.entries(schedule).filter(([k, e]) => {
-          if(e.professorId !== session.realUserId || e.day !== d) return false;
-          return Number(String(e.time).split(':')[0]) === hourNum;
+    // колона со часови
+    const timeCol = document.createElement('div');
+    timeCol.className = 'cal-timecol';
+    timeCol.style.height = totalPx + 'px';
+    for(let h=startH; h<=endH; h++){
+      const lab = document.createElement('span');
+      lab.className = 'tlabel';
+      lab.style.top = ((h-startH)*HOUR_PX) + 'px';
+      if(h===startH) lab.style.transform = 'translateY(2px)';
+      lab.textContent = String(h).padStart(2,'0') + ':00';
+      timeCol.appendChild(lab);
+    }
+    grid.appendChild(timeCol);
+
+    days.forEach(d=>{
+      const col = document.createElement('div');
+      col.className = 'cal-daycol';
+      col.style.height = totalPx + 'px';
+      for(let h=startH; h<endH; h++){
+        const l = document.createElement('div'); l.className='hline'; l.style.top = ((h-startH)*HOUR_PX)+'px'; col.appendChild(l);
+        const l2 = document.createElement('div'); l2.className='hline half'; l2.style.top = ((h-startH)*HOUR_PX + HOUR_PX/2)+'px'; col.appendChild(l2);
+      }
+
+      // распоред на преклопувања (како Teams): настаните што се преклопуваат одат еден до друг
+      const list = byDay[d].sort((a,b)=>a.start-b.start || a.end-b.end);
+      let cluster = [], clusterEnd = -1;
+      const flush = ()=>{
+        if(!cluster.length) return;
+        const colsEnd = [];
+        cluster.forEach(ev=>{
+          let idx = colsEnd.findIndex(end => end <= ev.start);
+          if(idx === -1){ idx = colsEnd.length; colsEnd.push(ev.end); } else colsEnd[idx] = ev.end;
+          ev.col = idx;
         });
-        const cell = document.createElement('div');
-        cell.className = 'cal-cell';
-        if(entriesInHour.length === 0){
-          cell.innerHTML = `<span class="slot-empty">·</span>`;
-        } else {
-          cell.innerHTML = entriesInHour.map(([k, entry])=>{
-            const key = d + '-' + entry.time;
-            const g = groups.find(x=>x.id===entry.groupId);
-            const memberCount = g && g.members ? g.members.length : 0;
-            const isSelected = selectedSlotKey === key;
-            return `<div class="cal-event${isSelected?' selected':''}" data-slot-key="${key}">
-              <span class="cal-event-time">${String(entry.time).slice(0,5)}</span>
-              <span class="cal-event-title">${g ? escapeHtml(g.name) : '—'}</span>
-              ${g ? `<span class="cal-event-sub">${memberCount}/${g.capacity}</span>` : ''}
-            </div>`;
-          }).join('');
-        }
-        cell.querySelectorAll('.cal-event').forEach(el=>{
-          el.addEventListener('click', (ev)=>{ ev.stopPropagation(); selectedSlotKey = el.dataset.slotKey; renderSchedulePage(); });
-        });
-        grid.appendChild(cell);
+        cluster.forEach(ev=>ev.cols = colsEnd.length);
+        cluster = []; clusterEnd = -1;
+      };
+      list.forEach(ev=>{
+        if(cluster.length && ev.start >= clusterEnd) flush();
+        cluster.push(ev); clusterEnd = Math.max(clusterEnd, ev.end);
       });
+      flush();
+
+      list.forEach(ev=>{
+        const { entry, group:g } = ev;
+        const key = d + '-' + entry.time;
+        const memberCount = g && g.members ? g.members.length : 0;
+        const el = document.createElement('div');
+        const heightPx = Math.max(18, (ev.dur * HOUR_PX / 60) - 2);
+        el.className = 'cal-event' + (selectedSlotKey === key ? ' selected' : '') + (heightPx < 38 ? ' short' : '') + (ev.cols > 1 ? ' narrow' : '');
+        el.dataset.slotKey = key;
+        el.style.top = ((ev.start - startH*60) * HOUR_PX / 60 + 1) + 'px';
+        el.style.height = heightPx + 'px';
+        const w = 100 / ev.cols;
+        el.style.left = `calc(${ev.col * w}% + 2px)`;
+        el.style.width = `calc(${w}% - 4px)`;
+        el.title = `${g ? g.name : ''} · ${fmt(ev.start)}–${fmt(ev.end)}`;
+        el.innerHTML = `<span class="cal-event-time">${fmt(ev.start)}–${fmt(ev.end)}</span>
+          <span class="cal-event-title">${g ? escapeHtml(g.name) : '—'}</span>
+          ${g ? `<span class="cal-event-sub">${memberCount}/${g.capacity}</span>` : ''}`;
+        el.addEventListener('click', (e)=>{ e.stopPropagation(); selectedSlotKey = el.dataset.slotKey; renderSchedulePage(); });
+        col.appendChild(el);
+      });
+      grid.appendChild(col);
     });
   }
 
