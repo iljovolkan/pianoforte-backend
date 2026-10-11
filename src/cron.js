@@ -13,13 +13,14 @@ const REMINDER_DAYS_BEFORE = 3; // потсетник точно 3 дена пр
  */
 async function runDailyMaintenance() {
   const [installments] = await pool.query(
-    `SELECT i.*, s.id AS subscription_id, s.student_id, s.group_id, s.released AS sub_released,
-            u.email, u.full_name, p.name AS package_name, g.name AS group_name
+    `SELECT i.*, s.id AS subscription_id, s.student_id, s.group_id, s.secondary_group_id, s.released AS sub_released,
+            u.email, u.full_name, c.full_name AS child_name, p.name AS package_name, g.name AS group_name
      FROM installments i
      JOIN subscriptions s ON s.id = i.subscription_id
-     JOIN users u ON u.id = s.student_id
+     JOIN children c ON c.id = s.student_id
+     JOIN users u ON u.id = c.parent_id
      JOIN packages p ON p.id = s.package_id
-     JOIN groups_table g ON g.id = s.group_id
+     LEFT JOIN groups_table g ON g.id = s.group_id
      WHERE i.status = 'pending' AND s.released = FALSE AND s.payment_plan != 'trial'`
   );
 
@@ -29,7 +30,9 @@ async function runDailyMaintenance() {
   let remindersSent = 0;
   let released = 0;
 
+  const releasedSubs = new Set();
   for (const inst of installments) {
+    if (releasedSubs.has(inst.subscription_id)) continue;
     const due = new Date(inst.due_date);
     due.setHours(0, 0, 0, 0);
     const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
@@ -43,7 +46,8 @@ async function runDailyMaintenance() {
             <h2>Твojata рата доспева за ${REMINDER_DAYS_BEFORE} дена</h2>
             <p>Здраво, ${inst.full_name}!</p>
             <p>Пакет: <strong>${inst.package_name}</strong></p>
-            <p>Група: <strong>${inst.group_name}</strong></p>
+            <p>Дете: <strong>${inst.child_name}</strong></p>
+            ${inst.group_name ? `<p>Група: <strong>${inst.group_name}</strong></p>` : ''}
             <p>Рата: <strong>${inst.installment_number}/${inst.total_installments}</strong> — <strong>${inst.amount} ден.</strong></p>
             <p>Рок за плаќање: <strong>${due.toLocaleDateString('mk-MK')}</strong></p>
             <p style="color:#B3555F;">Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.</p>
@@ -56,12 +60,14 @@ async function runDailyMaintenance() {
     if (diffDays < -GRACE_DAYS) {
       // ослободи го терминот целосно — ja означуваме претплатата и сите нејзини
       // преостанати чекачки рати како 'released'
+      releasedSubs.add(inst.subscription_id);
       await pool.query('UPDATE subscriptions SET released = TRUE WHERE id = ?', [inst.subscription_id]);
       await pool.query(
         `UPDATE installments SET status = 'released' WHERE subscription_id = ? AND status = 'pending'`,
         [inst.subscription_id]
       );
-      await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [inst.group_id, inst.student_id]);
+      if (inst.group_id) await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [inst.group_id, inst.student_id]);
+      if (inst.secondary_group_id) await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [inst.secondary_group_id, inst.student_id]);
 
       await sendMail({
         to: inst.email,
@@ -70,7 +76,7 @@ async function runDailyMaintenance() {
           <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
             <h2>Терминот ти е ослободен</h2>
             <p>Здраво, ${inst.full_name}.</p>
-            <p>Поради задоцнета рата (${inst.installment_number}/${inst.total_installments}) за пакетот <strong>${inst.package_name}</strong>, местото во групата <strong>${inst.group_name}</strong> веќе не е резервирано за тебе.</p>
+            <p>Поради задоцнета рата (${inst.installment_number}/${inst.total_installments}) за пакетот <strong>${inst.package_name}</strong> (${inst.child_name}), местото во групата${inst.group_name ? ' <strong>' + inst.group_name + '</strong>' : ''} веќе не е резервирано.</p>
             <p>Преостанатите рати се откажани. За да продолжиш, направи нова уплата од апликацијата — имај предвид дека не е гарантирано дека ќе останеш кај истиот професор.</p>
           </div>
         `
