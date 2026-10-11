@@ -453,6 +453,43 @@ router.post('/installments/:id/mark-paid', async (req, res) => {
   }
 });
 
+
+// POST /finance/installments/:id/mark-unpaid  body: { reason }
+// Поништува САМО рачно означена уплата (кеш/банка/друго). Онлајн (cPay) уплати
+// не се поништуваат тука — тие бараат враќање на пари преку банката/cPay.
+// Фактурата не се брише: се обележува како СТОРНИРАНА (останува во архивата).
+router.post('/installments/:id/mark-unpaid', async (req, res) => {
+  try {
+    const reason = String(req.body.reason || '').trim().slice(0, 200);
+    if (!reason) return res.status(400).json({ error: 'Внеси причина за поништувањето.' });
+
+    const [[inst]] = await pool.query('SELECT * FROM installments WHERE id = ?', [req.params.id]);
+    if (!inst) return res.status(404).json({ error: 'Ратата не постои.' });
+    if (inst.status !== 'paid') return res.status(409).json({ error: 'Ратата не е означена како платена.' });
+    if (!MANUAL_METHODS.includes(inst.paid_method)) {
+      return res.status(403).json({ error: 'Онлајн уплата не може да се поништи тука — потребно е враќање на пари преку cPay/банка.' });
+    }
+
+    await pool.query(
+      `UPDATE installments SET status = 'pending', paid_at = NULL, paid_method = NULL, paid_note = ?, marked_by = ?
+       WHERE id = ? AND status = 'paid'`,
+      [`Поништено: ${reason}`, req.user.id, inst.id]);
+    const [cancelled] = await pool.query(
+      `UPDATE invoices SET cancelled_at = NOW(), cancel_reason = ? WHERE installment_id = ? AND cancelled_at IS NULL`,
+      [reason, inst.id]);
+
+    const [[nextPending]] = await pool.query(
+      `SELECT due_date FROM installments WHERE subscription_id = ? AND status <> 'paid' ORDER BY due_date ASC LIMIT 1`, [inst.subscription_id]);
+    await pool.query('UPDATE subscriptions SET next_due_date = ? WHERE id = ?',
+      [nextPending ? nextPending.due_date : addDays(todayStr(), 365), inst.subscription_id]);
+
+    res.json({ ok: true, invoices_cancelled: cancelled.affectedRows });
+  } catch (err) {
+    console.error('POST /finance/installments/:id/mark-unpaid error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
 // GET /finance/invoices/:id/html — готова HTML фактура за печатење
 router.get('/invoices/:id/html', async (req, res) => {
   const inv = await invoiceLib.getInvoice(req.params.id);
