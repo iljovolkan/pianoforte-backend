@@ -51,7 +51,7 @@ function paymentState(sub) {
 }
 
 // POST /subscriptions/:id/renew  — рачно продолжување рок (по нова уплата)
-router.post('/:id/renew', requireAuth, async (req, res) => {
+router.post('/:id/renew', requireAuth, requireRole('admin'), async (req, res) => {
   const [[sub]] = await pool.query('SELECT * FROM subscriptions WHERE id = ?', [req.params.id]);
   if (!sub) return res.status(404).json({ error: 'Претплатата не постои.' });
   if (req.user.role === 'student') {
@@ -69,7 +69,7 @@ router.post('/:id/renew', requireAuth, async (req, res) => {
 });
 
 // Автоматско ослободување задоцнети термини (повикано периодично — засега рачно/по барање)
-router.post('/check-overdue', requireAuth, async (req, res) => {
+router.post('/check-overdue', requireAuth, requireRole('admin'), async (req, res) => {
   const [subs] = await pool.query('SELECT * FROM subscriptions WHERE released = FALSE');
   let releasedCount = 0;
   for (const sub of subs) {
