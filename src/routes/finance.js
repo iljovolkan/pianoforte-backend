@@ -346,7 +346,7 @@ router.post('/manual-enrollment', async (req, res) => {
     if (paidN > schedule.length) { conn.release(); return res.status(400).json({ error: `Овој план има само ${schedule.length} рат(и).` }); }
 
     // групи на детето (ако е веќе вклучено во група)
-    const [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY id ASC LIMIT 2', [child_id]);
+    const [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY group_id ASC LIMIT 2', [child_id]);
     const groupId = groups[0] ? groups[0].group_id : null;
     const secondaryId = pkg.is_combo && groups[1] ? groups[1].group_id : null;
 
