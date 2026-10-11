@@ -4341,6 +4341,8 @@
        <input type="date" id="meStart" class="login-input" value="2026-09-01">
        <label>Датум на уплата</label>
        <input type="date" id="mePaidDate" class="login-input" value="2026-09-01">
+       <label>Следната рата доспева на (ако не е внесено — за 7 дена)</label>
+       <input type="date" id="meNextDue" class="login-input">
        <label>Белешка (незадолжително)</label>
        <input type="text" id="meNote" class="login-input" maxlength="200">
        <label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="meInvoice"> Издади и испрати фактура за веќе платените рати</label>
@@ -4354,7 +4356,7 @@
           body: JSON.stringify({
             child_id, package_id: ov.querySelector('#mePkg').value, payment_plan: ov.querySelector('#mePlan').value,
             paid_count: ov.querySelector('#mePaid').value, method: ov.querySelector('#meMethod').value,
-            start_date: ov.querySelector('#meStart').value, paid_date: ov.querySelector('#mePaidDate').value,
+            start_date: ov.querySelector('#meStart').value, next_due_date: ov.querySelector('#meNextDue').value || undefined, paid_date: ov.querySelector('#mePaidDate').value,
             note: ov.querySelector('#meNote').value.trim(), send_invoice: ov.querySelector('#meInvoice').checked
           })
         });
