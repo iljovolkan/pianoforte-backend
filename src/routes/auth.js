@@ -70,7 +70,7 @@ function issueTokens(user) {
 
 // POST /auth/register  { email, password, full_name, role }
 router.post('/register', registerLimiter, async (req, res) => {
-  const { email, password, full_name, role, child_name, child_age, captcha_token, photo_consent } = req.body;
+  const { email, password, full_name, role, child_name, child_age, captcha_token, photo_consent, phone } = req.body;
 
   if (!email || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Сите полиња се задолжителни.' });
@@ -85,32 +85,43 @@ router.post('/register', registerLimiter, async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Лозинката мора да има барем 8 карактери.' });
   }
+  const phoneClean = String(phone || '').trim();
+  if (role === 'student' && !/^[+0-9][0-9 ()\/.-]{5,24}$/.test(phoneClean)) {
+    return res.status(400).json({ error: 'Внеси валиден телефонски број.' });
+  }
   if (role === 'student' && (!child_name || !child_name.trim())) {
     return res.status(400).json({ error: 'Името на детето е задолжително.' });
   }
 
+  const conn = await pool.getConnection();
   try {
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
+      conn.release();
       return res.status(409).json({ error: 'Веќе постои корисник со овој email.' });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const verifyToken = crypto.randomBytes(32).toString('hex');
 
-    const [result] = await pool.query(
-      'INSERT INTO users (email, password_hash, role, full_name, verify_token, email_verified) VALUES (?, ?, ?, ?, ?, FALSE)',
-      [email, passwordHash, role, full_name, verifyToken]
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
+      'INSERT INTO users (email, password_hash, role, full_name, verify_token, email_verified, phone) VALUES (?, ?, ?, ?, ?, FALSE, ?)',
+      [email, passwordHash, role, full_name, verifyToken, phoneClean || null]
     );
 
     // за родителски (student) сметки, автоматски креирај го првото дете —
     // родителот подоцна може да додаде уште деца од профилот
     if (role === 'student') {
-      await pool.query(
+      await conn.query(
         'INSERT INTO children (parent_id, full_name, age, photo_consent) VALUES (?, ?, ?, ?)',
         [result.insertId, child_name.trim(), child_age || null, photo_consent ? 1 : 0]
       );
     }
+
+    await conn.commit();
+    conn.release();
 
     const verifyLink = `${APP_URL}/auth/verify?token=${verifyToken}`;
     await sendMail({
@@ -130,6 +141,7 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     res.status(201).json({ id: result.insertId, email, role, full_name });
   } catch (err) {
+    try { await conn.rollback(); conn.release(); } catch (e) {}
     console.error(err);
     res.status(500).json({ error: 'Грешка на серверот.' });
   }
