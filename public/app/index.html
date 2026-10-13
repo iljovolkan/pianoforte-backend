@@ -807,6 +807,8 @@
     <input class="login-input" id="regName" placeholder="пр. Марија Петровска" data-i18n-placeholder="placeholder_reg_name">
     <label class="field-label" data-i18n="label_email">Email</label>
     <input class="login-input" id="regEmail" type="email" placeholder="родител@email.com" data-i18n-placeholder="placeholder_parent_email">
+    <label class="field-label" data-i18n="reg_phone_label">Телефонски број</label>
+    <input class="login-input" id="regPhone" type="tel" placeholder="07x xxx xxx" data-i18n-placeholder="placeholder_phone">
     <label class="field-label" data-i18n="label_password">Лозинка</label>
     <div class="pw-wrap"><input class="login-input" id="regPassword" type="password" placeholder="••••••••"><button type="button" class="pw-toggle" data-target="regPassword" aria-label="Прикажи лозинка" data-i18n-aria="aria_show_pw"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 
@@ -1306,6 +1308,7 @@
           <input type="date" id="invoiceFrom" class="login-input" style="margin-bottom:0; width:auto;">
           <input type="date" id="invoiceTo" class="login-input" style="margin-bottom:0; width:auto;">
           <button class="send-btn" id="invoiceSearchBtn" style="width:auto; padding:0 18px;">Пребарaj</button>
+          <button class="send-btn" id="invoicePrintAllBtn" style="width:auto; padding:0 18px; background:var(--leaf,#2f7d4f);">Печати ги сите</button>
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
@@ -1540,7 +1543,7 @@
       profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
       child_selector_label:'Дете', children_title:'Твоите деца', children_save_btn:'Зачувај', children_cancel_btn:'Откажи', children_add_btn:'+ Додади дете',
 
-      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
+      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_phone_label:'Телефонски број', placeholder_phone:'07x xxx xxx', reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
       reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
       reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
       pay_terms_post:' за оваа уплата.',
@@ -1629,7 +1632,7 @@
       profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
       child_selector_label:'Child', children_title:'Your children', children_save_btn:'Save', children_cancel_btn:'Cancel', children_add_btn:'+ Add child',
 
-      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
+      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_phone_label:'Phone number', placeholder_phone:'07x xxx xxx', reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
       reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
       reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
       pay_terms_post:' for this payment.',
@@ -2272,12 +2275,13 @@
     const name = document.getElementById('regName').value.trim();
     const childName = document.getElementById('regChildName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value.trim();
     const age = document.getElementById('regAge').value;
     const errBox = document.getElementById('registerError');
     errBox.style.display = 'none';
 
-    if(!name || !childName || !email || !password || !age){
+    if(!name || !childName || !email || !phone || !password || !age){
       errBox.textContent = 'Пополни ги сите полиња.';
       errBox.style.display = 'block';
       return;
@@ -2307,7 +2311,7 @@
       const photoConsent = document.getElementById('regPhotoCheckbox').checked;
       await apiCall('/auth/register', {
         method:'POST',
-        body: JSON.stringify({ email, password, full_name:name, role:'student', child_name:childName, child_age:age, captcha_token:captchaToken, photo_consent: photoConsent })
+        body: JSON.stringify({ email, password, phone, full_name:name, role:'student', child_name:childName, child_age:age, captcha_token:captchaToken, photo_consent: photoConsent })
       });
 
       pendingRegistration = {name, childName, email, password, age};
@@ -4349,6 +4353,20 @@
     }
   }
   document.getElementById('invoiceSearchBtn').addEventListener('click', loadInvoices);
+  document.getElementById('invoicePrintAllBtn').addEventListener('click', async ()=>{
+    const params = new URLSearchParams();
+    const q = document.getElementById('invoiceSearchQ').value.trim();
+    const from = document.getElementById('invoiceFrom').value;
+    const to = document.getElementById('invoiceTo').value;
+    if(q) params.set('q', q); if(from) params.set('from', from); if(to) params.set('to', to);
+    try{
+      const { html, count } = await authApiCall('/finance/invoices/print-all?' + params.toString());
+      if(!confirm('Да се отпечатат ' + count + ' фактури (според филтерот)?')) return;
+      const w = window.open('', '_blank');
+      w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 400);
+    } catch(err){ alert(err.message || 'Грешка.'); }
+  });
 
 
   /* ===================== ЕВИДЕНЦИЈА НА ПЛАЌАЊА (Искра) ===================== */
@@ -4398,7 +4416,7 @@
             <span style="min-width:150px;">${label}</span>
             ${isPaid
               ? `<span style="color:var(--leaf,#2f7d4f);font-weight:600;">✓ платена ${fmtDate(i.paid_at)} · ${PAY_METHODS[i.paid_method]||'Картичка (онлајн)'}</span>
-                 ${['cash','bank','other'].includes(i.paid_method) ? `<button class="mc-btn" style="flex:none;font-size:11px;" data-unmark-inst="${i.id}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Поништи</button>` : ''}`
+                 <button class="mc-btn" style="flex:none;font-size:11px;" data-unmark-inst="${i.id}" data-online="${['cash','bank','other'].includes(i.paid_method) ? '' : '1'}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Поништи</button>`
               : `<span style="color:${overdue?'var(--wine,#B3555F)':'inherit'};">${overdue?'⚠ доспеала':'доспева'} ${fmtDate(i.due_date)}</span>
                  <button class="mc-btn" style="flex:none;font-size:11px;" data-mark-inst="${i.id}" data-amount="${i.amount}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Означи платена</button>`}
           </div>`;
@@ -4411,7 +4429,8 @@
       }).join('');
       box.querySelectorAll('button[data-unmark-inst]').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
-          const reason = prompt('Поништување на уплатата за ' + btn.dataset.label + '.\nФактурата ќе се означи како СТОРНИРАНА (не се брише).\n\nПричина:');
+          const warn = btn.dataset.online ? '\nВНИМАНИЕ: ова е онлајн уплата. Системот НЕ враќа пари — враќањето е рачно од сметка на сметка.' : '';
+          const reason = prompt('Поништување на уплатата за ' + btn.dataset.label + '.\nФактурата ќе се означи како СТОРНИРАНА (не се брише).' + warn + '\n\nПричина:');
           if(!reason || !reason.trim()) return;
           btn.disabled = true;
           try{
@@ -4426,7 +4445,7 @@
           finModal('Означи рата како платена',
             `<p style="margin:0 0 10px;font-size:14px;"><strong>${btn.dataset.label}</strong> · ${fmtMoney(btn.dataset.amount)}</p>
              <label>Начин на плаќање</label>
-             <select id="fmMethod" class="login-select"><option value="cash">Кеш</option><option value="bank">Банка</option><option value="other">Друго</option></select>
+             <select id="fmMethod" class="login-select"><option value="bank">Банка</option><option value="other">Друго</option></select>
              <label>Датум на уплата</label>
              <input type="date" id="fmDate" class="login-input" value="${todayIso()}">
              <label>Белешка (незадолжително)</label>
@@ -4467,7 +4486,7 @@
        <label>Колку рати се веќе платени?</label>
        <input type="number" id="mePaid" class="login-input" min="0" value="1">
        <label>Како се платени</label>
-       <select id="meMethod" class="login-select"><option value="cash">Кеш</option><option value="bank">Банка</option><option value="other">Друго</option></select>
+       <select id="meMethod" class="login-select"><option value="bank">Банка</option><option value="other">Друго</option></select>
        <label>Датум на прва рата / почеток</label>
        <input type="date" id="meStart" class="login-input" value="2026-09-01">
        <label>Датум на уплата</label>
