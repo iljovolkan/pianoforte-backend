@@ -3,7 +3,7 @@
 // (за корисникот веднаш да ги гледа најновите промени), статичните икони/
 // manifest се cache-first (не се менуваат често). НЕ ги кешира API повиците.
 
-const CACHE_NAME = 'pianoforte-shell-v5'; // зголемено — поради преместување на апликацијата под /app патека
+const CACHE_NAME = 'pianoforte-shell-v6'; // зголемено — поради преместување на апликацијата под /app патека
 const SHELL_FILES = [
   '/app/manifest.json',
   '/app/icons/icon-192.png',
