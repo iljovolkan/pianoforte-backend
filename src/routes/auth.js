@@ -376,6 +376,10 @@ router.put('/profile', requireAuth, async (req, res) => {
   if (!full_name || !full_name.trim()) {
     return res.status(400).json({ error: 'Името е задолжително.' });
   }
+  const phoneIn = req.body.phone === undefined ? undefined : String(req.body.phone || '').trim();
+  if (phoneIn && !/^[+0-9][0-9 ()\/.-]{5,24}$/.test(phoneIn)) {
+    return res.status(400).json({ error: 'Внеси валиден телефонски број.' });
+  }
 
   const [[me]] = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
   if (!me) return res.status(404).json({ error: 'Корисникот не постои.' });
@@ -409,11 +413,13 @@ router.put('/profile', requireAuth, async (req, res) => {
         </div>
       `
     });
+    if (phoneIn !== undefined) await pool.query('UPDATE users SET phone = ? WHERE id = ?', [phoneIn || null, req.user.id]);
     return res.json({ ok: true, email_changed: true, requires_verification: true });
   }
 
   await pool.query('UPDATE users SET full_name = ?, email = ? WHERE id = ?',
     [full_name.trim(), email || me.email, req.user.id]);
+  if (phoneIn !== undefined) await pool.query('UPDATE users SET phone = ? WHERE id = ?', [phoneIn || null, req.user.id]);
   res.json({ ok: true, email_changed: emailChanged, requires_verification: false });
 });
 
