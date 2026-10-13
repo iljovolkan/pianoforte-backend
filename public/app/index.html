@@ -2631,6 +2631,39 @@
     }
     handleDeepLink();
     handlePaymentReturn();
+    if(session.role==='student' && !session.restrictedChildId) checkParentPhone();
+  }
+
+  // Постојни родители без телефон: еднаш по најава ги замолуваме да го внесат
+  // (потребен е за фактурата). Може да одложат со „Подоцна“.
+  async function checkParentPhone(){
+    try{
+      if(sessionStorage.getItem('pf_phone_snooze')) return;
+      const me = await authApiCall('/auth/me');
+      if(me.phone !== null && me.phone !== undefined) return;
+      if('phone' in me === false) return; // миграцијата не е извршена — не прикажувај
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+      ov.innerHTML = `<div style="background:var(--card,#fff);color:inherit;border-radius:14px;max-width:420px;width:100%;padding:22px;">
+        <h3 style="margin:0 0 8px;">Додај телефонски број</h3>
+        <p style="font-size:14px;opacity:.8;margin:0 0 12px;">Телефонскиот број е потребен за да се испечати на фактурите што ги добиваш на мејл.</p>
+        <input type="tel" id="phoneModalInput" class="login-input" placeholder="07x xxx xxx">
+        <div id="phoneModalErr" style="color:var(--wine,#b3262e);font-size:13px;min-height:18px;margin-bottom:6px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="send-btn" id="phoneModalSave" style="flex:1;">Зачувај</button>
+          <button class="mc-btn" id="phoneModalLater" style="flex:none;padding:0 16px;">Подоцна</button>
+        </div></div>`;
+      document.body.appendChild(ov);
+      ov.querySelector('#phoneModalLater').onclick = ()=>{ try{ sessionStorage.setItem('pf_phone_snooze','1'); }catch(e){} ov.remove(); };
+      ov.querySelector('#phoneModalSave').onclick = async ()=>{
+        const v = ov.querySelector('#phoneModalInput').value.trim();
+        const err = ov.querySelector('#phoneModalErr');
+        try{
+          await authApiCall('/auth/phone', { method:'PUT', body: JSON.stringify({ phone: v }) });
+          ov.remove();
+        } catch(e){ err.textContent = e.message || 'Грешка.'; }
+      };
+    } catch(e){ console.error('checkParentPhone', e); }
   }
 
   // Browser-от се враќа овде откако cPay го обработил плаќањето (redirect
