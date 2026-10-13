@@ -455,8 +455,8 @@ router.post('/installments/:id/mark-paid', async (req, res) => {
 
 
 // POST /finance/installments/:id/mark-unpaid  body: { reason }
-// Поништува САМО рачно означена уплата (кеш/банка/друго). Онлајн (cPay) уплати
-// не се поништуваат тука — тие бараат враќање на пари преку банката/cPay.
+// Поништува означена уплата (рачна или онлајн). Парите (ако се враќаат) се враќаат
+// рачно од сметка на сметка — системот само ја ослободува ратата и ја сторнира фактурата.
 // Фактурата не се брише: се обележува како СТОРНИРАНА (останува во архивата).
 router.post('/installments/:id/mark-unpaid', async (req, res) => {
   try {
@@ -466,9 +466,6 @@ router.post('/installments/:id/mark-unpaid', async (req, res) => {
     const [[inst]] = await pool.query('SELECT * FROM installments WHERE id = ?', [req.params.id]);
     if (!inst) return res.status(404).json({ error: 'Ратата не постои.' });
     if (inst.status !== 'paid') return res.status(409).json({ error: 'Ратата не е означена како платена.' });
-    if (!MANUAL_METHODS.includes(inst.paid_method)) {
-      return res.status(403).json({ error: 'Онлајн уплата не може да се поништи тука — потребно е враќање на пари преку cPay/банка.' });
-    }
 
     await pool.query(
       `UPDATE installments SET status = 'pending', paid_at = NULL, paid_method = NULL, paid_note = ?, marked_by = ?
@@ -488,6 +485,19 @@ router.post('/installments/:id/mark-unpaid', async (req, res) => {
     console.error('POST /finance/installments/:id/mark-unpaid error:', err);
     res.status(500).json({ error: 'Грешка: ' + err.message });
   }
+});
+
+// GET /finance/invoices/print-all?from&to&q — сите фактури од филтерот во еден документ за печатење
+router.get('/invoices/print-all', async (req, res) => {
+  const { from, to, q } = req.query;
+  let where = 'WHERE 1=1';
+  const params = [];
+  if (from) { where += ' AND i.issued_at >= ?'; params.push(from + ' 00:00:00'); }
+  if (to) { where += ' AND i.issued_at <= ?'; params.push(to + ' 23:59:59'); }
+  if (q) { where += ' AND (i.student_name LIKE ? OR i.parent_email LIKE ? OR i.invoice_number LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  const rows = await invoiceLib.queryInvoices(where + ' ORDER BY i.issued_at ASC, i.id ASC LIMIT 500', params);
+  if (!rows.length) return res.status(404).json({ error: 'Нема фактури за печатење.' });
+  res.json({ html: invoiceLib.renderInvoicesBatchHtml(rows), count: rows.length });
 });
 
 // GET /finance/invoices/:id/html — готова HTML фактура за печатење
