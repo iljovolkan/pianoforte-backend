@@ -1543,7 +1543,7 @@
       profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
       child_selector_label:'Дете', children_title:'Твоите деца', children_save_btn:'Зачувај', children_cancel_btn:'Откажи', children_add_btn:'+ Додади дете',
 
-      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_phone_label:'Телефонски број', placeholder_phone:'07x xxx xxx', reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
+      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_phone_label:'Телефонски број', placeholder_phone:'07x xxx xxx', phone_modal_title:'Додај телефонски број', phone_modal_text:'Телефонскиот број се печати на фактурите што ги добиваш на мејл и се користи само за тоа.', phone_modal_save:'Зачувај', phone_modal_later:'Подоцна', phone_modal_err:'Внеси валиден телефонски број.', reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
       reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
       reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
       pay_terms_post:' за оваа уплата.',
@@ -1632,7 +1632,7 @@
       profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
       child_selector_label:'Child', children_title:'Your children', children_save_btn:'Save', children_cancel_btn:'Cancel', children_add_btn:'+ Add child',
 
-      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_phone_label:'Phone number', placeholder_phone:'07x xxx xxx', reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
+      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_phone_label:'Phone number', placeholder_phone:'07x xxx xxx', phone_modal_title:'Add your phone number', phone_modal_text:'Your phone number is printed on the invoices you receive by email and is used only for that.', phone_modal_save:'Save', phone_modal_later:'Later', phone_modal_err:'Enter a valid phone number.', reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
       reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
       reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
       pay_terms_post:' for this payment.',
@@ -2645,13 +2645,13 @@
       const ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
       ov.innerHTML = `<div style="background:var(--card,#fff);color:inherit;border-radius:14px;max-width:420px;width:100%;padding:22px;">
-        <h3 style="margin:0 0 8px;">Додај телефонски број</h3>
-        <p style="font-size:14px;opacity:.8;margin:0 0 12px;">Телефонскиот број е потребен за да се испечати на фактурите што ги добиваш на мејл.</p>
+        <h3 style="margin:0 0 8px;">${t('phone_modal_title')}</h3>
+        <p style="font-size:14px;opacity:.8;margin:0 0 12px;">${t('phone_modal_text')}</p>
         <input type="tel" id="phoneModalInput" class="login-input" placeholder="07x xxx xxx">
         <div id="phoneModalErr" style="color:var(--wine,#b3262e);font-size:13px;min-height:18px;margin-bottom:6px;"></div>
         <div style="display:flex;gap:8px;">
-          <button class="send-btn" id="phoneModalSave" style="flex:1;">Зачувај</button>
-          <button class="mc-btn" id="phoneModalLater" style="flex:none;padding:0 16px;">Подоцна</button>
+          <button class="send-btn" id="phoneModalSave" style="flex:1;">${t('phone_modal_save')}</button>
+          <button class="mc-btn" id="phoneModalLater" style="flex:none;padding:0 16px;">${t('phone_modal_later')}</button>
         </div></div>`;
       document.body.appendChild(ov);
       ov.querySelector('#phoneModalLater').onclick = ()=>{ try{ sessionStorage.setItem('pf_phone_snooze','1'); }catch(e){} ov.remove(); };
@@ -2661,7 +2661,7 @@
         try{
           await authApiCall('/auth/phone', { method:'PUT', body: JSON.stringify({ phone: v }) });
           ov.remove();
-        } catch(e){ err.textContent = e.message || 'Грешка.'; }
+        } catch(e){ err.textContent = t('phone_modal_err'); }
       };
     } catch(e){ console.error('checkParentPhone', e); }
   }
