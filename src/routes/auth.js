@@ -282,12 +282,31 @@ router.post('/logout', requireAuth, async (req, res) => {
 
 // GET /auth/me  — сопствен профил, потврдува дека токенот работи
 router.get('/me', requireAuth, async (req, res) => {
-  const [rows] = await pool.query(
-    'SELECT id, email, role, full_name, email_verified, instrument, finance_access, created_at FROM users WHERE id = ?',
-    [req.user.id]
-  );
+  let rows;
+  try {
+    [rows] = await pool.query(
+      'SELECT id, email, role, full_name, email_verified, instrument, finance_access, phone, created_at FROM users WHERE id = ?',
+      [req.user.id]
+    );
+  } catch (e) {
+    if (e.code !== 'ER_BAD_FIELD_ERROR') throw e; // миграцијата за телефон сè уште не е извршена
+    [rows] = await pool.query(
+      'SELECT id, email, role, full_name, email_verified, instrument, finance_access, created_at FROM users WHERE id = ?',
+      [req.user.id]
+    );
+  }
   if (rows.length === 0) return res.status(404).json({ error: 'Корисникот не постои.' });
   res.json(rows[0]);
+});
+
+// PUT /auth/phone  { phone } — родителот го додава/менува својот телефон (се печати на фактурата)
+router.put('/phone', requireAuth, async (req, res) => {
+  const phone = String(req.body.phone || '').trim();
+  if (!/^[+0-9][0-9 ()\/.-]{5,24}$/.test(phone)) {
+    return res.status(400).json({ error: 'Внеси валиден телефонски број.' });
+  }
+  await pool.query('UPDATE users SET phone = ? WHERE id = ?', [phone, req.user.id]);
+  res.json({ ok: true });
 });
 
 // POST /auth/forgot-password  { email }
