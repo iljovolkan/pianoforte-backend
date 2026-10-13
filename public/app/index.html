@@ -448,6 +448,10 @@
     /* Преглед на групи — една колона на телефон */
     .groups-overview{grid-template-columns:1fr;}
   }
+
+  .sent-item:has(.child-actions){flex-wrap:wrap; row-gap:12px;}
+  .child-actions{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px; padding-top:10px; border-top:1px solid var(--line, rgba(0,0,0,.08));}
+  .child-actions .mc-btn{flex:0 0 auto !important; width:auto; padding:8px 14px; white-space:nowrap;}
 </style>
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
@@ -2423,10 +2427,12 @@
           <div class="t">${escapeHtml(c.full_name)}</div>
           <div class="sub">${c.age ? c.age + ' ' + t('x_years') : ''}${c.access_code ? ' · 🔑 ' + c.access_code : ''}</div>
         </div>
+<div class="child-actions">
         <button class="mc-btn" style="flex:none;" onclick="editChild(${c.id})">${t('x_edit')}</button>
         <button class="mc-btn" style="flex:none;" data-gen-code="${c.id}">${c.access_code ? t('regenerate_code_btn') : t('generate_code_btn')}</button>
         <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" data-withdraw="${c.id}" data-name="${escapeHtml(c.full_name)}">${t('x_stop_service')}</button>
         ${children.length>1 ? `<button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteChild(${c.id})">${t('x_delete')}</button>` : ''}
+        </div>
       </div>
     `).join('');
     list.querySelectorAll('button[data-withdraw]').forEach(btn=>{
