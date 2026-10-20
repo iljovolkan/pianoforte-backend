@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Проекти — PianoForte</title>
-<meta name="description" content="Концерти, настапи и проекти на PianoForte музичкото училиште.">
+<title>За нас — PianoForte</title>
+<meta name="description" content="Дознај повеќе за PianoForte музичкото училиште во Скопје.">
 <meta name="theme-color" content="#FBF7F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,11 +193,11 @@
   }
 
   /* ===== ABOUT / PROJECTS / SUMMER SCHOOL ===== */
-  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:stretch;}
-  .about-grid > *{min-width:0; min-height:0;}
-  .about-media{overflow:hidden; border-radius:22px; display:flex; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); color:var(--mist); font-size:13px; min-height:280px;}
-  .about-media img{display:block; width:100%; height:100%; object-fit:cover;}
-  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} .about-media{aspect-ratio:4/3; min-height:0; height:auto;} }
+  .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start;}
+  .about-grid > *{min-width:0;}
+  .about-media{overflow:hidden; border-radius:22px; background:linear-gradient(135deg, var(--lilac-pale), var(--sand-pale)); display:flex; align-items:center; justify-content:center; color:var(--mist); font-size:13px; aspect-ratio:16/10;}
+  .about-media img{display:block; width:100%; height:100%; object-fit:contain;}
+  @media(max-width:900px){ .about-grid{grid-template-columns:1fr; gap:32px;} .about-media{aspect-ratio:4/3;} }
 
   /* ===== BLOG — вистински написи, естетски картички ===== */
   .blog-post-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px;}
@@ -213,6 +213,9 @@
 
   /* ===== BLOG POST DETAILS (blog-post.html) ===== */
   .back-link{display:inline-flex; align-items:center; gap:6px; color:var(--lilac-deep); font-weight:600; font-size:14px; text-decoration:none; margin-bottom:8px;}
+  .scroll-hint{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:var(--lilac-deep); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(107,78,142,0.35); cursor:pointer; z-index:500; animation:scrollBounce 1.6s infinite;}
+  .scroll-hint svg{width:20px; height:20px;}
+  @keyframes scrollBounce{ 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(6px);} }
   .back-link:hover{text-decoration:underline;}
   .blog-post-article{max-width:760px; margin:0 auto;}
   .post-title{font-size:32px; font-weight:500; margin:10px 0 26px; line-height:1.3;}
@@ -296,10 +299,6 @@
     .wrap{padding:0 18px;}
   }
 
-
-  .scroll-hint{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:var(--lilac-deep); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(107,78,142,0.35); cursor:pointer; z-index:500; animation:scrollBounce 1.6s infinite;}
-  .scroll-hint svg{width:20px; height:20px;}
-  @keyframes scrollBounce{ 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(6px);} }
 </style>
 </head>
 <body>
@@ -386,46 +385,30 @@
   <a href="contact.html" class="m-link" data-i18n="nav_contact">Контакт</a>
   <a href="/app" class="cta-primary m-cta" data-i18n="nav_cta">Купи/Најави се</a>
 </div>
-<div class="page-hero tint-sand">
+<div class="page-hero tint-lilac">
   <div class="wrap">
     <a href="#" class="back-link" onclick="history.back(); return false;" data-i18n="back_link">← Назад</a>
-    <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_projects">Проекти</span></div>
-    <h1 data-i18n="projects_title">Проекти</h1>
-    <p data-i18n="projects_sub">Концерти, настапи и соработки со други музички институции.</p>
+    <div class="breadcrumb"><a href="index.html" data-i18n="breadcrumb_home">Почетна</a> / <span data-i18n="nav_about_us">За нас</span></div>
+    <h1 data-i18n="about_title">За PianoForte</h1>
   </div>
 </div>
-
 <section>
   <div class="wrap about-grid">
-    <div>
-      <span class="placeholder-tag" style="background:var(--sand-pale); color:var(--sand-deep);" data-i18n="proj1_tag">Меѓународна соработка</span>
-      <h3 style="font-size:24px; margin-bottom:14px;" data-i18n="proj1_title">PianoForte Strings во Љубљана</h3>
-      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;" data-i18n="proj1_p1">
-        Камерниот ансамбл PianoForte Strings — составен од млади музички уметници и врвни педагози на училиштето — гостуваше во Словенија, како резултат на повеќегодишна соработка меѓу PianoForte Скопје и Валдорфската школа во Љубљана.
-      </p>
-      <p style="color:var(--mist); line-height:1.75;" data-i18n="proj1_p2">
-        На заедничкиот концерт публиката слушна и македонско современо и народно творештво, и словенечки аранжмани за класичен состав. Настанот беше делумно поддржан од Министерството за култура на РС Македонија, како проект од национален интерес во меѓународната културна дејност.
-      </p>
-    </div>
     <div class="about-media">
-      <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2021/11/rsz_1j_mg_5010-800x800.jpg" alt="PianoForte Strings во Љубљана" style="width:100%; height:100%; object-fit:cover; border-radius:22px;">
-    </div>
-  </div>
-</section>
-
-<section class="alt">
-  <div class="wrap about-grid">
-    <div class="about-media">
-      <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2023/04/DRA_5168-scaled-600x400.jpg" alt="Профундис и PianoForte" style="width:100%; height:100%; object-fit:cover; border-radius:22px;">
+      <img src="https://app.pianoforte.edu.mk/wp-content/uploads/2020/10/zanaaaas-300x200.png" alt="За PianoForte" style="border-radius:20px;">
     </div>
     <div>
-      <span class="placeholder-tag" data-i18n="proj2_tag">Оркестарска работилница</span>
-      <h3 style="font-size:24px; margin-bottom:14px;" data-i18n="proj2_title">Профундис и PianoForte</h3>
-      <p style="color:var(--mist); line-height:1.75; margin-bottom:14px;" data-i18n="proj2_p1">
-        Во соработка со камерниот оркестар „Профундис“ — еден од најнапредните ансамбли во земjaва — учениците на PianoForte имаа можност да ja доживеат целата подготовка на еден концерт, од првата проба до настапот.
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p1">
+        PianoForte е музичко училиште во Скопје кое веќе повеќе од две децении го збогатува музичкото образование на деца и младинци. Основано во 2000-та година, училиштето е дело на визијата на неговите основачки — Марина Чадо, професорка по виолина и извршен директор, и Виолета Стефановска-Шуковиќ, професорка по пијано и академски директор.
       </p>
-      <p style="color:var(--mist); line-height:1.75;" data-i18n="proj2_p2">
-        Работилницата ги запозна младите музичари со архитектурата на концертната сала, распоредот на инструментите во оркестарот, и им овозможи да свират рамо до рамо со професионални музичари, под диригентство на Ѓурѓица Дашиќ.
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p2">
+        Денес во училиштето учат над 180 ученици, во класично музичко образование по пијано, виолина, гитара, тапани и пеење, како и во посебен Оддел за популарни жанрови. Наставата се одвива и во просториите на училиштето, и онлајн во живо, а програмата ja предаваат над 20 еминентни професори — дипломирани музичари, магистри и доктори на науки.
+      </p>
+      <p style="color:var(--mist); margin-bottom:18px; line-height:1.75;" data-i18n="about_p3">
+        Секоja возраст е добредојдена — од ран музички развој за предучилишни деца, до возрасни кои сакаат да почнат одново. Учениците на училиштето освоија повеќе награди на меѓународни натпревари и фестивали во Италија, Белгија, Словенија, Србија, Косово и Украина, но фокусот секогаш останува на уживањето во музицирањето, не само на резултатите.
+      </p>
+      <p style="color:var(--mist); line-height:1.75;" data-i18n="about_p4">
+        Училиштето е активно и во општествено-корисни иницијативи — музичка работилница „По патот на музиката“, волонтерски настапи на детски фестивали, и соработка со основни музички училишта низ Скопје, каде најмладите го доживуваат својот прв контакт со виолина, гитара и флејта.
       </p>
     </div>
   </div>
@@ -494,13 +477,12 @@
     mk: {
       util_login:'Најави се / Регистрација', util_buy:'Купи час',
       nav_home:'Почетна', nav_about:'За нас', nav_about_us:'За нас', nav_projects:'Проекти', nav_summer:'Летна школа',
-      page_title:'Проекти — PianoForte', aria_menu:'Мени', back_link:'← Назад', placeholder_email:'твoja@email.com',
-      proj1_tag:'Меѓународна соработка', proj1_title:'PianoForte Strings во Љубљана',
-      proj1_p1:'Камерниот ансамбл PianoForte Strings — составен од млади музички уметници и врвни педагози на училиштето — гостуваше во Словенија, како резултат на повеќегодишна соработка меѓу PianoForte Скопје и Валдорфската школа во Љубљана.',
-      proj1_p2:'На заедничкиот концерт публиката слушна и македонско современо и народно творештво, и словенечки аранжмани за класичен состав. Настанот беше делумно поддржан од Министерството за култура на РС Македонија, како проект од национален интерес во меѓународната културна дејност.',
-      proj2_tag:'Оркестарска работилница', proj2_title:'Профундис и PianoForte',
-      proj2_p1:'Во соработка со камерниот оркестар „Профундис“ — еден од најнапредните ансамбли во земjaва — учениците на PianoForte имаа можност да ja доживеат целата подготовка на еден концерт, од првата проба до настапот.',
-      proj2_p2:'Работилницата ги запозна младите музичари со архитектурата на концертната сала, распоредот на инструментите во оркестарот, и им овозможи да свират рамо до рамо со професионални музичари, под диригентство на Ѓурѓица Дашиќ.',
+      page_title:'За нас — PianoForte',
+      aria_menu:'Мени', back_link:'← Назад', placeholder_email:'твoja@email.com',
+      about_p1:'PianoForte е музичко училиште во Скопје кое веќе повеќе од две децении го збогатува музичкото образование на деца и младинци. Основано во 2000-та година, училиштето е дело на визијата на неговите основачки — Марина Чадо, професорка по виолина и извршен директор, и Виолета Стефановска-Шуковиќ, професорка по пијано и академски директор.',
+      about_p2:'Денес во училиштето учат над 180 ученици, во класично музичко образование по пијано, виолина, гитара, тапани и пеење, како и во посебен Оддел за популарни жанрови. Наставата се одвива и во просториите на училиштето, и онлајн во живо, а програмата ja предаваат над 20 еминентни професори — дипломирани музичари, магистри и доктори на науки.',
+      about_p3:'Секоja возраст е добредојдена — од ран музички развој за предучилишни деца, до возрасни кои сакаат да почнат одново. Учениците на училиштето освоија повеќе награди на меѓународни натпревари и фестивали во Италија, Белгија, Словенија, Србија, Косово и Украина, но фокусот секогаш останува на уживањето во музицирањето, не само на резултатите.',
+      about_p4:'Училиштето е активно и во општествено-корисни иницијативи — музичка работилница „По патот на музиката“, волонтерски настапи на детски фестивали, и соработка со основни музички училишта низ Скопје, каде најмладите го доживуваат својот прв контакт со виолина, гитара и флејта.',
       dri_about_desc:'Нашата приказна и филозофија', dri_projects_desc:'Концерти и соработки', dropdown_label_instruments:'ИНСТРУМЕНТИ',
       nav_instruments:'Инструменти', nav_blog:'Блог', nav_contact:'Контакт', nav_cta:'Купи/Најави се',
       inst_piano:'Пијано', inst_violin:'Виолина', inst_guitar:'Гитара', inst_elguitar:'Електрична гитара',
@@ -545,13 +527,12 @@
     en: {
       util_login:'Sign in / Register', util_buy:'Buy a lesson',
       nav_home:'Home', nav_about:'About', nav_about_us:'About us', nav_projects:'Projects', nav_summer:'Summer school',
-      page_title:'Projects — PianoForte', aria_menu:'Menu', back_link:'← Back', placeholder_email:'your@email.com',
-      proj1_tag:'International collaboration', proj1_title:'PianoForte Strings in Ljubljana',
-      proj1_p1:'The PianoForte Strings chamber ensemble — made up of young musicians and the school\u2019s top teachers — performed in Slovenia, the result of a multi-year partnership between PianoForte Skopje and the Waldorf School in Ljubljana.',
-      proj1_p2:'At the joint concert, the audience heard Macedonian contemporary and folk works alongside Slovenian arrangements for classical ensemble. The event was partly supported by the Ministry of Culture of the Republic of North Macedonia as a project of national interest in international cultural activity.',
-      proj2_tag:'Orchestra workshop', proj2_title:'Profundis and PianoForte',
-      proj2_p1:'In collaboration with the chamber orchestra \u201cProfundis\u201d — one of the country\u2019s most advanced ensembles — PianoForte students got to experience the full preparation of a concert, from the first rehearsal to the performance.',
-      proj2_p2:'The workshop introduced the young musicians to the architecture of the concert hall and the layout of instruments within the orchestra, and let them play side by side with professional musicians under the direction of conductor Gjurgjica Dashikj.',
+      page_title:'About us — PianoForte',
+      aria_menu:'Menu', back_link:'← Back', placeholder_email:'your@email.com',
+      about_p1:'PianoForte is a music school in Skopje that has been enriching the musical education of children and young people for over two decades. Founded in 2000, the school is the vision of its founders — Marina Chado, violin professor and executive director, and Violeta Stefanovska-Shukovikj, piano professor and academic director.',
+      about_p2:'Today the school has over 180 students, offering classical music education in piano, violin, guitar, drums and singing, as well as a dedicated Popular Genres department. Classes take place both at the school and live online, taught by over 20 distinguished professors — graduate musicians, master\\u2019s and doctoral degree holders.',
+      about_p3:'Every age is welcome — from early musical development for preschoolers, to adults who want to start fresh. The school\\u2019s students have won numerous awards at international competitions and festivals in Italy, Belgium, Slovenia, Serbia, Kosovo and Ukraine, though the focus always remains on the joy of making music, not just results.',
+      about_p4:'The school is also active in community initiatives — the \\u201cAlong the Path of Music\\u201d workshop, volunteer performances at children\\u2019s festivals, and collaborations with primary music schools across Skopje, where the youngest students experience their first contact with violin, guitar and flute.',
       dri_about_desc:'Our story and philosophy', dri_projects_desc:'Concerts and collaborations', dropdown_label_instruments:'INSTRUMENTS',
       nav_instruments:'Instruments', nav_blog:'Blog', nav_contact:'Contact', nav_cta:'Buy / Sign in',
       inst_piano:'Piano', inst_violin:'Violin', inst_guitar:'Guitar', inst_elguitar:'Electric guitar',
@@ -872,7 +853,7 @@
 
   // Стрелка за скролување — покажува дека има уште содржина подолу
   (function(){
-    if(document.body.scrollHeight <= window.innerHeight + 100) return;
+    if(document.body.scrollHeight <= window.innerHeight + 100) return; // нема потреба ако страницата е кратка
     const hint = document.createElement('div');
     hint.className = 'scroll-hint';
     hint.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
