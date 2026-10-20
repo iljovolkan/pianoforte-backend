@@ -3,6 +3,8 @@ const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const invoiceLib = require('../invoice');
 const payments = require('./payments');
+const { schoolMonthsLeft, buildAnnualSchedule } = require('../schedule');
+const roster = require('../roster');
 
 const router = express.Router();
 
@@ -203,37 +205,60 @@ router.get('/invoices', async (req, res) => {
 });
 
 // GET /finance/professor-students/:professorId — сите деца доделени кај овoj
-// professor (преку групи И индивидуални часови), со статус на плаќање
+// професор (преку групи И индивидуални часови), со статус на плаќање
 router.get('/professor-students/:professorId', async (req, res) => {
-  const profId = req.params.professorId;
+  try {
+    const profId = Number(req.params.professorId);
+    const month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : currentYm();
 
-  const [groupStudents] = await pool.query(`
-    SELECT c.id AS child_id, c.full_name AS child_name, g.name AS group_name,
-           s.id AS subscription_id, s.next_due_date, s.released
-    FROM group_members gm
-    JOIN children c ON c.id = gm.student_id
-    JOIN groups_table g ON g.id = gm.group_id
-    LEFT JOIN subscriptions s ON s.student_id = c.id AND (s.group_id = g.id OR s.secondary_group_id = g.id) AND s.released = FALSE
-    WHERE g.professor_id = ?
-    ORDER BY g.name, c.full_name
-  `, [profId]);
+    const [groupStudents] = await pool.query(`
+      SELECT c.id AS child_id, c.full_name AS child_name, g.name AS group_name,
+             s.id AS subscription_id, s.next_due_date, s.released
+      FROM group_members gm
+      JOIN children c ON c.id = gm.student_id
+      JOIN groups_table g ON g.id = gm.group_id
+      LEFT JOIN subscriptions s ON s.student_id = c.id AND (s.group_id = g.id OR s.secondary_group_id = g.id) AND s.released = FALSE
+      WHERE g.professor_id = ?
+      ORDER BY g.name, c.full_name
+    `, [profId]);
 
-  const [indivStudents] = await pool.query(`
-    SELECT DISTINCT c.id AS child_id, c.full_name AS child_name, ib.instrument, MAX(ib.booking_date) AS last_lesson
-    FROM individual_bookings ib
-    JOIN children c ON c.id = ib.student_id
-    WHERE ib.professor_id = ?
-    GROUP BY c.id, c.full_name, ib.instrument
-    ORDER BY c.full_name
-  `, [profId]);
+    const [indivStudents] = await pool.query(`
+      SELECT DISTINCT c.id AS child_id, c.full_name AS child_name, ib.instrument, MAX(ib.booking_date) AS last_lesson
+      FROM individual_bookings ib
+      JOIN children c ON c.id = ib.student_id
+      WHERE ib.professor_id = ?
+      GROUP BY c.id, c.full_name, ib.instrument
+      ORDER BY c.full_name
+    `, [profId]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const groupRows = groupStudents.map(r => ({
-    ...r,
-    payment_status: !r.subscription_id ? 'нема претплата' : (r.next_due_date && r.next_due_date <= today ? 'доспеано' : 'платено')
-  }));
+    const board = await fetchBoard('', profId);
+    const rosterRows = await rosterForProfessor(profId, month);
 
-  res.json({ group_students: groupRows, individual_students: indivStudents });
+    // Колку различни деца има кај професорот (платформа + листа, без дупликати по име)
+    const keys = new Set();
+    const ids = new Set();
+    groupStudents.forEach(r => { ids.add(r.child_id); });
+    indivStudents.forEach(r => { ids.add(r.child_id); });
+    board.forEach(r => { ids.add(r.child_id); });
+    const nameOf = {};
+    groupStudents.concat(indivStudents, board).forEach(r => { nameOf[r.child_id] = r.child_name; });
+    ids.forEach(id => keys.add(roster.nameKey(nameOf[id])));
+    let rosterOnly = 0;
+    rosterRows.forEach(r => { if (!keys.has(roster.nameKey(r.full_name))) { keys.add(roster.nameKey(r.full_name)); rosterOnly++; } });
+
+    const today = todayStr();
+    const groupRows = groupStudents.map(r => ({
+      ...r,
+      payment_status: !r.subscription_id ? 'нема претплата' : (r.next_due_date && String(r.next_due_date).slice(0, 10) <= today ? 'доспеано' : 'платено')
+    }));
+    res.json({
+      group_students: groupRows, individual_students: indivStudents, board, roster: rosterRows, month,
+      counts: { total: keys.size, platform: ids.size, roster_only: rosterOnly }
+    });
+  } catch (err) {
+    console.error('GET /finance/professor-students error:', err);
+    res.status(500).json({ error: 'Грешка при вчитување на децата.' });
+  }
 });
 
 // GET /finance/withdrawn-students — истиот преглед достапен и од Финансии
@@ -260,31 +285,38 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 const addDays = (dateStr, n) => { const d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 
-// GET /finance/payment-board?q= — активни претплати со сите рати
+async function fetchBoard(q, professorId) {
+  const params = [];
+  let where = 's.released = FALSE';
+  if (q) { where += ' AND (c.full_name LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (professorId) {
+    where += ' AND (s.group_id IN (SELECT id FROM groups_table WHERE professor_id = ?) OR s.secondary_group_id IN (SELECT id FROM groups_table WHERE professor_id = ?))';
+    params.push(professorId, professorId);
+  }
+  const [subs] = await pool.query(
+    `SELECT s.id AS subscription_id, s.payment_plan, p.name AS package_name,
+            c.id AS child_id, c.full_name AS child_name, u.email AS parent_email, u.full_name AS parent_name
+     FROM subscriptions s
+     JOIN children c ON c.id = s.student_id
+     JOIN users u ON u.id = c.parent_id
+     JOIN packages p ON p.id = s.package_id
+     WHERE ${where} ORDER BY c.full_name ASC LIMIT 400`, params
+  );
+  if (!subs.length) return [];
+  const [inst] = await pool.query(
+    `SELECT id, subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note
+     FROM installments WHERE subscription_id IN (?) ORDER BY subscription_id, installment_number`,
+    [subs.map(x => x.subscription_id)]
+  );
+  const bySub = {};
+  inst.forEach(i => { (bySub[i.subscription_id] = bySub[i.subscription_id] || []).push(i); });
+  return subs.map(x => ({ ...x, installments: bySub[x.subscription_id] || [] }));
+}
+
+// GET /finance/payment-board?q=&professor_id= — активни претплати со сите рати
 router.get('/payment-board', async (req, res) => {
   try {
-    const q = (req.query.q || '').trim();
-    const params = [];
-    let where = 's.released = FALSE';
-    if (q) { where += ' AND (c.full_name LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
-    const [subs] = await pool.query(
-      `SELECT s.id AS subscription_id, s.payment_plan, p.name AS package_name,
-              c.id AS child_id, c.full_name AS child_name, u.email AS parent_email, u.full_name AS parent_name
-       FROM subscriptions s
-       JOIN children c ON c.id = s.student_id
-       JOIN users u ON u.id = c.parent_id
-       JOIN packages p ON p.id = s.package_id
-       WHERE ${where} ORDER BY c.full_name ASC LIMIT 300`, params
-    );
-    if (!subs.length) return res.json([]);
-    const [inst] = await pool.query(
-      `SELECT id, subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note
-       FROM installments WHERE subscription_id IN (?) ORDER BY subscription_id, installment_number`,
-      [subs.map(x => x.subscription_id)]
-    );
-    const bySub = {};
-    inst.forEach(i => { (bySub[i.subscription_id] = bySub[i.subscription_id] || []).push(i); });
-    res.json(subs.map(x => ({ ...x, installments: bySub[x.subscription_id] || [] })));
+    res.json(await fetchBoard((req.query.q || '').trim(), req.query.professor_id ? Number(req.query.professor_id) : null));
   } catch (err) {
     console.error('GET /finance/payment-board error:', err);
     res.status(500).json({ error: 'Грешка при вчитување на плаќањата.' });
@@ -342,7 +374,7 @@ router.post('/manual-enrollment', async (req, res) => {
 
     const schedule = payment_plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
-      : payments.buildAnnualSchedule(payment_plan, Number(pkg.price_mkd));
+      : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
     if (paidN > schedule.length) { conn.release(); return res.status(400).json({ error: `Овој план има само ${schedule.length} рат(и).` }); }
 
     // групи на детето (ако е веќе вклучено во група)
@@ -514,6 +546,260 @@ router.post('/invoices/:id/resend', async (req, res) => {
   const ok = await invoiceLib.emailInvoice(inv);
   if (!ok) return res.status(502).json({ error: 'Мејлот не беше испратен. Провери ја email конфигурацијата.' });
   res.json({ ok: true });
+});
+
+// =====================================================================
+// ЛИСТА НА ДЕЦА ПО ПРОФЕСОР (увоз од Excel/Sheets) + ПРЕГЛЕДИ
+// =====================================================================
+const currentYm = () => new Date().toISOString().slice(0, 7);
+const monthEndStr = (ym) => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); };
+const defaultStartYear = () => { const d = new Date(); return d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; };
+const schoolYearStr = (y) => `${y}/${y + 1}`;
+const ymList = (startYear) => {
+  const out = [];
+  for (let i = 0; i < 12; i++) { const m = ((8 + i) % 12) + 1; const y = m >= 9 ? startYear : startYear + 1; out.push(`${y}-${String(m).padStart(2, '0')}`); }
+  return out; // сеп … авг
+};
+
+function rosterRowCalc(st, pays, ym) {
+  const upTo = pays.filter(p => p.pay_month <= ym).reduce((a, p) => a + Number(p.amount), 0);
+  const all = pays.reduce((a, p) => a + Number(p.amount), 0);
+  const expected = roster.expectedThrough(st.full_price, ym);
+  const owed = Math.max(0, expected - upTo);
+  return {
+    id: st.id, full_name: st.full_name, module: st.module, full_price: Number(st.full_price),
+    half1: st.half1 === null ? null : Number(st.half1), half2: st.half2 === null ? null : Number(st.half2),
+    discount: st.discount, professor_name: st.professor_name, professor_id: st.professor_id,
+    payments: pays.map(p => ({ pay_month: p.pay_month, amount: Number(p.amount) })),
+    paid_total: all, paid_to_month: upTo, expected, owed, status: owed > 0 ? 'unpaid' : 'paid'
+  };
+}
+
+async function loadRoster(where, params, ym) {
+  const [students] = await pool.query(`SELECT * FROM roster_students WHERE ${where} ORDER BY professor_name, full_name`, params);
+  if (!students.length) return [];
+  const [pays] = await pool.query('SELECT roster_id, pay_month, amount FROM roster_payments WHERE roster_id IN (?)', [students.map(x => x.id)]);
+  const by = {};
+  pays.forEach(p => { (by[p.roster_id] = by[p.roster_id] || []).push(p); });
+  // дали детето веќе има профил на платформата (по име)
+  const [kids] = await pool.query('SELECT c.id, c.full_name, EXISTS(SELECT 1 FROM subscriptions s WHERE s.student_id = c.id AND s.released = FALSE) AS has_sub FROM children c');
+  const kidKeys = {};
+  kids.forEach(k => { kidKeys[roster.nameKey(k.full_name)] = k; });
+  return students.map(st => {
+    const row = rosterRowCalc(st, by[st.id] || [], ym);
+    const k = kidKeys[roster.nameKey(st.full_name)];
+    row.has_profile = !!k; row.has_subscription = !!(k && k.has_sub);
+    return row;
+  });
+}
+async function rosterForProfessor(profId, ym) {
+  return loadRoster('school_year = ? AND professor_id = ?', [schoolYearStr(defaultStartYear()), profId], ym);
+}
+
+// GET /finance/roster?professor_name=...&month=YYYY-MM  (за професори без поврзан профил)
+router.get('/roster', async (req, res) => {
+  try {
+    const ym = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : currentYm();
+    const name = (req.query.professor_name || '').trim();
+    const rows = await loadRoster('school_year = ? AND professor_name = ? AND professor_id IS NULL', [schoolYearStr(defaultStartYear()), name], ym);
+    res.json({ month: ym, roster: rows, counts: { total: rows.length } });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Грешка.' }); }
+});
+
+// GET /finance/roster/professors — професори од листата што не се поврзани со профил
+router.get('/roster/professors', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT professor_name, COUNT(*) AS cnt FROM roster_students WHERE school_year = ? AND professor_id IS NULL GROUP BY professor_name ORDER BY professor_name`,
+      [schoolYearStr(defaultStartYear())]);
+    res.json(rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Грешка.' }); }
+});
+
+// POST /finance/roster/:id/payment  { pay_month: 'YYYY-MM', amount }  (amount 0 = избриши)
+router.post('/roster/:id/payment', async (req, res) => {
+  try {
+    const { pay_month, amount } = req.body;
+    if (!/^\d{4}-\d{2}$/.test(pay_month || '')) return res.status(400).json({ error: 'Избери месец.' });
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt < 0) return res.status(400).json({ error: 'Невалиден износ.' });
+    const [[st]] = await pool.query('SELECT id FROM roster_students WHERE id = ?', [req.params.id]);
+    if (!st) return res.status(404).json({ error: 'Ученикот не е пронајден.' });
+    if (amt === 0) await pool.query('DELETE FROM roster_payments WHERE roster_id = ? AND pay_month = ?', [req.params.id, pay_month]);
+    else await pool.query(
+      'INSERT INTO roster_payments (roster_id, pay_month, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = VALUES(amount)',
+      [req.params.id, pay_month, amt]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Грешка при запишување.' }); }
+});
+
+// DELETE /finance/roster/:id — отстрани запис од листата (пр. грешка при увоз)
+router.delete('/roster/:id', async (req, res) => {
+  try { await pool.query('DELETE FROM roster_students WHERE id = ?', [req.params.id]); res.json({ ok: true }); }
+  catch (err) { console.error(err); res.status(500).json({ error: 'Грешка.' }); }
+});
+
+// POST /finance/roster/import { text, dry_run, start_year }
+router.post('/roster/import', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const startYear = Number(req.body.start_year) || defaultStartYear();
+    const parsed = roster.parseRoster(req.body.text || '', startYear);
+    if (!parsed.length) { conn.release(); return res.status(400).json({ error: 'Не пронајдов податоци. Залепи ја целата табела (со имињата на професорите и колоните).' }); }
+    const dry = !!req.body.dry_run;
+    const sy = schoolYearStr(startYear);
+
+    const [profs] = await conn.query(`SELECT id, full_name FROM users WHERE role = 'professor'`);
+    const pk = profs.map(p => ({ id: p.id, name: p.full_name, key: roster.nameKey(p.full_name), toks: new Set(roster.nameKey(p.full_name).split(' ')) }));
+    const matchProf = (name) => {
+      const k = roster.nameKey(name); const toks = k.split(' ');
+      let c = pk.filter(p => p.key === k);
+      if (c.length !== 1) c = pk.filter(p => toks.every(t => p.toks.has(t)) || [...p.toks].every(t => toks.includes(t)));
+      if (c.length !== 1) { const last = pk.filter(p => toks.filter(t => p.toks.has(t)).length >= 2); if (last.length === 1) c = last; }
+      return c.length === 1 ? c[0] : null;
+    };
+    const [kids] = await conn.query('SELECT full_name FROM children');
+    const kidKeys = new Set(kids.map(k => roster.nameKey(k.full_name)));
+
+    const summary = { school_year: sy, professors: [], students: 0, payments: 0, payments_sum: 0, matched_children: 0, dry_run: dry };
+    if (!dry) await conn.beginTransaction();
+    for (const p of parsed) {
+      const m = matchProf(p.professor_name);
+      summary.professors.push({ name: p.professor_name, students: p.students.length, matched_to: m ? m.name : null, note: p.note });
+      for (const st of p.students) {
+        summary.students++;
+        if (kidKeys.has(roster.nameKey(st.full_name))) summary.matched_children++;
+        const pays = Object.entries(st.payments);
+        pays.forEach(([, v]) => { summary.payments++; summary.payments_sum += v; });
+        if (dry) continue;
+        const key = roster.nameKey(st.full_name);
+        const [[ex]] = await conn.query('SELECT id FROM roster_students WHERE school_year = ? AND professor_name = ? AND name_key = ?', [sy, p.professor_name, key]);
+        let id;
+        if (ex) {
+          id = ex.id;
+          await conn.query(`UPDATE roster_students SET professor_id = ?, full_name = ?, module = ?, full_price = ?, half1 = ?, half2 = ?, discount = ? WHERE id = ?`,
+            [m ? m.id : null, st.full_name, st.module, st.full_price, st.half1, st.half2, st.discount, id]);
+        } else {
+          const [r] = await conn.query(
+            `INSERT INTO roster_students (school_year, professor_id, professor_name, full_name, name_key, module, full_price, half1, half2, discount)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [sy, m ? m.id : null, p.professor_name, st.full_name, key, st.module, st.full_price, st.half1, st.half2, st.discount]);
+          id = r.insertId;
+        }
+        for (const [ym, v] of pays) {
+          await conn.query('INSERT INTO roster_payments (roster_id, pay_month, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = VALUES(amount)', [id, ym, v]);
+        }
+      }
+    }
+    if (!dry) await conn.commit();
+    conn.release();
+    res.json(summary);
+  } catch (err) {
+    try { await conn.rollback(); } catch (e) {}
+    conn.release();
+    console.error('POST /finance/roster/import error:', err);
+    res.status(500).json({ error: 'Грешка при увоз: ' + err.message });
+  }
+});
+
+// GET /finance/unpaid-overview?month=YYYY-MM — кој не платил до избраниот месец
+router.get('/unpaid-overview', async (req, res) => {
+  try {
+    const ym = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : currentYm();
+    const end = monthEndStr(ym);
+
+    const [subsAll] = await pool.query(`SELECT COUNT(*) AS n FROM subscriptions WHERE released = FALSE`);
+    const [plat] = await pool.query(
+      `SELECT c.id AS child_id, c.full_name AS child_name, pr.full_name AS professor_name, pk.name AS package_name,
+              SUM(i.amount) AS owed, COUNT(*) AS inst_count, MIN(i.due_date) AS oldest_due, u.email AS parent_email
+       FROM installments i
+       JOIN subscriptions s ON s.id = i.subscription_id AND s.released = FALSE
+       JOIN children c ON c.id = s.student_id
+       JOIN users u ON u.id = c.parent_id
+       JOIN packages pk ON pk.id = s.package_id
+       LEFT JOIN groups_table g ON g.id = s.group_id
+       LEFT JOIN users pr ON pr.id = g.professor_id
+       WHERE i.status = 'pending' AND i.due_date <= ?
+       GROUP BY c.id, c.full_name, pr.full_name, pk.name, u.email
+       ORDER BY oldest_due ASC`, [end]);
+    const rosterRows = await loadRoster('school_year = ?', [schoolYearStr(defaultStartYear())], ym);
+
+    const rows = plat.map(r => ({
+      source: 'platform', child_name: r.child_name, professor_name: r.professor_name || '—', package_label: r.package_name,
+      owed: Number(r.owed), detail: `${r.inst_count} неплатена рата · најстара од ${String(r.oldest_due).slice(0, 10)}`, contact: r.parent_email
+    }));
+    let rosterTotal = 0, rosterPaid = 0;
+    rosterRows.forEach(r => {
+      if (r.has_subscription) return; // веќе се брои преку платформата
+      rosterTotal++;
+      if (r.status === 'paid') { rosterPaid++; return; }
+      rows.push({ source: 'roster', child_name: r.full_name, professor_name: r.professor_name, package_label: r.module || 'Од листата',
+        owed: r.owed, detail: `платено ${r.paid_to_month.toLocaleString('en')} од очекувани ${r.expected.toLocaleString('en')}`, contact: '' });
+    });
+    rows.sort((a, b) => b.owed - a.owed);
+    const total = Number(subsAll[0].n) + rosterTotal;
+    const unpaidCount = rows.length;
+    res.json({
+      month: ym,
+      totals: { students: total, unpaid: unpaidCount, paid_up: Math.max(0, total - unpaidCount), owed_total: rows.reduce((a, r) => a + r.owed, 0) },
+      rows
+    });
+  } catch (err) {
+    console.error('GET /finance/unpaid-overview error:', err);
+    res.status(500).json({ error: 'Грешка при вчитување на неплатените.' });
+  }
+});
+
+// GET /finance/annual-forecast?year=2026 — колку пари влегуваат/ќе влезат во фирмата по месец
+router.get('/annual-forecast', async (req, res) => {
+  try {
+    const startYear = Number(req.query.year) || defaultStartYear();
+    const months = ymList(startYear);
+    const first = months[0], last = months[11];
+    const cur = currentYm();
+    const clamp = (ym) => (ym < first ? first : ym > last ? last : ym);
+    const data = {};
+    months.forEach(m => { data[m] = { month: m, paid: 0, expected: 0 }; });
+
+    const [paid] = await pool.query(
+      `SELECT DATE_FORMAT(paid_at, '%Y-%m') AS ym, SUM(amount) AS total FROM installments WHERE status = 'paid' AND paid_at IS NOT NULL GROUP BY ym`);
+    paid.forEach(r => { if (r.ym >= first && r.ym <= last) data[r.ym].paid += Number(r.total); });
+    const [pend] = await pool.query(
+      `SELECT DATE_FORMAT(i.due_date, '%Y-%m') AS ym, SUM(i.amount) AS total FROM installments i
+       JOIN subscriptions s ON s.id = i.subscription_id AND s.released = FALSE
+       WHERE i.status = 'pending' GROUP BY ym`);
+    pend.forEach(r => { const k = clamp(r.ym < cur ? cur : r.ym); if (data[k]) data[k].expected += Number(r.total); });
+
+    // листа: добиени = уплати по месец; идни = преостанато / преостанати месеци
+    const sy = schoolYearStr(startYear);
+    const [rsAll] = await pool.query('SELECT id, full_price, name_key FROM roster_students WHERE school_year = ?', [sy]);
+    const [subKids] = await pool.query('SELECT DISTINCT c.full_name FROM children c JOIN subscriptions s ON s.student_id = c.id AND s.released = FALSE');
+    const subKeys = new Set(subKids.map(k => roster.nameKey(k.full_name)));
+    const rs = rsAll.filter(r => !subKeys.has(r.name_key)); // веќе броени преку платформата
+    if (rs.length) {
+      const [rp] = await pool.query('SELECT roster_id, pay_month, amount FROM roster_payments WHERE roster_id IN (?)', [rs.map(x => x.id)]);
+      const by = {};
+      rp.forEach(p => { (by[p.roster_id] = by[p.roster_id] || []).push(p); if (data[p.pay_month]) data[p.pay_month].paid += Number(p.amount); });
+      const curIdx = Math.max(0, months.indexOf(clamp(cur)));
+      rs.forEach(st => {
+        const list = by[st.id] || [];
+        const total = list.reduce((a, p) => a + Number(p.amount), 0);
+        const remaining = Math.max(0, Number(st.full_price) - total);
+        if (remaining <= 0) return;
+        const hasCur = list.some(p => p.pay_month === months[curIdx]);
+        const startIdx = Math.min(7, curIdx + (hasCur ? 1 : 0));
+        const k = Math.max(1, 8 - startIdx);
+        for (let i = startIdx; i < 8; i++) data[months[i]].expected += remaining / k;
+      });
+    }
+    const rowsOut = months.map(m => ({ month: m, paid: Math.round(data[m].paid), expected: Math.round(data[m].expected) }));
+    const collected = rowsOut.reduce((a, r) => a + r.paid, 0);
+    const expected = rowsOut.reduce((a, r) => a + r.expected, 0);
+    res.json({ school_year: sy, months: rowsOut, totals: { collected, expected, projected: collected + expected } });
+  } catch (err) {
+    console.error('GET /finance/annual-forecast error:', err);
+    res.status(500).json({ error: 'Грешка при вчитување на годишниот преглед.' });
+  }
 });
 
 module.exports = router;
