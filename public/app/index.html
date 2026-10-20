@@ -4422,7 +4422,8 @@
       const o = await authApiCall('/admin/overview');
       const stats = [
         {num: o.parents, lbl: 'Родители'},
-        {num: o.children, lbl: 'Деца'},
+        {num: o.children, lbl: 'Деца со профил'},
+        {num: o.children_roster_only || 0, lbl: 'Без профил (само во листа)', warn: (o.children_roster_only || 0) > 0},
         {num: o.professors, lbl: 'Професори'},
         {num: o.groups, lbl: 'Групи'},
         {num: o.active_subscriptions, lbl: 'Активни претплати'},
