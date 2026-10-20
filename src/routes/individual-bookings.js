@@ -23,14 +23,14 @@ router.get('/professors', requireAuth, async (req, res) => {
 });
 
 // ===================================================================
-// ДОСТАПНОСТ ЗА ИНДИВИДУАЛНА НАСТАВА — professor-от ги дефинира
+// ДОСТАПНОСТ ЗА ИНДИВИДУАЛНА НАСТАВА — професорот ги дефинира
 // термините што ги нуди (на секои 15 мин, било кое време во работно
 // време), ученикот бира само од понудените.
 // ===================================================================
 const TIME_15MIN_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // секоj можен минут
 
 // POST /individual-bookings/availability  { instrument, slot_date, start_time, location }
-// Само professor додава сопствени термини, само за инструмент(и) на кои е доделен.
+// Само професор додава сопствени термини, само за инструмент(и) на кои е доделен.
 router.post('/availability', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само професор може да додава термини.' });
   const { instrument, slot_date, start_time, location, repeat_weekly, duration_minutes } = req.body;
@@ -99,7 +99,7 @@ router.post('/availability', requireAuth, async (req, res) => {
 });
 
 // GET /individual-bookings/availability?professor_id=X&instrument=Y
-// За ученици — само НЕзафатени идни термини на конкретен professor.
+// За ученици — само НЕзафатени идни термини на конкретен професор.
 router.get('/availability', requireAuth, async (req, res) => {
   const { professor_id, instrument } = req.query;
   if (!professor_id || !instrument) return res.status(400).json({ error: 'professor_id и instrument се задолжителни.' });
@@ -119,7 +119,7 @@ router.get('/my-instruments', requireAuth, async (req, res) => {
   res.json(rows.map(r => r.instrument));
 });
 
-// GET /individual-bookings/my-availability — сопствен преглед на professor-от (сите, вклучувajќи зафатени)
+// GET /individual-bookings/my-availability — сопствен преглед на професорот (сите, вклучувajќи зафатени)
 router.get('/my-availability', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само за професори.' });
   const [rows] = await pool.query(
@@ -129,7 +129,7 @@ router.get('/my-availability', requireAuth, async (req, res) => {
   res.json(rows);
 });
 
-// DELETE /individual-bookings/availability/:id — professor ja отстранува сопствената понуда (ако сè уште не е зафатена)
+// DELETE /individual-bookings/availability/:id — професор ja отстранува сопствената понуда (ако сè уште не е зафатена)
 router.delete('/availability/:id', requireAuth, async (req, res) => {
   if (req.user.role !== 'professor') return res.status(403).json({ error: 'Само за професори.' });
   const [[slot]] = await pool.query('SELECT * FROM individual_availability WHERE id = ? AND professor_id = ?', [req.params.id, req.user.id]);
@@ -182,7 +182,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /individual-bookings/manual — professor рачно додава ученик за
+// POST /individual-bookings/manual — професор рачно додава ученик за
 // индивидуален час (без онлajн плаќање — пр. кога плаќањето е решено
 // одделно, преку специjaлен линк или готовина).
 router.post('/manual', requireAuth, requireRole('professor'), async (req, res) => {
