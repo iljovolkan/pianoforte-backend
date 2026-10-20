@@ -760,7 +760,7 @@
           return;
         }
         const trial = packages.find(p => p.package_type === 'trial');
-        const annual = packages.find(p => p.package_type === 'annual');
+        const annuals = packages.filter(p => p.package_type === 'annual');
         const individual = packages.find(p => p.package_type === 'individual');
         let html = '';
 
@@ -768,7 +768,7 @@
           html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Пробен пакет' : 'Trial package'}</h3>
             <div class="pkg-table">${pkgTableHead()}${pkgRow(trial.name, trial.price_mkd, null, trial.description)}</div></div>`;
         }
-        if(annual){
+        annuals.forEach(annual=>{
           const monthly = Number(annual.price_mkd);
           const annualTotal = monthly * 8;
           const halfPrice = Math.round((annualTotal/2) * (1 - HALF_DISCOUNT));
@@ -780,7 +780,7 @@
               ${pkgRow(currentLang==='mk' ? 'Полугодишен пакет' : 'Half-year package', halfPrice, '−3%', annual.description)}
               ${pkgRow(currentLang==='mk' ? 'Целогодишен пакет' : 'Full-year package', fullPrice, '−5%', annual.description)}
             </div></div>`;
-        }
+        });
         if(individual){
           html += `<div class="pkg-section"><h3>${currentLang==='mk' ? 'Индивидуален час' : 'Individual lesson'}</h3>
             <div class="pkg-table">${pkgTableHead()}${pkgRow(individual.name, individual.price_mkd, null, individual.description)}</div></div>`;
