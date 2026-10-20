@@ -173,7 +173,7 @@ router.get('/overview', requireAuth, requireRole('admin'), async (req, res) => {
 
   const rosterOnly = (await rosterOnlyStudents()).length;
   res.json({
-    children: childrenCount.cnt + rosterOnly,
+    children: childrenCount.cnt,
     children_roster_only: rosterOnly,
     parents: parentCount.cnt,
     professors: profCount.cnt,
