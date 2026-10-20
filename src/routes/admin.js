@@ -4,6 +4,19 @@ const crypto = require('crypto');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { runDailyMaintenance } = require('../cron');
+const roster = require('../roster');
+
+// Ученици само од увезената листа (немаат профил на платформата)
+async function rosterOnlyStudents() {
+  try {
+    const d = new Date();
+    const y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+    const [kids] = await pool.query('SELECT full_name FROM children');
+    const keys = new Set(kids.map(k => roster.nameKey(k.full_name)));
+    const [rs] = await pool.query('SELECT id, full_name, professor_name, module FROM roster_students WHERE school_year = ? ORDER BY professor_name, full_name', [`${y}/${y + 1}`]);
+    return rs.filter(r => !keys.has(roster.nameKey(r.full_name)));
+  } catch (e) { return []; }
+}
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -113,6 +126,9 @@ router.get('/students', requireAuth, requireRole('admin'), async (req, res) => {
      FROM children c JOIN users u ON u.id = c.parent_id
      ORDER BY c.created_at DESC`
   );
+  const only = await rosterOnlyStudents();
+  only.forEach(r => rows.push({ id: null, full_name: r.full_name, age: null, created_at: null, parent_id: null, parent_email: null,
+    parent_email_verified: null, from_roster: true, professor_name: r.professor_name, module: r.module }));
   res.json(rows);
 });
 
@@ -155,8 +171,10 @@ router.get('/overview', requireAuth, requireRole('admin'), async (req, res) => {
   );
   const [[indivCount]] = await pool.query("SELECT COUNT(*) AS cnt FROM individual_bookings WHERE status = 'confirmed'");
 
+  const rosterOnly = (await rosterOnlyStudents()).length;
   res.json({
-    children: childrenCount.cnt,
+    children: childrenCount.cnt + rosterOnly,
+    children_roster_only: rosterOnly,
     parents: parentCount.cnt,
     professors: profCount.cnt,
     groups: groupCount.cnt,
