@@ -11,7 +11,7 @@ const GRACE_DAYS = 5; // колку дена по рокот терминот с
 router.get('/', requireAuth, async (req, res) => {
   if (req.user.role === 'student') {
     const [rows] = await pool.query(
-      `SELECT s.*, p.name AS package_name, p.instrument, g.name AS group_name, g.professor_id, c.full_name AS student_name
+      `SELECT s.*, p.name AS package_name, p.instrument, p.is_combo, g.name AS group_name, g.professor_id, c.full_name AS student_name
        FROM subscriptions s
        JOIN packages p ON p.id = s.package_id
        LEFT JOIN groups_table g ON g.id = s.group_id
