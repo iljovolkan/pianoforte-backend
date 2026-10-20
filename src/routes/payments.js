@@ -18,28 +18,7 @@ const CPAY_MERCHANT_NAME = process.env.CPAY_MERCHANT_NAME || 'PIJANO FORTE SKOPJ
 const CPAY_CHECKSUM_KEY = process.env.CPAY_CHECKSUM_KEY;     // вистинскиот клуч од стариот плагин
 const APP_URL = process.env.APP_BASE_URL || 'https://www.pianoforte.edu.mk';
 
-const HALF_YEAR_DISCOUNT = 0.03;
-const FULL_YEAR_DISCOUNT = 0.05;
-
-function buildAnnualSchedule(plan, monthlyPrice) {
-  const annualTotal = monthlyPrice * 8;
-  if (plan === 'full') {
-    const amount = Math.round(annualTotal * (1 - FULL_YEAR_DISCOUNT));
-    return [{ number: 1, total: 1, amount, offsetDays: 0 }];
-  }
-  if (plan === 'two') {
-    const halfPrice = Math.round((annualTotal / 2) * (1 - HALF_YEAR_DISCOUNT));
-    return [
-      { number: 1, total: 2, amount: halfPrice, offsetDays: 0 },
-      { number: 2, total: 2, amount: halfPrice, offsetDays: 150 }
-    ];
-  }
-  const schedule = [];
-  for (let i = 0; i < 8; i++) {
-    schedule.push({ number: i + 1, total: 8, amount: monthlyPrice, offsetDays: i * 30 });
-  }
-  return schedule;
-}
+const { schoolMonthsLeft, buildAnnualSchedule, buildCustomSchedule } = require('../schedule');
 
 // ===================================================================
 // CheckSum — точно реконструиран и ПОТВРДЕН со реален успешен тест против
@@ -152,12 +131,13 @@ router.post('/init-subscription', requireAuth, requireRole('student'), async (re
     }
 
     const plan = pkg.package_type === 'trial' ? 'trial' : (['full', 'two', 'eight'].includes(payment_plan) ? payment_plan : 'eight');
+    const monthsLeft = schoolMonthsLeft(); // доцен упис = помалку рати
     const schedule = plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
-      : buildAnnualSchedule(plan, Number(pkg.price_mkd));
+      : buildAnnualSchedule(plan, Number(pkg.price_mkd), monthsLeft);
     const firstAmount = Math.round(schedule[0].amount); // цели денари — AmountToPay мора да завршува на 00
 
-    const payload = { child_id, package_id, group_id: group_id || null, secondary_group_id: secondary_group_id || null, payment_plan: plan };
+    const payload = { child_id, package_id, group_id: group_id || null, secondary_group_id: secondary_group_id || null, payment_plan: plan, months_left: monthsLeft };
     const [result] = await pool.query(
       `INSERT INTO payment_intents (kind, user_id, payload, amount, status) VALUES ('subscription', ?, ?, ?, 'pending')`,
       [req.user.id, JSON.stringify(payload), firstAmount]
@@ -407,6 +387,7 @@ async function issueInvoice(args) {
 
 async function completeSubscriptionPurchase(intent, payload, cpayRef) {
   const { child_id, package_id, group_id, secondary_group_id, payment_plan } = payload;
+  const customSchedule = Array.isArray(payload.custom_schedule) ? payload.custom_schedule : null;
 
   const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
   const [[child]] = await pool.query('SELECT full_name FROM children WHERE id = ?', [child_id]);
@@ -425,9 +406,9 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [secondary_group_id, child_id]);
   }
 
-  const schedule = payment_plan === 'trial'
+  const schedule = customSchedule || (payment_plan === 'trial'
     ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
-    : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd));
+    : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), payload.months_left));
 
   const today = new Date();
   const firstDueDate = today.toISOString().slice(0, 10);
@@ -457,7 +438,14 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
     subResult.insertId
   ]);
 
-  const planLabel = { full: 'Целосно (1 уплата)', two: '2 полугодишни рати', eight: '8 месечни рати', trial: 'Пробен пакет (1 уплата)' }[payment_plan];
+  if (payload.special_link_id) {
+    await pool.query(
+      `UPDATE special_payment_links SET status='paid', cpay_ref=?, paid_at=NOW(), paid_child_id=?, subscription_id=? WHERE id=?`,
+      [cpayRef, child_id, subResult.insertId, payload.special_link_id]
+    );
+  }
+
+  const planLabel = customSchedule ? `${schedule.length} месечни рати (посебна понуда)` : ({ full: 'Целосно (1 уплата)', two: '2 полугодишни рати', eight: `${schedule.length} месечни рати`, trial: 'Пробен пакет (1 уплата)' }[payment_plan]);
   const groupNoteHtml = !group_id
     ? '<p style="color:#B3555F;">Уплатата е примена — сега влези во апликацијата и избери термин (група) за твojot пакет.</p>' : '';
 
@@ -553,7 +541,7 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
       console.error(`Колизија: availability_id ${availability_id} веќе е зафатена, но плаќање помина (intent ${intent.id}).`);
     }
 
-    // Ако professor-от одделно понудил и други термини што ПРЕКЛОПУВААТ со
+    // Ако професорот одделно понудил и други термини што ПРЕКЛОПУВААТ со
     // овoj веќе резервиран час (според вистинското времетраење — 30 или 45
     // мин), тие автоматски се означуваат како зафатени исто, за да веќе не
     // се нудат на никого.
@@ -605,18 +593,43 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
 
 router.post('/special-link', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
-    const { student_id, parent_email, description, amount } = req.body;
-    if (!parent_email || !description || !amount) {
-      return res.status(400).json({ error: 'parent_email, description и amount се задолжителни.' });
-    }
-    if (Number(amount) <= 0) return res.status(400).json({ error: 'Износот мора да е позитивен.' });
+    const { student_id, parent_email, description, amount, link_type, package_id, first_amount, monthly_amount, installments_total } = req.body;
+    if (!parent_email) return res.status(400).json({ error: 'Внеси email на родителот.' });
 
     const token = crypto.randomBytes(20).toString('hex');
-    await pool.query(
-      `INSERT INTO special_payment_links (token, created_by, student_id, parent_email, description, amount)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [token, req.user.id, student_id || null, parent_email, description, Math.round(Number(amount))]
-    );
+    let desc = description, shownAmount, intro = '', planInfo = null;
+
+    if (link_type === 'plan') {
+      // Посебен план: пакет + (по избор) посебна цена за првата рата + цена за следните месеци
+      if (!package_id) return res.status(400).json({ error: 'Избери пакет.' });
+      const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
+      if (!pkg || pkg.package_type === 'individual') return res.status(400).json({ error: 'Пакетот не е валиден за посебен план.' });
+      const monthly = Math.round(Number(monthly_amount) || Number(pkg.price_mkd));
+      if (!(monthly > 0)) return res.status(400).json({ error: 'Месечната цена мора да е позитивна.' });
+      const first = first_amount !== undefined && first_amount !== null && first_amount !== '' ? Math.round(Number(first_amount)) : null;
+      if (first !== null && !(first > 0)) return res.status(400).json({ error: 'Цената за првиот месец мора да е позитивна.' });
+      const total = Math.max(1, Math.min(8, Math.round(Number(installments_total) || schoolMonthsLeft())));
+      desc = (description && description.trim()) || `${pkg.name} — ${total} ${total === 1 ? 'уплата' : 'месечни рати'}`;
+      shownAmount = first !== null ? first : monthly;
+      await pool.query(
+        `INSERT INTO special_payment_links (token, created_by, student_id, parent_email, description, amount, link_type, package_id, first_amount, monthly_amount, installments_total)
+         VALUES (?, ?, ?, ?, ?, ?, 'plan', ?, ?, ?, ?)`,
+        [token, req.user.id, student_id || null, parent_email, desc, shownAmount, package_id, first, monthly, total]
+      );
+      planInfo = { total, first, monthly };
+      intro = total > 1
+        ? `<p>Прва уплата: <strong>${shownAmount} ден.</strong>, потоа ${total - 1} × <strong>${monthly} ден.</strong> месечно.</p>`
+        : '';
+    } else {
+      if (!desc || !amount) return res.status(400).json({ error: 'Опис и износ се задолжителни.' });
+      if (Number(amount) <= 0) return res.status(400).json({ error: 'Износот мора да е позитивен.' });
+      shownAmount = Math.round(Number(amount));
+      await pool.query(
+        `INSERT INTO special_payment_links (token, created_by, student_id, parent_email, description, amount)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [token, req.user.id, student_id || null, parent_email, desc, shownAmount]
+      );
+    }
 
     const payLink = `${APP_URL}/app/#special-payment/${token}`;
     await sendMail({
@@ -625,15 +638,17 @@ router.post('/special-link', requireAuth, requireRole('professor', 'admin'), asy
       html: `
         <div style="font-family:sans-serif; max-width:480px; margin:0 auto;">
           <h2>Персонализирана уплата</h2>
-          <p>${description}</p>
-          <p style="font-size:20px; font-weight:700; margin:16px 0;">${Math.round(Number(amount))} ден.</p>
+          <p>${desc}</p>
+          <p style="font-size:20px; font-weight:700; margin:16px 0;">${shownAmount} ден.</p>
+          ${intro}
           <a href="${payLink}" style="display:inline-block; background:#6B4E8E; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none;">Плати сега</a>
-          <p style="color:#888; font-size:12.5px; margin-top:24px;">⚠️ Овoj линк е наменет исклучиво за тебе и не треба да се препраќа на други лица. Плаќањето преку тoj линк е анонимно и важи само еднaш.</p>
+          ${link_type === 'plan' ? '<p style="font-size:13px;color:#555;">За да продолжиш треба да се најавиш (или да направиш профил) во апликацијата — така следните рати ќе ти бидат видливи и ќе можеш да ги платиш секој месец.</p>' : ''}
+          <p style="color:#888; font-size:12.5px; margin-top:24px;">⚠️ Овoj линк е наменет исклучиво за тебе и не треба да се препраќа на други лица. Важи само еднаш.</p>
         </div>
       `
     });
 
-    res.status(201).json({ token });
+    res.status(201).json({ token, ...(planInfo || {}) });
   } catch (err) {
     console.error('POST /payments/special-link error:', err);
     res.status(500).json({ error: 'Грешка: ' + err.message });
@@ -641,10 +656,59 @@ router.post('/special-link', requireAuth, requireRole('professor', 'admin'), asy
 });
 
 router.get('/special-link/:token', async (req, res) => {
-  const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE token = ?', [req.params.token]);
+  const [[link]] = await pool.query(
+    `SELECT l.*, p.name AS package_name FROM special_payment_links l LEFT JOIN packages p ON p.id = l.package_id WHERE l.token = ?`, [req.params.token]);
   if (!link) return res.status(404).json({ error: 'Линкот не постои или е невалиден.' });
   if (link.status !== 'pending') return res.status(409).json({ error: 'Овoj линк веќе е искористен или истечен.' });
-  res.json({ description: link.description, amount: link.amount });
+  res.json({
+    link_type: link.link_type || 'one_time', description: link.description, amount: link.amount,
+    package_name: link.package_name || null, first_amount: link.first_amount, monthly_amount: link.monthly_amount,
+    installments_total: link.installments_total
+  });
+});
+
+// Посебен план — родителот мора да е најавен (претплатата се врзува за неговото дете,
+// па следните рати се гледаат и се плаќаат во „Наплата“ како секоја друга претплата).
+router.post('/init-special-plan/:token', requireAuth, requireRole('student'), async (req, res) => {
+  try {
+    if (!CPAY_MERCHANT_ID || !CPAY_CHECKSUM_KEY) {
+      return res.status(500).json({ error: 'CPay сè уште не е целосно конфигуриран на серверот.' });
+    }
+    const { child_id } = req.body;
+    if (!child_id) return res.status(400).json({ error: 'Избери дете.' });
+    const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE token = ?', [req.params.token]);
+    if (!link || link.link_type !== 'plan') return res.status(404).json({ error: 'Линкот не постои.' });
+    if (link.status !== 'pending') return res.status(409).json({ error: 'Овoj линк веќе е искористен.' });
+    const [[child]] = await pool.query('SELECT id, full_name FROM children WHERE id = ? AND parent_id = ?', [child_id, req.user.id]);
+    if (!child) return res.status(403).json({ error: 'Ова дете не е поврзано со твојот профил.' });
+    const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [link.package_id]);
+    if (!pkg) return res.status(404).json({ error: 'Пакетот не постои.' });
+
+    const schedule = buildCustomSchedule(link.first_amount, link.monthly_amount, link.installments_total);
+    const firstAmount = Math.round(schedule[0].amount);
+    const payload = {
+      child_id, package_id: link.package_id, group_id: null, secondary_group_id: null,
+      payment_plan: schedule.length > 1 ? 'eight' : 'full', custom_schedule: schedule, special_link_id: link.id
+    };
+    const [result] = await pool.query(
+      `INSERT INTO payment_intents (kind, user_id, payload, amount, status) VALUES ('subscription', ?, ?, ?, 'pending')`,
+      [req.user.id, JSON.stringify(payload), firstAmount]
+    );
+    const fields = {
+      AmountToPay: String(firstAmount * 100), AmountCurrency: 'MKD',
+      Details1: truncateDetails1(`${pkg.name} ${child.full_name}`), Details2: String(result.insertId),
+      PayToMerchant: CPAY_MERCHANT_ID, MerchantName: CPAY_MERCHANT_NAME,
+      PaymentOKURL: `${APP_URL}/payments/cpay-ok`, PaymentFailURL: `${APP_URL}/payments/cpay-fail`,
+      FirstName: '', LastName: '', Address: '', City: '', Zip: '', Country: '', Telephone: '',
+      Email: req.user.email, OriginalAmount: '', OriginalCurrency: ''
+    };
+    const { header, checksum } = buildRequestChecksum(fields);
+    fields.CheckSumHeader = header; fields.CheckSum = checksum;
+    res.json({ intent_id: result.insertId, cpay_url: CPAY_PAYMENT_URL, fields });
+  } catch (err) {
+    console.error('POST /payments/init-special-plan error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
 });
 
 router.post('/init-special/:token', async (req, res) => {
@@ -655,6 +719,7 @@ router.post('/init-special/:token', async (req, res) => {
     const [[link]] = await pool.query('SELECT * FROM special_payment_links WHERE token = ?', [req.params.token]);
     if (!link) return res.status(404).json({ error: 'Линкот не постои.' });
     if (link.status !== 'pending') return res.status(409).json({ error: 'Овoj линк веќе е искористен.' });
+    if (link.link_type === 'plan') return res.status(400).json({ error: 'Овој линк бара најава.' });
 
     const amount = Math.round(Number(link.amount));
     const fields = {
@@ -728,3 +793,4 @@ router.get('/my-special-payments', requireAuth, requireRole('student'), async (r
 
 module.exports = router;
 module.exports.buildAnnualSchedule = buildAnnualSchedule;
+module.exports.schoolMonthsLeft = schoolMonthsLeft;
