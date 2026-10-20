@@ -6,6 +6,8 @@ const CYR = { а:'a',б:'b',в:'v',г:'g',д:'d',ѓ:'g',е:'e',ж:'z',з:'z',ѕ:
 // Фонетски клуч: „Матеј Митевски“ и „Matej Mitevski“ даваат ист клуч.
 function nameKey(name) {
   let s = String(name || '').toLowerCase().replace(/[*()]/g, ' ');
+  s = s.replace(/^\s*јс\s+/, '').replace(/ı/g, 'i').replace(/ß/g, 'ss');            // „ЈС Саша…“ → „Саша…“
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');                           // Çakmak → cakmak, Özbeyaz → ozbeyaz
   s = s.replace(/[Ѐ-ӿ]/g, ch => CYR[ch] !== undefined ? CYR[ch] : '');
   s = s.replace(/sh|zh/g, m => (m === 'sh' ? 's' : 'z')).replace(/ch/g, 'c').replace(/kj/g, 'k').replace(/gj/g, 'g').replace(/dj|dz/g, 'z')
        .replace(/y/g, 'j').replace(/w/g, 'v').replace(/q/g, 'k').replace(/x/g, 'ks');
@@ -73,7 +75,7 @@ function parseRoster(text, startYear) {
     let shift = 0;
     if (num(cells[1]) !== null && String(cells[1]).trim() !== '' ) shift = -1;
     const at = (idx) => (idx === null || idx === undefined ? undefined : cells[idx + shift]);
-    const name = first.replace(/^\*+/, '').trim();
+    const name = first.replace(/^\*+/, '').replace(/^ЈС\s+/i, '').trim();
     if (!name) continue;
     const full = num(at(useCols.full));
     const months = {};
