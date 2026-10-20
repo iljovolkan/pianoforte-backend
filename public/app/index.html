@@ -5232,7 +5232,14 @@
       if(studs.length === 0){
         studentBox.innerHTML = '<div class="empty-state">Сè уште нема регистрирани ученици.</div>';
       } else {
-        studentBox.innerHTML = studs.map(s => `
+        studentBox.innerHTML = studs.map(s => s.from_roster ? `
+          <div class="sent-item">
+            <div class="sent-icon">📋</div>
+            <div class="sent-meta">
+              <div class="t">${escapeHtml(s.full_name)}</div>
+              <div class="sub">Од листата · проф. ${escapeHtml(s.professor_name || '')}${s.module ? ' · ' + escapeHtml(s.module) : ''} · нема профил на платформата</div>
+            </div>
+          </div>` : `
           <div class="sent-item">
             <div class="sent-icon">🎧</div>
             <div class="sent-meta">
