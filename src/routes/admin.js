@@ -16,7 +16,7 @@ function generateTempPassword(){
 }
 
 // POST /admin/professors  { email, full_name, instrument }  — само admin
-// Создава professor сметка со генерирана привремена лозинка. "instrument" тука
+// Создава професор сметка со генерирана привремена лозинка. "instrument" тука
 // е само ПРВИОТ/главен инструмент — понатаму admin може да додаде уште преку
 // /admin/professors/:id/instruments (professor_instruments табелата).
 router.post('/professors', requireAuth, requireRole('admin'), async (req, res) => {
@@ -77,7 +77,7 @@ router.get('/professors', requireAuth, requireRole('admin'), async (req, res) =>
   res.json(rows);
 });
 
-// POST /admin/professors/:id/instruments  { instrument } — додава уште еден инструмент на professor
+// POST /admin/professors/:id/instruments  { instrument } — додава уште еден инструмент на професор
 router.post('/professors/:id/instruments', requireAuth, requireRole('admin'), async (req, res) => {
   const { instrument } = req.body;
   if (!VALID_INSTRUMENTS.includes(instrument)) return res.status(400).json({ error: 'Невалиден инструмент.' });
