@@ -466,7 +466,13 @@
       <div style="background:var(--surface-2); border-radius:12px; padding:18px; margin:20px 0; text-align:center;">
         <div id="specialPaymentDesc" style="font-size:14px; color:var(--ink); margin-bottom:10px;"></div>
         <div id="specialPaymentAmount" style="font-size:26px; font-weight:700; color:var(--lilac-deep);"></div>
+        <div id="specialPlanInfo" style="display:none; font-size:13px; color:var(--ink); margin-top:10px; line-height:1.5;"></div>
       </div>
+      <div id="specialPlanChildRow" style="display:none; margin-bottom:14px;">
+        <label style="font-size:13px;" data-i18n="sp_choose_child">Избери дете</label>
+        <select id="specialPlanChild" class="login-select"></select>
+      </div>
+      <p id="specialPlanLoginNote" style="display:none; font-size:13px; color:var(--mist); text-align:center; margin-bottom:14px;"></p>
       <p style="font-size:12px; color:var(--mist); text-align:center; margin-bottom:16px;">⚠️ Овoj линк е наменет исклучиво за тебе. Ве молиме не го препраќajте на други лица.</p>
       <button class="login-btn" id="specialPaymentPayBtn">Плати сега</button>
     </div>
@@ -1133,7 +1139,7 @@
 
       <div class="page-head" style="margin-top:12px;">
         <h2 data-i18n="admin_manage_profs">Управувaj со професори</h2>
-        <p data-i18n="admin_manage_profs_sub">Создади нова professor сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.</p>
+        <p data-i18n="admin_manage_profs_sub">Создади нова професор сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.</p>
       </div>
 
       <div class="index-layout">
@@ -1147,10 +1153,10 @@
             <input type="email" id="adminProfEmail" placeholder="professor@pianoforte.mk">
           </div>
           <div class="form-row">
-            <label data-i18n="admin_prof_instrument">Инструмент (professor-от ќе смее да создава групи само за овoj инструмент)</label>
+            <label data-i18n="admin_prof_instrument">Инструмент (професорот ќе смее да создава групи само за овoj инструмент)</label>
             <select id="adminProfInstrument" class="login-select" style="margin-bottom:0;"></select>
           </div>
-          <button class="send-btn" id="adminCreateProfBtn" data-i18n="admin_create_prof">Креирaj professor сметка</button>
+          <button class="send-btn" id="adminCreateProfBtn" data-i18n="admin_create_prof">Креирaj професор сметка</button>
           <div id="adminError" style="display:none; color:var(--wine); font-size:12.5px; margin-top:10px;"></div>
           <div id="adminSuccessBox" style="display:none; margin-top:16px; background:var(--leaf-pale); border:1px solid #cfe3d3; border-radius:10px; padding:16px;">
             <div style="font-weight:600; font-size:14px; margin-bottom:8px;" data-i18n="admin_prof_created">✓ Профилот е креиран</div>
@@ -1243,17 +1249,21 @@
       </div>
 
       <!-- ДЕЦА ПО ПРОФЕСОР -->
-      <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Деца по professor</h3></div>
-        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">За секоj professor — список на деца и дали плаќаат, за да знaeш точно колку да му исплатиш.</p>
-        <select id="profStudentsSelect" class="login-select" style="margin-bottom:14px;"></select>
+      <div class="card" style="margin-top:20px;" id="profKidsCard">
+        <div class="fin-section-title"><h3>Деца по професор</h3><span class="fin-section-total" id="profKidsCount"></span></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">За секој професор — колку деца има, кој платил и кој не, и тука ги означуваш уплатите. Месецот ја одредува границата „платено до“.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+          <select id="profStudentsSelect" class="login-select" style="margin-bottom:0; flex:1; min-width:220px;"></select>
+          <input type="month" id="profKidsMonth" class="login-select" style="max-width:170px; margin-bottom:0;">
+          <button class="mc-btn" id="profKidsImportBtn" style="flex:none; padding:8px 14px;">📥 Увоз на листа</button>
+        </div>
         <div id="profStudentsResult"></div>
       </div>
 
       <!-- АРХИВА НА ОТПИСИ (истата видлива и од Финансии) -->
       <div class="card" style="margin-top:20px;">
         <div class="fin-section-title"><h3>Архива на отпишани ученици</h3></div>
-        <table class="fin-table"><thead><tr><th>Дете</th><th>Родител</th><th>Professor</th><th>Причина</th><th>Датум</th></tr></thead>
+        <table class="fin-table"><thead><tr><th>Дете</th><th>Родител</th><th>Професор</th><th>Причина</th><th>Датум</th></tr></thead>
           <tbody id="financeWithdrawnList"></tbody>
         </table>
       </div>
@@ -1292,6 +1302,35 @@
       </div>
 
       <!-- НЕПЛАТЕНИ ШКОЛАРИНИ -->
+      <!-- НЕПЛАТЕНО ДО ИЗБРАН МЕСЕЦ -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Неплатено до избраниот месец</h3><span class="fin-section-total" id="unpaidOvTotal"></span></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Кој не платил до крајот на месецот (рати од платформата + ученици од увезената листа). Платените до тој месец не се прикажуваат.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+          <input type="month" id="unpaidOvMonth" class="login-select" style="max-width:190px; margin-bottom:0;">
+          <button class="send-btn" id="unpaidOvBtn" style="width:auto; padding:10px 18px;">Прикажи</button>
+        </div>
+        <div class="admin-stats-grid" id="unpaidOvStats" style="margin-bottom:12px;"></div>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Ученик</th><th>Професор</th><th>Пакет / модул</th><th>Недостасува</th><th>Детали</th></tr></thead>
+            <tbody id="unpaidOvTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ГОДИШЕН ПРЕГЛЕД: колку пари влегуваат во фирмата -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Годишен преглед — приход по месец</h3><span class="fin-section-total" id="annualTotal"></span></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Наплатено = веќе уплатено. Очекувано = преостанатите рати и остаток од листата, распоредени по месеци. Ова е проценка.</p>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Месец</th><th>Наплатено</th><th>Очекувано</th><th>Вкупно</th></tr></thead>
+            <tbody id="annualTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:20px;">
         <div class="fin-section-title"><h3 data-i18n="finance_unpaid_title">Неплатени школарини</h3><span class="fin-section-total" id="financeUnpaidTotal"></span></div>
         <div class="fin-table-wrap">
@@ -1344,7 +1383,7 @@
       <!-- ЕВИДЕНЦИЈА НА ОДРЖАНИ ЧАСОВИ -->
       <div class="card" style="margin-top:20px;">
         <div class="fin-section-title"><h3>Евиденција на одржани часови</h3></div>
-        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Проверка колку часови одржал секоj professor — за пресметка на исплати.</p>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Проверка колку часови одржал секоj професор — за пресметка на исплати.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
           <select id="attendanceProfFilter" class="login-select" style="margin-bottom:0; flex:1; min-width:160px;"><option value="">Сите професори</option></select>
           <input type="date" id="attendanceFrom" class="login-input" style="margin-bottom:0; width:auto;">
@@ -1353,7 +1392,7 @@
         </div>
         <div class="fin-table-wrap">
           <table class="fin-table">
-            <thead><tr><th>Датум</th><th>Professor</th><th>Час</th><th>Одржан</th><th>Присуство</th></tr></thead>
+            <thead><tr><th>Датум</th><th>Професор</th><th>Час</th><th>Одржан</th><th>Присуство</th></tr></thead>
             <tbody id="attendanceListTbody"></tbody>
           </table>
         </div>
@@ -1380,10 +1419,25 @@
       </div>
       <div class="card" id="specialPaymentLinkCard" style="margin-top:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:6px;">Испрати персонализирана уплата</h3>
-        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">За индивидуални случаи (пр. попуст за повеќе деца од исто семејство) — ти ja поставуваш цената рачно, без автоматски попусти/рати.</p>
+        <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;">За индивидуални случаи — ти ја поставуваш цената. „План“ создава вистинска претплата со рати (родителот го плаќа првиот месец преку линкот, а следните во „Наплата“).</p>
+        <div class="form-row"><label>Вид</label>
+          <select id="spLinkType" class="login-select">
+            <option value="one_time">Еднократна уплата (опис + износ)</option>
+            <option value="plan">План со рати (пакет + цена за првиот месец + цена за следните)</option>
+          </select></div>
         <div class="form-row"><label>Email на родителот</label><input type="email" id="spLinkEmail" class="login-input" placeholder="родител@email.com"></div>
-        <div class="form-row"><label>Опис (родителот ќе го види)</label><input type="text" id="spLinkDesc" class="login-input" placeholder="пр. Пакет пијано — 2 деца, семеен попуст"></div>
-        <div class="form-row"><label>Износ (ден.)</label><input type="number" id="spLinkAmount" class="login-input" min="1"></div>
+        <div id="spLinkOneTime">
+          <div class="form-row"><label>Опис (родителот ќе го види)</label><input type="text" id="spLinkDesc" class="login-input" placeholder="пр. Пакет пијано — 2 деца, семеен попуст"></div>
+          <div class="form-row"><label>Износ (ден.)</label><input type="number" id="spLinkAmount" class="login-input" min="1"></div>
+        </div>
+        <div id="spLinkPlan" style="display:none;">
+          <div class="form-row"><label>Пакет</label><select id="spLinkPkg" class="login-select"></select></div>
+          <div class="form-row"><label>Цена за првиот месец (ден.) — незадолжително, за доцен упис</label><input type="number" id="spLinkFirst" class="login-input" min="1" placeholder="остави празно ако е иста како следните"></div>
+          <div class="form-row"><label>Цена од следниот месец (ден. месечно)</label><input type="number" id="spLinkMonthly" class="login-input" min="1"></div>
+          <div class="form-row"><label>Вкупно рати (колку месеци плаќа)</label><input type="number" id="spLinkTotal" class="login-input" min="1" max="8"></div>
+          <p style="font-size:12px;color:var(--mist);margin:-4px 0 10px;" id="spLinkPlanHint"></p>
+          <div class="form-row"><label>Опис (незадолжително)</label><input type="text" id="spLinkPlanDesc" class="login-input" placeholder="автоматски: име на пакет + број на рати"></div>
+        </div>
         <button class="send-btn" id="spLinkSendBtn">Испрати линк за плаќање</button>
         <div id="spLinkMsg" style="display:none; margin-top:10px; font-size:12.5px;"></div>
       </div>
@@ -1523,9 +1577,9 @@
       choose_slot_title:'Избери термин', click_slot_hint:'Кликни на прозорче од календарот',
       admin_eyebrow:'Администрација', admin_overview_title:'Преглед и управување', admin_overview_sub:'Целосен надзор на системот — статистика, активност, професори и корисници.',
       admin_recent_activity:'Последна активност (купувања)', admin_manage_profs:'Управувaj со професори',
-      admin_manage_profs_sub:'Создади нова professor сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.',
-      admin_prof_name:'Име и презиме на професорот', admin_prof_instrument:'Инструмент (professor-от ќе смее да создава групи само за овoj инструмент)',
-      admin_create_prof:'Креирaj professor сметка', admin_prof_created:'✓ Профилот е креиран',
+      admin_manage_profs_sub:'Создади нова професор сметка. Привремената лозинка се прикажува само еднaш — сподели ja рачно со професорот.',
+      admin_prof_name:'Име и презиме на професорот', admin_prof_instrument:'Инструмент (професорот ќе смее да создава групи само за овoj инструмент)',
+      admin_create_prof:'Креирaj професор сметка', admin_prof_created:'✓ Профилот е креиран',
       admin_existing_profs:'Постоечки професори', admin_registered_students:'Регистрирани ученици', admin_all_indiv:'Сите закажани индивидуални часови',
       finance_eyebrow:'Финансии', finance_title:'Финансиски преглед', finance_sub:'Приход, плати, трошоци и остаток — прецизен табеларен приказ, сè на едно место.',
       label_month:'Месец', finance_staff_access:'Персонал со финансиски пристап', finance_staff_access_sub:'Максимум 3 членови од персоналот (покрaj admin) можат да имаат пристап до овoj дел.',
@@ -1567,7 +1621,7 @@
       profile_released:'Термин ослободен', profile_individual_lesson:'Индивидуален час', profile_confirmed:'Закажан',
       child_selector_label:'Дете', children_title:'Твоите деца', children_save_btn:'Зачувај', children_cancel_btn:'Откажи', children_add_btn:'+ Додади дете',
 
-      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_phone_label:'Телефонски број', placeholder_phone:'07x xxx xxx', phone_modal_title:'Додај телефонски број', profile_phone_hint:'Се печати на фактурите што ги добиваш на мејл.', phone_modal_text:'Телефонскиот број се печати на фактурите што ги добиваш на мејл и се користи само за тоа.', phone_modal_save:'Зачувај', phone_modal_later:'Подоцна', phone_modal_err:'Внеси валиден телефонски број.', x_loading:'Се вчитува...', x_sending:'Се испраќа...', x_saving:'Се зачувува...', x_error:'Грешка: ', x_error_dot:'Грешка.', x_years:'год.', x_mkd:'ден.', x_edit:'Уреди', x_delete:'Избриши', x_stop_service:'Прекини услуга', x_pay:'Плати', x_cancel:'Откажи', x_children:'деца', x_whole_group:'Целата група', x_whole_group_lc:'целата група', x_the_group:'групата', x_the_child:'детето', x_day:'ден', x_days:'дена', x_choose_slot:'Избери термин', x_signing_in:'Се најавува...', x_bad_login:'Погрешен email или лозинка.', x_signin:'Најави се', x_all_required:'Сите полиња се задолжителни.', x_link_sent:'✓ Линкот за плаќање е испратен до родителот.', x_send_err:'Грешка при испраќање.', x_send_pay_link:'Испрати линк за плаќање', x_enter_email:'Внеси email.', x_try_again:'Грешка. Пробај повторно.', x_send_reset:'Испрати линк за ресетирање', x_pw_min8:'Лозинката мора да има барем 8 карактери.', x_pw_mismatch:'Лозинките не се совпаѓаат.', x_invalid_link:'Невалиден линк.', x_pw_changed:'✓ Лозинката е сменета! Пренасочување кон најава...', x_link_expired:'Линкот не важи или е истечен.', x_save_new_pw:'Зачувај ја новата лозинка', x_fill_all:'Пополни ги сите полиња.', x_captcha:'Потврди дека не си робот (CAPTCHA).', x_agree_terms:'Мора да се согласиш со Условите за користење и Политиката на приватност.', x_creating:'Се креира профил...', x_to_addr:'на', x_error_occurred:'Настана грешка. Пробај повторно.', x_create_account:'Креирај профил', x_pay_ok:'Плаќањето е успешно! Испративме потврда на твојот email.', x_pay_not_done:'Плаќањето не беше завршено (откажано или одбиено). Пробај повторно.', x_pay_error:'Настана грешка при обработка на плаќањето. Ако парите се симнати од твојата сметка, контактирај нè на info@pianoforte.edu.mk.', x_confirm_stop:'Дали сте сигурни дека сакате да ја прекинете услугата за „{name}“?', x_stop_reason:'PianoForte настојува да ги подобрува своите услуги, па ве молиме наведете ја причината за прекинот на услугата (не е задолжително):', x_service_stopped:'Услугата е прекината. Испративме потврда на email.', x_confirm_del_child:'Дали сигурно сакаш да го избришеш детето „{name}“? Ова ги брише и сите негови материјали, претплати и закажувања.', x_name_required:'Името е задолжително.', x_pick_student:'Избери ученик или група прво.', x_material_sent_group:'Материјалот е испратен до {n} деца во групата.', x_send_error:'Грешка при испраќање: ', x_send_to_student:'Испрати до ученикот', x_download_failed:'Не успеа преземањето на фајлот.', x_no_student:'Нема избран ученик. Избери или додај ученик во некоја од твоите групи.', x_no_new_mat:'Нема нови материјали', x_pick_student_hist:'Избери ученик за да видиш историја.', x_show_single:'Прикажи одделно дете за преглед', x_group_mat_note:'Материјалот ќе се испрати посебно до секое дете во групата. Избери одделно дете (погоре) за да видиш историја на испратени материјали.', x_enter_room:'Влези во училница ({n} нови)', x_no_queued:'Нема нови материјали во ред', x_no_sent:'Сè уште нема испратени материјали за овој ученик.', x_sent_at:'испратено во', x_tablet_empty:'Таблетот е празен. Материјалите ќе се појават откако ученикот ќе влезе во училница.', x_attached_file:'Прикачен фајл', x_open_material:'Отвори материјал', x_mark_done:'Означи како завршено', x_new_badge:'НОВО', x_confirm_cancel_lesson:'Дали сигурно сакаш да го откажеш овој час?', x_cancelled:'Откажан', x_booked:'Закажан', x_with_prof:'кај ', x_sp_pending:'Чека плаќање', x_sp_paid:'Платено', x_sp_expired:'Истечено', x_student:'Ученик', x_group:'Група', x_pkg_plan:'Пакет / план', x_next_inst:'Следна рата', x_status:'Статус', x_no_students_pkg:'Нема ученици со активен пакет во твоите групи сè уште.', x_days_late:'дена задоцнето', x_in:'за', x_no_active_pkg:'Сè уште немаш активен пакет. Оди на „Пакети“ за да избереш.', bn_released_title:'Терминот ти е ослободен поради задоцнета уплата', bn_released_body:'Местото во {g} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети“ — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.', bn_late_title:'Задоцнета рата — {n} дена', bn_late_body:'Ако не платиш наскоро, терминот ти се ослободува. При следна уплата постои ризик да бидеш префрлен кај друг професор.', bn_soon_title:'Твојата следна рата доспева наскоро', bn_soon_body:'Рок за плаќање: <strong>{date}</strong> (за {n} {d}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.', bn_ok_title:'Сè е во ред', bn_ok_body:'Следната рата доспева на {date}. Местото ти е сигурно резервирано до тогаш.', bn_paid_title:'Целиот пакет е платен', bn_paid_body:'Немаш преостанати рати за оваа учебна година.', bn_nogroup_title:'Сè уште немаш избрано термин', bn_nogroup_body:'Уплатата е примена — сега избери група/термин за {name}. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.', x_child:'Дете', x_package:'Пакет', x_plan:'План на плаќање', x_slot:'Термин', x_installment:'Рата', x_amount:'Износ', x_due:'Рок', x_pay_err:'Грешка при плаќање: ', x_back_billing:'← Назад кон Наплата', x_choose_slot_for:'Избери термин за {i}. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.', x_pick_instrument:'Прво избери инструмент погоре.', x_pkg_desc:'Опис на пакет', x_chosen:'✓ Избрано', x_buy:'Купи', x_packages_h:'Пакети', x_price:'Цена', x_discount:'Попуст', x_no_groups_match:'Нема групи со доделен термин што одговараат на избраните филтри. Пробај да ги промениш возраста или нивото.', x_reserve_slot:'Резервирај термин', x_prof:'проф.', x_same_slot:'Ист термин низ целата учебна година', x_spots_free:'слободни места', x_full:'пополнето', x_already_member:'Веќе си во групата', x_no_spots:'Нема слободни места', x_instr_group_chosen:'Инструмент-групата е избрана! Сега избери солфеж-група.', x_slot_chosen:'Терминот е избран! 🎉', x_slots_load_err:'Грешка при вчитување термини.', x_no_prof:'Нема достапен професор за овој инструмент', x_load_err:'Грешка при вчитување', x_choose_slot_dot:'Избери термин.', ps_full:'1 уплата од {a} ден. (наместо {b} ден. — заштеда 5%) · 72 часа + БОНУС 36 часа солфеж', ps_two:'2 полугодишни уплати од по {a} ден. (−3% од секое полугодие) · по 36 часа + БОНУС 18 часа солфеж секое полугодие', ps_eight:'8 месечни уплати од по {a} ден. · 9 часа месечно, без бонус солфеж', x_slot_after_pay:'термин ќе избереш по плаќањето', x_one_time:'1 еднократна уплата од {a} ден. ({n} часа)', x_to_cpay:'Те носиме кон cPay...', x_pay_failed:'Плаќањето не успеа: ', x_pay_first:'Плати ја првата рата', x_to_payment:'Те носиме кон плаќање...', x_init_pay_err:'Грешка при иницирање плаќање.', x_pay_now:'Плати сега', x_link_invalid:'Линкот не е валиден.',  reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
+      reg_tagline:'Креирај родителски профил', reg_parent_name_label:'Твоето име и презиме (родител/старател)', reg_phone_label:'Телефонски број', placeholder_phone:'07x xxx xxx', phone_modal_title:'Додај телефонски број', profile_phone_hint:'Се печати на фактурите што ги добиваш на мејл.', phone_modal_text:'Телефонскиот број се печати на фактурите што ги добиваш на мејл и се користи само за тоа.', phone_modal_save:'Зачувај', phone_modal_later:'Подоцна', phone_modal_err:'Внеси валиден телефонски број.', sp_choose_child:'Избери дете', sp_plan_info:'Прва уплата: {first} ден., потоа {n} × {m} ден. месечно. Следните рати ќе ги гледаш и плаќаш во „Наплата“.', sp_plan_one:'Еднократна уплата. После плаќањето избираш термин во апликацијата.', sp_need_login:'За да продолжиш, најави се (или направи профил) — така следните рати ќе ти бидат видливи.', sp_login_btn:'Најави се / Регистрирај се', sp_need_child:'Прво додај го детето во апликацијата, па врати се на овој линк.', sp_open_app:'Отвори ја апликацијата',  pk_title_suffix:'програма (целогодишна, групна)', pk_inst_row:'Рата (1 од 8) од целогодишниот пакет', pk_inst_row_n:'Месечна рата (1 од {n}) — остаток од годината', pk_half_row:'Полугодишен пакет ({l} часа)', pk_split_row:'Две уплати ({a} + {b} месеци)', pk_full_row:'Целогодишен пакет ({l} часа)', pk_rest_row:'Остаток од годината — {n} месеци ({l} часа)', pk_desc_inst:'Месечна уплата — околу {l} часа месечно, {h}', pk_desc_total:'Се состои од {l} часа, {h}', pk_hour_group:'во групна настава, секој час со времетраење од 45 мин.', pk_hour_violin:'(45 мин. групен и 45 мин. индивидуален час)', pk_hour_early:'по 1 час неделно во групна настава, секој час со времетраење од 45 мин.', pk_bonus:' Како бонус, вклучени се {b} часа солфеж (комбинирано „online“ или во живо, 45 мин неделно).', pk_early_note:'Програмата е наменета за деца на 4-5 години.', pk_second_pay:'Втората уплата е {a} ден.', pk_late_note:'Бидејќи учебната година е веќе започната, остануваат {n} месечни уплати (наместо 8) — плаќаш само за преостанатите месеци.', ps_full:'1 уплата од {a} ден. (наместо {b} ден. — заштеда 5%) · {l} часа{bn}', ps_two:'2 уплати: {a} ден. и {c} ден. (−3%) · {l1} + {l2} часа{bn}', ps_eight:'{n} месечни уплати од по {a} ден. · околу {l} часа месечно, без бонус солфеж', ps_one:'1 уплата од {a} ден. (последен месец од годината)', ps_bonus:' + БОНУС {b} часа солфеж',  x_loading:'Се вчитува...', x_sending:'Се испраќа...', x_saving:'Се зачувува...', x_error:'Грешка: ', x_error_dot:'Грешка.', x_years:'год.', x_mkd:'ден.', x_edit:'Уреди', x_delete:'Избриши', x_stop_service:'Прекини услуга', x_pay:'Плати', x_cancel:'Откажи', x_children:'деца', x_whole_group:'Целата група', x_whole_group_lc:'целата група', x_the_group:'групата', x_the_child:'детето', x_day:'ден', x_days:'дена', x_choose_slot:'Избери термин', x_signing_in:'Се најавува...', x_bad_login:'Погрешен email или лозинка.', x_signin:'Најави се', x_all_required:'Сите полиња се задолжителни.', x_link_sent:'✓ Линкот за плаќање е испратен до родителот.', x_send_err:'Грешка при испраќање.', x_send_pay_link:'Испрати линк за плаќање', x_enter_email:'Внеси email.', x_try_again:'Грешка. Пробај повторно.', x_send_reset:'Испрати линк за ресетирање', x_pw_min8:'Лозинката мора да има барем 8 карактери.', x_pw_mismatch:'Лозинките не се совпаѓаат.', x_invalid_link:'Невалиден линк.', x_pw_changed:'✓ Лозинката е сменета! Пренасочување кон најава...', x_link_expired:'Линкот не важи или е истечен.', x_save_new_pw:'Зачувај ја новата лозинка', x_fill_all:'Пополни ги сите полиња.', x_captcha:'Потврди дека не си робот (CAPTCHA).', x_agree_terms:'Мора да се согласиш со Условите за користење и Политиката на приватност.', x_creating:'Се креира профил...', x_to_addr:'на', x_error_occurred:'Настана грешка. Пробај повторно.', x_create_account:'Креирај профил', x_pay_ok:'Плаќањето е успешно! Испративме потврда на твојот email.', x_pay_not_done:'Плаќањето не беше завршено (откажано или одбиено). Пробај повторно.', x_pay_error:'Настана грешка при обработка на плаќањето. Ако парите се симнати од твојата сметка, контактирај нè на info@pianoforte.edu.mk.', x_confirm_stop:'Дали сте сигурни дека сакате да ја прекинете услугата за „{name}“?', x_stop_reason:'PianoForte настојува да ги подобрува своите услуги, па ве молиме наведете ја причината за прекинот на услугата (не е задолжително):', x_service_stopped:'Услугата е прекината. Испративме потврда на email.', x_confirm_del_child:'Дали сигурно сакаш да го избришеш детето „{name}“? Ова ги брише и сите негови материјали, претплати и закажувања.', x_name_required:'Името е задолжително.', x_pick_student:'Избери ученик или група прво.', x_material_sent_group:'Материјалот е испратен до {n} деца во групата.', x_send_error:'Грешка при испраќање: ', x_send_to_student:'Испрати до ученикот', x_download_failed:'Не успеа преземањето на фајлот.', x_no_student:'Нема избран ученик. Избери или додај ученик во некоја од твоите групи.', x_no_new_mat:'Нема нови материјали', x_pick_student_hist:'Избери ученик за да видиш историја.', x_show_single:'Прикажи одделно дете за преглед', x_group_mat_note:'Материјалот ќе се испрати посебно до секое дете во групата. Избери одделно дете (погоре) за да видиш историја на испратени материјали.', x_enter_room:'Влези во училница ({n} нови)', x_no_queued:'Нема нови материјали во ред', x_no_sent:'Сè уште нема испратени материјали за овој ученик.', x_sent_at:'испратено во', x_tablet_empty:'Таблетот е празен. Материјалите ќе се појават откако ученикот ќе влезе во училница.', x_attached_file:'Прикачен фајл', x_open_material:'Отвори материјал', x_mark_done:'Означи како завршено', x_new_badge:'НОВО', x_confirm_cancel_lesson:'Дали сигурно сакаш да го откажеш овој час?', x_cancelled:'Откажан', x_booked:'Закажан', x_with_prof:'кај ', x_sp_pending:'Чека плаќање', x_sp_paid:'Платено', x_sp_expired:'Истечено', x_student:'Ученик', x_group:'Група', x_pkg_plan:'Пакет / план', x_next_inst:'Следна рата', x_status:'Статус', x_no_students_pkg:'Нема ученици со активен пакет во твоите групи сè уште.', x_days_late:'дена задоцнето', x_in:'за', x_no_active_pkg:'Сè уште немаш активен пакет. Оди на „Пакети“ за да избереш.', bn_released_title:'Терминот ти е ослободен поради задоцнета уплата', bn_released_body:'Местото во {g} веќе не е резервирано за тебе. За да продолжиш, направи нова уплата од „Пакети“ — имај предвид дека при нова резервација <strong>не е гарантирано</strong> дека ќе останеш кај истиот професор.', bn_late_title:'Задоцнета рата — {n} дена', bn_late_body:'Ако не платиш наскоро, терминот ти се ослободува. При следна уплата постои ризик да бидеш префрлен кај друг професор.', bn_soon_title:'Твојата следна рата доспева наскоро', bn_soon_body:'Рок за плаќање: <strong>{date}</strong> (за {n} {d}). Ако не платиш до тогаш, терминот ти се ослободува и постои ризик при следна уплата да бидеш префрлен кај друг професор.', bn_ok_title:'Сè е во ред', bn_ok_body:'Следната рата доспева на {date}. Местото ти е сигурно резервирано до тогаш.', bn_paid_title:'Целиот пакет е платен', bn_paid_body:'Немаш преостанати рати за оваа учебна година.', bn_nogroup_title:'Сè уште немаш избрано термин', bn_nogroup_body:'Уплатата е примена — сега избери група/термин за {name}. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.', x_child:'Дете', x_package:'Пакет', x_plan:'План на плаќање', x_slot:'Термин', x_installment:'Рата', x_amount:'Износ', x_due:'Рок', x_pay_err:'Грешка при плаќање: ', x_back_billing:'← Назад кон Наплата', x_choose_slot_for:'Избери термин за {i}. Ако не најдеш соодветен термин, контактирај нè на +389 70 247 442, +389 78 309 692 или +389 75 367 657.', x_pick_instrument:'Прво избери инструмент погоре.', x_pkg_desc:'Опис на пакет', x_chosen:'✓ Избрано', x_buy:'Купи', x_packages_h:'Пакети', x_price:'Цена', x_discount:'Попуст', x_no_groups_match:'Нема групи со доделен термин што одговараат на избраните филтри. Пробај да ги промениш возраста или нивото.', x_reserve_slot:'Резервирај термин', x_prof:'проф.', x_same_slot:'Ист термин низ целата учебна година', x_spots_free:'слободни места', x_full:'пополнето', x_already_member:'Веќе си во групата', x_no_spots:'Нема слободни места', x_instr_group_chosen:'Инструмент-групата е избрана! Сега избери солфеж-група.', x_slot_chosen:'Терминот е избран! 🎉', x_slots_load_err:'Грешка при вчитување термини.', x_no_prof:'Нема достапен професор за овој инструмент', x_load_err:'Грешка при вчитување', x_choose_slot_dot:'Избери термин.', x_slot_after_pay:'термин ќе избереш по плаќањето', x_one_time:'1 еднократна уплата од {a} ден. ({n} часа)', x_to_cpay:'Те носиме кон cPay...', x_pay_failed:'Плаќањето не успеа: ', x_pay_first:'Плати ја првата рата', x_to_payment:'Те носиме кон плаќање...', x_init_pay_err:'Грешка при иницирање плаќање.', x_pay_now:'Плати сега', x_link_invalid:'Линкот не е валиден.',  reg_child_section:'Прво дете (можеш да додадеш уште подоцна)', reg_child_name_label:'Име и презиме на детето', reg_age_label:'Возраст на детето',
       reg_instrument_label:'Инструмент', reg_submit_btn:'Креирај профил', reg_back_to_login:'← Веќе имаш профил? Најави се',
       reg_terms_pre:'Се согласувам со', reg_terms_and:'и', reg_terms_post:', и потврдувам дека сум родител/старател или лице над 18 години овластено да ja регистрира сметката.',
       pay_terms_post:' за оваа уплата.',
@@ -1656,7 +1710,7 @@
       profile_released:'Slot released', profile_individual_lesson:'Individual lesson', profile_confirmed:'Booked',
       child_selector_label:'Child', children_title:'Your children', children_save_btn:'Save', children_cancel_btn:'Cancel', children_add_btn:'+ Add child',
 
-      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_phone_label:'Phone number', placeholder_phone:'07x xxx xxx', phone_modal_title:'Add your phone number', profile_phone_hint:'Printed on the invoices you receive by email.', phone_modal_text:'Your phone number is printed on the invoices you receive by email and is used only for that.', phone_modal_save:'Save', phone_modal_later:'Later', phone_modal_err:'Enter a valid phone number.', x_loading:'Loading...', x_sending:'Sending...', x_saving:'Saving...', x_error:'Error: ', x_error_dot:'Error.', x_years:'yrs', x_mkd:'MKD', x_edit:'Edit', x_delete:'Delete', x_stop_service:'Stop service', x_pay:'Pay', x_cancel:'Cancel', x_children:'children', x_whole_group:'Whole group', x_whole_group_lc:'whole group', x_the_group:'the group', x_the_child:'the child', x_day:'day', x_days:'days', x_choose_slot:'Choose time slot', x_signing_in:'Signing in...', x_bad_login:'Incorrect email or password.', x_signin:'Sign in', x_all_required:'All fields are required.', x_link_sent:'✓ The payment link was sent to the parent.', x_send_err:'Error while sending.', x_send_pay_link:'Send payment link', x_enter_email:'Enter your email.', x_try_again:'Something went wrong. Please try again.', x_send_reset:'Send reset link', x_pw_min8:'Password must be at least 8 characters.', x_pw_mismatch:'Passwords do not match.', x_invalid_link:'Invalid link.', x_pw_changed:'✓ Password changed! Redirecting to sign in...', x_link_expired:'The link is invalid or has expired.', x_save_new_pw:'Save new password', x_fill_all:'Please fill in all fields.', x_captcha:'Please confirm you are not a robot (CAPTCHA).', x_agree_terms:'You must agree to the Terms of Use and Privacy Policy.', x_creating:'Creating account...', x_to_addr:'to', x_error_occurred:'An error occurred. Please try again.', x_create_account:'Create account', x_pay_ok:'Payment successful! We sent a confirmation to your email.', x_pay_not_done:'The payment was not completed (cancelled or declined). Please try again.', x_pay_error:'An error occurred while processing the payment. If the money was deducted from your account, please contact us at info@pianoforte.edu.mk.', x_confirm_stop:'Are you sure you want to stop the service for “{name}”?', x_stop_reason:'PianoForte strives to improve its services, so please state the reason for stopping the service (optional):', x_service_stopped:'The service has been stopped. We sent a confirmation by email.', x_confirm_del_child:'Are you sure you want to delete the child “{name}”? This also deletes all of their materials, subscriptions and bookings.', x_name_required:'Name is required.', x_pick_student:'Select a student or group first.', x_material_sent_group:'The material was sent to {n} children in the group.', x_send_error:'Error while sending: ', x_send_to_student:'Send to student', x_download_failed:'Downloading the file failed.', x_no_student:'No student selected. Select or add a student to one of your groups.', x_no_new_mat:'No new materials', x_pick_student_hist:'Select a student to see the history.', x_show_single:'Show a single child to preview', x_group_mat_note:'The material will be sent separately to each child in the group. Select a single child (above) to see the history of sent materials.', x_enter_room:'Enter the classroom ({n} new)', x_no_queued:'No new materials in the queue', x_no_sent:'No materials have been sent to this student yet.', x_sent_at:'sent at', x_tablet_empty:'The tablet is empty. Materials will appear once the student enters the classroom.', x_attached_file:'Attached file', x_open_material:'Open material', x_mark_done:'Mark as done', x_new_badge:'NEW', x_confirm_cancel_lesson:'Are you sure you want to cancel this lesson?', x_cancelled:'Cancelled', x_booked:'Booked', x_with_prof:'with ', x_sp_pending:'Awaiting payment', x_sp_paid:'Paid', x_sp_expired:'Expired', x_student:'Student', x_group:'Group', x_pkg_plan:'Package / plan', x_next_inst:'Next installment', x_status:'Status', x_no_students_pkg:'No students with an active package in your groups yet.', x_days_late:'days late', x_in:'in', x_no_active_pkg:'You do not have an active package yet. Go to “Packages” to choose one.', bn_released_title:'Your slot was released due to a late payment', bn_released_body:'Your spot in {g} is no longer reserved. To continue, make a new payment from “Packages” — please note that with a new booking it is <strong>not guaranteed</strong> that you will stay with the same teacher.', bn_late_title:'Late installment — {n} days', bn_late_body:'If you do not pay soon, your slot will be released. On your next payment you may be moved to another teacher.', bn_soon_title:'Your next installment is due soon', bn_soon_body:'Payment due: <strong>{date}</strong> (in {n} {d}). If you do not pay by then, your slot will be released and on your next payment you may be moved to another teacher.', bn_ok_title:'All good', bn_ok_body:'Your next installment is due on {date}. Your spot is reserved until then.', bn_paid_title:'The whole package is paid', bn_paid_body:'You have no remaining installments for this school year.', bn_nogroup_title:'You have not chosen a time slot yet', bn_nogroup_body:'Payment received — now choose a group/time slot for {name}. If you cannot find a suitable slot, contact us at +389 70 247 442, +389 78 309 692 or +389 75 367 657.', x_child:'Child', x_package:'Package', x_plan:'Payment plan', x_slot:'Time slot', x_installment:'Installment', x_amount:'Amount', x_due:'Due', x_pay_err:'Payment error: ', x_back_billing:'← Back to Billing', x_choose_slot_for:'Choose a time slot for {i}. If you cannot find a suitable slot, contact us at +389 70 247 442, +389 78 309 692 or +389 75 367 657.', x_pick_instrument:'First choose an instrument above.', x_pkg_desc:'Package description', x_chosen:'✓ Selected', x_buy:'Buy', x_packages_h:'Packages', x_price:'Price', x_discount:'Discount', x_no_groups_match:'No groups with an assigned slot match the selected filters. Try changing the age or level.', x_reserve_slot:'Reserve time slot', x_prof:'prof.', x_same_slot:'Same time slot throughout the school year', x_spots_free:'spots left', x_full:'full', x_already_member:'You are already in the group', x_no_spots:'No spots available', x_instr_group_chosen:'Instrument group selected! Now choose the solfège group.', x_slot_chosen:'Time slot selected! 🎉', x_slots_load_err:'Error loading time slots.', x_no_prof:'No teacher available for this instrument', x_load_err:'Error loading', x_choose_slot_dot:'Choose a time slot.', ps_full:'1 payment of {a} MKD (instead of {b} MKD — 5% savings) · 72 lessons + BONUS 36 solfège lessons', ps_two:'2 half-year payments of {a} MKD each (−3% per half-year) · 36 lessons + BONUS 18 solfège lessons each half-year', ps_eight:'8 monthly payments of {a} MKD each · 9 lessons per month, no bonus solfège', x_slot_after_pay:'you will choose a time slot after payment', x_one_time:'1 one-time payment of {a} MKD ({n} lessons)', x_to_cpay:'Taking you to cPay...', x_pay_failed:'Payment failed: ', x_pay_first:'Pay the first installment', x_to_payment:'Taking you to payment...', x_init_pay_err:'Error while starting the payment.', x_pay_now:'Pay now', x_link_invalid:'The link is not valid.',  reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
+      reg_tagline:'Create a parent account', reg_parent_name_label:'Your full name (parent/guardian)', reg_phone_label:'Phone number', placeholder_phone:'07x xxx xxx', phone_modal_title:'Add your phone number', profile_phone_hint:'Printed on the invoices you receive by email.', phone_modal_text:'Your phone number is printed on the invoices you receive by email and is used only for that.', phone_modal_save:'Save', phone_modal_later:'Later', phone_modal_err:'Enter a valid phone number.', sp_choose_child:'Choose a child', sp_plan_info:'First payment: {first} MKD, then {n} × {m} MKD monthly. You will see and pay the next installments in “Billing”.', sp_plan_one:'One-time payment. After paying you choose a time slot in the app.', sp_need_login:'To continue, sign in (or create an account) so you can see the next installments.', sp_login_btn:'Sign in / Register', sp_need_child:'First add your child in the app, then come back to this link.', sp_open_app:'Open the app',  pk_title_suffix:'program (full-year, group)', pk_inst_row:'Installment (1 of 8) of the full-year package', pk_inst_row_n:'Monthly installment (1 of {n}) — rest of the year', pk_half_row:'Half-year package ({l} lessons)', pk_split_row:'Two payments ({a} + {b} months)', pk_full_row:'Full-year package ({l} lessons)', pk_rest_row:'Rest of the year — {n} months ({l} lessons)', pk_desc_inst:'Monthly payment — about {l} lessons per month, {h}', pk_desc_total:'Consists of {l} lessons, {h}', pk_hour_group:'in group classes, each lesson lasting 45 min.', pk_hour_violin:'(45 min group and 45 min individual lesson)', pk_hour_early:'1 lesson per week in group classes, each lesson lasting 45 min.', pk_bonus:' As a bonus, {b} solfège lessons are included (online or in person, 45 min weekly).', pk_early_note:'The program is intended for children aged 4-5.', pk_second_pay:'The second payment is {a} MKD.', pk_late_note:'Since the school year has already started, {n} monthly payments remain (instead of 8) — you only pay for the remaining months.', ps_full:'1 payment of {a} MKD (instead of {b} MKD — 5% savings) · {l} lessons{bn}', ps_two:'2 payments: {a} MKD and {c} MKD (−3%) · {l1} + {l2} lessons{bn}', ps_eight:'{n} monthly payments of {a} MKD each · about {l} lessons per month, no bonus solfège', ps_one:'1 payment of {a} MKD (last month of the year)', ps_bonus:' + BONUS {b} solfège lessons',  x_loading:'Loading...', x_sending:'Sending...', x_saving:'Saving...', x_error:'Error: ', x_error_dot:'Error.', x_years:'yrs', x_mkd:'MKD', x_edit:'Edit', x_delete:'Delete', x_stop_service:'Stop service', x_pay:'Pay', x_cancel:'Cancel', x_children:'children', x_whole_group:'Whole group', x_whole_group_lc:'whole group', x_the_group:'the group', x_the_child:'the child', x_day:'day', x_days:'days', x_choose_slot:'Choose time slot', x_signing_in:'Signing in...', x_bad_login:'Incorrect email or password.', x_signin:'Sign in', x_all_required:'All fields are required.', x_link_sent:'✓ The payment link was sent to the parent.', x_send_err:'Error while sending.', x_send_pay_link:'Send payment link', x_enter_email:'Enter your email.', x_try_again:'Something went wrong. Please try again.', x_send_reset:'Send reset link', x_pw_min8:'Password must be at least 8 characters.', x_pw_mismatch:'Passwords do not match.', x_invalid_link:'Invalid link.', x_pw_changed:'✓ Password changed! Redirecting to sign in...', x_link_expired:'The link is invalid or has expired.', x_save_new_pw:'Save new password', x_fill_all:'Please fill in all fields.', x_captcha:'Please confirm you are not a robot (CAPTCHA).', x_agree_terms:'You must agree to the Terms of Use and Privacy Policy.', x_creating:'Creating account...', x_to_addr:'to', x_error_occurred:'An error occurred. Please try again.', x_create_account:'Create account', x_pay_ok:'Payment successful! We sent a confirmation to your email.', x_pay_not_done:'The payment was not completed (cancelled or declined). Please try again.', x_pay_error:'An error occurred while processing the payment. If the money was deducted from your account, please contact us at info@pianoforte.edu.mk.', x_confirm_stop:'Are you sure you want to stop the service for “{name}”?', x_stop_reason:'PianoForte strives to improve its services, so please state the reason for stopping the service (optional):', x_service_stopped:'The service has been stopped. We sent a confirmation by email.', x_confirm_del_child:'Are you sure you want to delete the child “{name}”? This also deletes all of their materials, subscriptions and bookings.', x_name_required:'Name is required.', x_pick_student:'Select a student or group first.', x_material_sent_group:'The material was sent to {n} children in the group.', x_send_error:'Error while sending: ', x_send_to_student:'Send to student', x_download_failed:'Downloading the file failed.', x_no_student:'No student selected. Select or add a student to one of your groups.', x_no_new_mat:'No new materials', x_pick_student_hist:'Select a student to see the history.', x_show_single:'Show a single child to preview', x_group_mat_note:'The material will be sent separately to each child in the group. Select a single child (above) to see the history of sent materials.', x_enter_room:'Enter the classroom ({n} new)', x_no_queued:'No new materials in the queue', x_no_sent:'No materials have been sent to this student yet.', x_sent_at:'sent at', x_tablet_empty:'The tablet is empty. Materials will appear once the student enters the classroom.', x_attached_file:'Attached file', x_open_material:'Open material', x_mark_done:'Mark as done', x_new_badge:'NEW', x_confirm_cancel_lesson:'Are you sure you want to cancel this lesson?', x_cancelled:'Cancelled', x_booked:'Booked', x_with_prof:'with ', x_sp_pending:'Awaiting payment', x_sp_paid:'Paid', x_sp_expired:'Expired', x_student:'Student', x_group:'Group', x_pkg_plan:'Package / plan', x_next_inst:'Next installment', x_status:'Status', x_no_students_pkg:'No students with an active package in your groups yet.', x_days_late:'days late', x_in:'in', x_no_active_pkg:'You do not have an active package yet. Go to “Packages” to choose one.', bn_released_title:'Your slot was released due to a late payment', bn_released_body:'Your spot in {g} is no longer reserved. To continue, make a new payment from “Packages” — please note that with a new booking it is <strong>not guaranteed</strong> that you will stay with the same teacher.', bn_late_title:'Late installment — {n} days', bn_late_body:'If you do not pay soon, your slot will be released. On your next payment you may be moved to another teacher.', bn_soon_title:'Your next installment is due soon', bn_soon_body:'Payment due: <strong>{date}</strong> (in {n} {d}). If you do not pay by then, your slot will be released and on your next payment you may be moved to another teacher.', bn_ok_title:'All good', bn_ok_body:'Your next installment is due on {date}. Your spot is reserved until then.', bn_paid_title:'The whole package is paid', bn_paid_body:'You have no remaining installments for this school year.', bn_nogroup_title:'You have not chosen a time slot yet', bn_nogroup_body:'Payment received — now choose a group/time slot for {name}. If you cannot find a suitable slot, contact us at +389 70 247 442, +389 78 309 692 or +389 75 367 657.', x_child:'Child', x_package:'Package', x_plan:'Payment plan', x_slot:'Time slot', x_installment:'Installment', x_amount:'Amount', x_due:'Due', x_pay_err:'Payment error: ', x_back_billing:'← Back to Billing', x_choose_slot_for:'Choose a time slot for {i}. If you cannot find a suitable slot, contact us at +389 70 247 442, +389 78 309 692 or +389 75 367 657.', x_pick_instrument:'First choose an instrument above.', x_pkg_desc:'Package description', x_chosen:'✓ Selected', x_buy:'Buy', x_packages_h:'Packages', x_price:'Price', x_discount:'Discount', x_no_groups_match:'No groups with an assigned slot match the selected filters. Try changing the age or level.', x_reserve_slot:'Reserve time slot', x_prof:'prof.', x_same_slot:'Same time slot throughout the school year', x_spots_free:'spots left', x_full:'full', x_already_member:'You are already in the group', x_no_spots:'No spots available', x_instr_group_chosen:'Instrument group selected! Now choose the solfège group.', x_slot_chosen:'Time slot selected! 🎉', x_slots_load_err:'Error loading time slots.', x_no_prof:'No teacher available for this instrument', x_load_err:'Error loading', x_choose_slot_dot:'Choose a time slot.', x_slot_after_pay:'you will choose a time slot after payment', x_one_time:'1 one-time payment of {a} MKD ({n} lessons)', x_to_cpay:'Taking you to cPay...', x_pay_failed:'Payment failed: ', x_pay_first:'Pay the first installment', x_to_payment:'Taking you to payment...', x_init_pay_err:'Error while starting the payment.', x_pay_now:'Pay now', x_link_invalid:'The link is not valid.',  reg_child_section:'First child (you can add more later)', reg_child_name_label:"Child's full name", reg_age_label:"Child's age",
       reg_instrument_label:'Instrument', reg_submit_btn:'Create account', reg_back_to_login:'← Already have an account? Sign in',
       reg_terms_pre:'I agree to the', reg_terms_and:'and', reg_terms_post:', and I confirm I am a parent/guardian or a person over 18 authorized to register this account.',
       pay_terms_post:' for this payment.',
@@ -2038,26 +2092,72 @@
     }
   });
 
+  /* ---- посебен линк: еднократна / план ---- */
+  let spPackagesLoaded = false;
+  function spToggleType(){
+    const plan = document.getElementById('spLinkType').value === 'plan';
+    document.getElementById('spLinkOneTime').style.display = plan ? 'none' : 'block';
+    document.getElementById('spLinkPlan').style.display = plan ? 'block' : 'none';
+    if(plan && !spPackagesLoaded){
+      spPackagesLoaded = true;
+      authApiCall('/packages').then(list=>{
+        const opts = list.filter(p=>p.package_type!=='individual');
+        document.getElementById('spLinkPkg').innerHTML = opts.map(p=>`<option value="${p.id}" data-price="${p.price_mkd}">${escapeHtml(p.name)} — ${instrumentLabel(p.instrument).replace(/^\S+\s/,'')} — ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.</option>`).join('');
+        spFillPlanDefaults();
+      }).catch(()=>{ spPackagesLoaded = false; });
+    }
+  }
+  function spFillPlanDefaults(){
+    const sel = document.getElementById('spLinkPkg');
+    const opt = sel.options[sel.selectedIndex];
+    if(!opt) return;
+    document.getElementById('spLinkMonthly').value = Math.round(Number(opt.dataset.price));
+    document.getElementById('spLinkTotal').value = schoolMonthsLeftNow();
+    spUpdatePlanHint();
+  }
+  function spUpdatePlanHint(){
+    const first = Number(document.getElementById('spLinkFirst').value) || 0;
+    const monthly = Number(document.getElementById('spLinkMonthly').value) || 0;
+    const total = Number(document.getElementById('spLinkTotal').value) || 0;
+    const firstAmt = first || monthly;
+    const sum = total > 0 ? firstAmt + monthly * (total - 1) : 0;
+    document.getElementById('spLinkPlanHint').textContent = monthly && total
+      ? `Родителот плаќа ${firstAmt.toLocaleString('mk-MK')} ден. сега${total>1 ? `, потоа ${total-1} × ${monthly.toLocaleString('mk-MK')} ден. месечно` : ''}. Вкупно: ${sum.toLocaleString('mk-MK')} ден. (преостанати месеци во годината: ${schoolMonthsLeftNow()}).`
+      : '';
+  }
+  document.getElementById('spLinkType').addEventListener('change', spToggleType);
+  document.getElementById('spLinkPkg').addEventListener('change', spFillPlanDefaults);
+  ['spLinkFirst','spLinkMonthly','spLinkTotal'].forEach(id=>document.getElementById(id).addEventListener('input', spUpdatePlanHint));
+
   document.getElementById('spLinkSendBtn').addEventListener('click', async ()=>{
+    const isPlan = document.getElementById('spLinkType').value === 'plan';
     const parent_email = document.getElementById('spLinkEmail').value.trim();
-    const description = document.getElementById('spLinkDesc').value.trim();
-    const amount = document.getElementById('spLinkAmount').value;
     const msgBox = document.getElementById('spLinkMsg');
     msgBox.style.display = 'none';
-    if(!parent_email || !description || !amount){
-      msgBox.style.color = 'var(--wine)'; msgBox.textContent = t('x_all_required'); msgBox.style.display = 'block';
-      return;
+    let body;
+    if(isPlan){
+      const package_id = document.getElementById('spLinkPkg').value;
+      const monthly_amount = document.getElementById('spLinkMonthly').value;
+      if(!parent_email || !package_id || !monthly_amount){
+        msgBox.style.color = 'var(--wine)'; msgBox.textContent = t('x_all_required'); msgBox.style.display = 'block'; return;
+      }
+      body = { link_type:'plan', parent_email, package_id, monthly_amount,
+        first_amount: document.getElementById('spLinkFirst').value || null,
+        installments_total: document.getElementById('spLinkTotal').value,
+        description: document.getElementById('spLinkPlanDesc').value.trim() || undefined };
+    } else {
+      const description = document.getElementById('spLinkDesc').value.trim();
+      const amount = document.getElementById('spLinkAmount').value;
+      if(!parent_email || !description || !amount){
+        msgBox.style.color = 'var(--wine)'; msgBox.textContent = t('x_all_required'); msgBox.style.display = 'block'; return;
+      }
+      body = { parent_email, description, amount };
     }
     const btn = document.getElementById('spLinkSendBtn');
     btn.disabled = true; btn.textContent = t('x_sending');
     try{
-      await authApiCall('/payments/special-link', {
-        method:'POST',
-        body: JSON.stringify({ parent_email, description, amount })
-      });
-      document.getElementById('spLinkEmail').value = '';
-      document.getElementById('spLinkDesc').value = '';
-      document.getElementById('spLinkAmount').value = '';
+      await authApiCall('/payments/special-link', { method:'POST', body: JSON.stringify(body) });
+      ['spLinkEmail','spLinkDesc','spLinkAmount','spLinkFirst','spLinkPlanDesc'].forEach(id=>{ document.getElementById(id).value = ''; });
       msgBox.style.color = 'var(--leaf)'; msgBox.textContent = t('x_link_sent'); msgBox.style.display = 'block';
     } catch(err){
       msgBox.style.color = 'var(--wine)'; msgBox.textContent = err.message || t('x_send_err'); msgBox.style.display = 'block';
@@ -2636,6 +2736,14 @@
   });
 
   async function startApp(){
+    try{
+      const rh = localStorage.getItem('pf_return_hash');
+      if(rh && /^#special-payment\/[a-f0-9]+$/.test(rh)){
+        localStorage.removeItem('pf_return_hash');
+        saveSessionToStorage();
+        window.location.hash = rh; window.location.reload(); return;
+      }
+    } catch(e){}
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'block';
     const avatar = document.getElementById('avatar');
@@ -3147,7 +3255,7 @@
       timeContainer.dataset.filled = '1';
     }
 
-    // dropdown со сите инструменти на кои е доделен овоj professor
+    // dropdown со сите инструменти на кои е доделен овоj професор
     const instSelect = document.getElementById('profAvailInstrument');
     try{
       const myInstruments = await authApiCall('/individual-bookings/my-instruments');
@@ -3937,7 +4045,7 @@
   }
 
   function lessonsOnWeekday(dayAbbr){
-    // сите термини (за овоj professor) чиja ден-абревијатура одговара
+    // сите термини (за овоj професор) чиja ден-абревијатура одговара
     return Object.values(schedule)
       .filter(e => e.day === dayAbbr && e.professorId === session.realUserId)
       .map(e => ({key: e.day+'-'+e.time, hour: e.time, group: groups.find(g=>g.id===e.groupId)}));
@@ -4228,7 +4336,7 @@
           </div>`;
         section.appendChild(cta);
         cta.querySelector('.choose-group-btn').addEventListener('click', ()=>{
-          chooseGroupMode = { subscriptionId: sub.id, isCombo: sub.package_name === 'Изворче' };
+          chooseGroupMode = { subscriptionId: sub.id, isCombo: !!sub.is_combo };
           comboFirstPickedGroupId = null;
           selectedPkgInstrument = sub.instrument;
           filterInstrument = sub.instrument;
@@ -4470,6 +4578,14 @@
     try{
       const rows = await authApiCall('/finance/payment-board' + (q ? '?q=' + encodeURIComponent(q) : ''));
       if(!rows.length){ box.innerHTML = '<div class="empty-state">Нема ученици со претплата. Користи „Запиши дете што плаќа“.</div>'; return; }
+      renderBoardRows(box, rows);
+    } catch(err){ box.innerHTML = `<div class="empty-state">Грешка: ${escapeHtml(err.message)}</div>`; }
+  }
+
+  // Цртање картички со рати (се користи и во „Евиденција на плаќања“ и во „Деца по професор“)
+  function renderBoardRows(box, rows, month){
+    const endOfMonth = month ? new Date(Number(month.slice(0,4)), Number(month.slice(5,7)), 0, 23, 59, 59) : null;
+    {
       box.innerHTML = rows.map(r=>{
         const paid = r.installments.filter(i=>i.status==='paid').length;
         const chips = r.installments.map(i=>{
@@ -4485,9 +4601,16 @@
                  <button class="mc-btn" style="flex:none;font-size:11px;" data-mark-inst="${i.id}" data-amount="${i.amount}" data-label="${escapeHtml(r.child_name)} — ${i.installment_number}/${i.total_installments}">Означи платена</button>`}
           </div>`;
         }).join('');
+        let pill = '';
+        if(endOfMonth){
+          const owed = r.installments.filter(i=>i.status!=='paid' && new Date(i.due_date) <= endOfMonth).reduce((a,i)=>a+Number(i.amount),0);
+          pill = owed > 0
+            ? `<span class="status-pill status-queued" style="margin-left:8px;">⚠ неплатено ${fmtMoney(owed)}</span>`
+            : `<span class="status-pill status-done" style="margin-left:8px;">✓ платено</span>`;
+        }
         return `<div style="border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
           <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <div><strong>${escapeHtml(r.child_name)}</strong> <span style="opacity:.7;font-size:12px;">· ${escapeHtml(r.parent_email)}</span></div>
+            <div><strong>${escapeHtml(r.child_name)}</strong>${pill} <span style="opacity:.7;font-size:12px;">· ${escapeHtml(r.parent_email)}</span></div>
             <div style="font-size:12px;opacity:.8;">${escapeHtml(r.package_name)} · ${PLAN_LABELS[r.payment_plan]||r.payment_plan} · платени ${paid}/${r.installments.length}</div>
           </div>${chips}</div>`;
       }).join('');
@@ -4531,8 +4654,161 @@
             });
         });
       });
+    }
+  }
+
+
+  /* ===================== ДЕЦА ПО ПРОФЕСОР (со плаќања) ===================== */
+  const MONTH_NAMES = {'09':'Сеп','10':'Окт','11':'Ное','12':'Дек','01':'Јан','02':'Фев','03':'Мар','04':'Апр'};
+  function schoolMonthsYm(){
+    const now = new Date(); const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+    return ['09','10','11','12','01','02','03','04'].map(m=> (Number(m) >= 9 ? y : y + 1) + '-' + m);
+  }
+  async function loadProfKids(){
+    const sel = document.getElementById('profStudentsSelect');
+    const box = document.getElementById('profStudentsResult');
+    const cnt = document.getElementById('profKidsCount');
+    if(!sel || !sel.value){ if(box) box.innerHTML = ''; if(cnt) cnt.textContent = ''; return; }
+    const month = document.getElementById('profKidsMonth').value || new Date().toISOString().slice(0,7);
+    box.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+    try{
+      let data;
+      if(sel.value.startsWith('r:')){
+        const r = await authApiCall('/finance/roster?professor_name=' + encodeURIComponent(sel.value.slice(2)) + '&month=' + month);
+        data = { board: [], roster: r.roster, group_students: [], individual_students: [], counts: { total: r.counts.total, platform: 0, roster_only: r.counts.total } };
+      } else {
+        data = await authApiCall('/finance/professor-students/' + sel.value + '?month=' + month);
+      }
+      const end = new Date(Number(month.slice(0,4)), Number(month.slice(5,7)), 0, 23, 59, 59);
+      const boardOwed = data.board.filter(r=>r.installments.some(i=>i.status!=='paid' && new Date(i.due_date) <= end)).length;
+      const rosterOwed = data.roster.filter(r=>r.status==='unpaid' && !r.has_subscription).length;
+      const rosterShown = data.roster.filter(r=>!r.has_subscription);
+      const paidUp = (data.board.length - boardOwed) + (rosterShown.length - rosterOwed);
+      const unpaidAll = boardOwed + rosterOwed;
+      cnt.innerHTML = `Вкупно деца: <b>${data.counts.total}</b>`;
+      let html = `<div class="admin-stats-grid" style="margin-bottom:14px;">
+        <div class="admin-stat-card"><div class="num">${data.counts.total}</div><div class="lbl">Вкупно деца</div></div>
+        <div class="admin-stat-card"><div class="num" style="color:var(--leaf);">${paidUp}</div><div class="lbl">Платиле до ${month}</div></div>
+        <div class="admin-stat-card"><div class="num" style="color:var(--wine);">${unpaidAll}</div><div class="lbl">Не платиле</div></div>
+      </div>`;
+      if(data.board.length){
+        html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:10px 0 6px;">СО ПРЕТПЛАТА НА ПЛАТФОРМАТА</div><div id="profBoardBox"></div>';
+      }
+      if(rosterShown.length){
+        html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:14px 0 6px;">ОД ЛИСТАТА (рачно водени уплати)</div><div id="profRosterBox"></div>';
+      }
+      const boardKids = new Set(data.board.map(b=>b.child_id));
+      const noSub = data.group_students.filter(g=>!g.subscription_id && !boardKids.has(g.child_id));
+      if(noSub.length){
+        html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:14px 0 6px;">ВО ГРУПА, БЕЗ ПРЕТПЛАТА</div><table class="fin-table"><thead><tr><th>Дете</th><th>Група</th></tr></thead><tbody>'
+          + noSub.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${escapeHtml(s.group_name)}</td></tr>`).join('') + '</tbody></table>';
+      }
+      if(data.individual_students.length){
+        html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:14px 0 6px;">ИНДИВИДУАЛНИ ЧАСОВИ</div><table class="fin-table"><thead><tr><th>Дете</th><th>Инструмент</th><th>Последен час</th></tr></thead><tbody>'
+          + data.individual_students.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${instrumentLabel(s.instrument)}</td><td>${fmtDate(s.last_lesson)}</td></tr>`).join('') + '</tbody></table>';
+      }
+      box.innerHTML = data.counts.total === 0 && !noSub.length ? '<div class="empty-state">Нема деца доделени кај овој професор. Ако имаш листа, користи „Увоз на листа“.</div>' : html;
+      if(data.board.length) renderBoardRows(document.getElementById('profBoardBox'), data.board, month);
+      if(rosterShown.length) renderRosterRows(document.getElementById('profRosterBox'), rosterShown, month);
     } catch(err){ box.innerHTML = `<div class="empty-state">Грешка: ${escapeHtml(err.message)}</div>`; }
   }
+
+  function renderRosterRows(box, rows, month){
+    const months = schoolMonthsYm();
+    box.innerHTML = rows.map(r=>{
+      const byM = {}; r.payments.forEach(p=>{ byM[p.pay_month] = p.amount; });
+      const chips = months.map(ym=>{
+        const v = byM[ym];
+        const label = MONTH_NAMES[ym.slice(5)];
+        return `<button class="mc-btn" style="flex:none;font-size:11px;padding:4px 8px;${v ? 'background:var(--leaf-pale,#e6f3ea);border-color:var(--leaf,#2f7d4f);' : 'opacity:.75;'}" data-rost="${r.id}" data-ym="${ym}" data-amt="${v||''}" data-full="${r.full_price}" data-name="${escapeHtml(r.full_name)}">${label}: ${v ? Number(v).toLocaleString('mk-MK') : '—'}</button>`;
+      }).join('');
+      const pill = r.owed > 0
+        ? `<span class="status-pill status-queued" style="margin-left:8px;">⚠ недостасува ${fmtMoney(r.owed)}</span>`
+        : `<span class="status-pill status-done" style="margin-left:8px;">✓ платено</span>`;
+      return `<div style="border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div><strong>${escapeHtml(r.full_name)}</strong>${pill}${r.has_profile ? ' <span style="font-size:11px;opacity:.7;">· има профил</span>' : ''}</div>
+          <div style="font-size:12px;opacity:.8;">${r.module ? escapeHtml(r.module) + ' · ' : ''}цена ${fmtMoney(r.full_price)}${r.discount ? ' · попуст ' + escapeHtml(r.discount) : ''} · платено ${fmtMoney(r.paid_total)} од ${fmtMoney(r.full_price)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${chips}</div>
+        <div style="margin-top:6px;"><button class="mc-btn" style="flex:none;font-size:11px;padding:3px 8px;opacity:.7;" data-rost-del="${r.id}" data-name="${escapeHtml(r.full_name)}">Отстрани од листата</button></div>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('button[data-rost]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const suggested = btn.dataset.amt || Math.round(Number(btn.dataset.full) / 8);
+        finModal('Уплата за ' + btn.dataset.name + ' — ' + btn.dataset.ym,
+          `<label>Износ (ден.) — остави 0 за да се избрише уплатата</label>
+           <input type="number" id="rpAmt" class="login-input" min="0" value="${suggested}">`,
+          'Зачувај', async (ov)=>{
+            await authApiCall('/finance/roster/' + btn.dataset.rost + '/payment', {
+              method:'POST', body: JSON.stringify({ pay_month: btn.dataset.ym, amount: Number(ov.querySelector('#rpAmt').value || 0) })
+            });
+            renderFinancePage();
+          });
+      });
+    });
+    box.querySelectorAll('button[data-rost-del]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!confirm('Да се отстрани „' + btn.dataset.name + '“ од листата (заедно со внесените уплати)?')) return;
+        try{ await authApiCall('/finance/roster/' + btn.dataset.rostDel, { method:'DELETE' }); renderFinancePage(); }
+        catch(err){ alert(err.message || 'Грешка.'); }
+      });
+    });
+  }
+
+  function openRosterImport(){
+    finModal('Увоз на листа (деца по професор)',
+      `<p style="font-size:12.5px;margin:0 0 8px;">Означи ја целата табела во Excel/Google Sheets (со имињата на професорите и колоните), копирај (Ctrl+C) и залепи тука (Ctrl+V). Може повторно да се залепи подоцна (пр. со нов месец) — постоечките ученици само се ажурираат, ништо не се дуплира.</p>
+       <textarea id="rosterText" class="login-input" rows="10" style="width:100%;font-size:12px;font-family:monospace;" placeholder="ФИЛИП НАНЕВСКИ&#10;ИМЕ И ПРЕЗИМЕ ..."></textarea>`,
+      'Провери и увези',
+      async (ov)=>{
+        const text = ov.querySelector('#rosterText').value;
+        if(!text.trim()){ alert('Залепи ја табелата.'); return true; }
+        const dry = await authApiCall('/finance/roster/import', { method:'POST', body: JSON.stringify({ text, dry_run: true }) });
+        const unmatched = dry.professors.filter(p=>!p.matched_to).map(p=>p.name + ' (' + p.students + ')');
+        const msg = `Пронајдени: ${dry.professors.length} професори, ${dry.students} ученици, ${dry.payments} уплати (вкупно ${Number(dry.payments_sum).toLocaleString('mk-MK')} ден.).\n`
+          + `Учебна година: ${dry.school_year}. Деца што веќе имаат профил на платформата: ${dry.matched_children}.\n`
+          + (unmatched.length ? `\nПрофесори што НЕ се препознаени (ќе се прикажат под „Од листата“):\n - ` + unmatched.join('\n - ') + '\n' : '\nСите професори се препознаени.\n')
+          + '\nДа се увезе?';
+        if(!confirm(msg)) return true;
+        const out = await authApiCall('/finance/roster/import', { method:'POST', body: JSON.stringify({ text }) });
+        alert(`Увезено: ${out.students} ученици и ${out.payments} уплати.`);
+        renderFinancePage();
+      });
+  }
+
+  /* ===================== НЕПЛАТЕНО ДО МЕСЕЦ + ГОДИШЕН ПРЕГЛЕД ===================== */
+  async function loadUnpaidOverview(){
+    const inp = document.getElementById('unpaidOvMonth');
+    if(!inp) return;
+    if(!inp.value) inp.value = new Date().toISOString().slice(0,7);
+    const tb = document.getElementById('unpaidOvTbody');
+    tb.innerHTML = '<tr><td colspan="5" class="fin-table-empty">Се вчитува...</td></tr>';
+    try{
+      const d = await authApiCall('/finance/unpaid-overview?month=' + inp.value);
+      document.getElementById('unpaidOvStats').innerHTML = `
+        <div class="admin-stat-card"><div class="num">${d.totals.students}</div><div class="lbl">Вкупно ученици</div></div>
+        <div class="admin-stat-card"><div class="num" style="color:var(--leaf);">${d.totals.paid_up}</div><div class="lbl">Платиле</div></div>
+        <div class="admin-stat-card"><div class="num" style="color:var(--wine);">${d.totals.unpaid}</div><div class="lbl">Не платиле</div></div>`;
+      document.getElementById('unpaidOvTotal').textContent = d.rows.length ? 'Вкупно недостасува: ' + fmtMoney(d.totals.owed_total) : '';
+      tb.innerHTML = d.rows.length
+        ? d.rows.map(r=>`<tr><td>${escapeHtml(r.child_name)}</td><td>${escapeHtml(r.professor_name)}</td><td>${escapeHtml(r.package_label)}</td><td class="num neg">${fmtMoney(r.owed)}</td><td style="font-size:12px;">${escapeHtml(r.detail)}</td></tr>`).join('')
+        : '<tr><td colspan="5" class="fin-table-empty">Сите платиле до овој месец. 🎉</td></tr>';
+    } catch(err){ tb.innerHTML = `<tr><td colspan="5" class="fin-table-empty">Грешка: ${escapeHtml(err.message)}</td></tr>`; }
+  }
+  async function loadAnnual(){
+    const tb = document.getElementById('annualTbody');
+    if(!tb) return;
+    try{
+      const d = await authApiCall('/finance/annual-forecast');
+      const names = {'01':'Јануари','02':'Февруари','03':'Март','04':'Април','05':'Мај','06':'Јуни','07':'Јули','08':'Август','09':'Септември','10':'Октомври','11':'Ноември','12':'Декември'};
+      tb.innerHTML = d.months.map(m=>`<tr><td>${names[m.month.slice(5)]} ${m.month.slice(0,4)}</td><td class="num">${fmtMoney(m.paid)}</td><td class="num">${fmtMoney(m.expected)}</td><td class="num" style="font-weight:700;">${fmtMoney(m.paid + m.expected)}</td></tr>`).join('')
+        + `<tr style="font-weight:700;"><td>Вкупно ${d.school_year}</td><td class="num">${fmtMoney(d.totals.collected)}</td><td class="num">${fmtMoney(d.totals.expected)}</td><td class="num">${fmtMoney(d.totals.projected)}</td></tr>`;
+      document.getElementById('annualTotal').textContent = 'Проценка за годината: ' + fmtMoney(d.totals.projected);
+    } catch(err){ tb.innerHTML = `<tr><td colspan="4" class="fin-table-empty">Грешка: ${escapeHtml(err.message)}</td></tr>`; }
+  }
+  (function(){ const b=document.getElementById('unpaidOvBtn'); if(b) b.addEventListener('click', loadUnpaidOverview); const m=document.getElementById('unpaidOvMonth'); if(m) m.addEventListener('change', loadUnpaidOverview); })();
 
   async function openManualEnrollment(){
     let packages = [];
@@ -4651,6 +4927,8 @@
     loadInvoices();
     loadPaymentBoard();
     loadAttendanceRecords();
+    loadUnpaidOverview();
+    loadAnnual();
 
     // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
     const accessCard = document.getElementById('financeAccessCard');
@@ -4728,33 +5006,24 @@
         });
       });
 
-      // --- деца по professor ---
+      // --- деца по професор: листа на професори (од профили + од увезената листа) ---
       const profSelect = document.getElementById('profStudentsSelect');
-      if(profSelect.children.length === 0){
-        profSelect.innerHTML = '<option value="">Избери professor...</option>' + profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('');
-        profSelect.addEventListener('change', async ()=>{
-          const resultBox = document.getElementById('profStudentsResult');
-          if(!profSelect.value){ resultBox.innerHTML=''; return; }
-          resultBox.innerHTML = '<div class="empty-state">Се вчитува...</div>';
-          try{
-            const data = await authApiCall('/finance/professor-students/' + profSelect.value);
-            let html = '';
-            if(data.group_students.length > 0){
-              html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:10px 0 6px;">ГРУПНИ ЧАСОВИ</div>';
-              html += '<table class="fin-table"><thead><tr><th>Дете</th><th>Група</th><th>Статус на плаќање</th></tr></thead><tbody>';
-              html += data.group_students.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${escapeHtml(s.group_name)}</td><td>${escapeHtml(s.payment_status)}</td></tr>`).join('');
-              html += '</tbody></table>';
-            }
-            if(data.individual_students.length > 0){
-              html += '<div style="font-size:12px; font-weight:600; color:var(--mist); margin:14px 0 6px;">ИНДИВИДУАЛНИ ЧАСОВИ</div>';
-              html += '<table class="fin-table"><thead><tr><th>Дете</th><th>Инструмент</th><th>Последен час</th></tr></thead><tbody>';
-              html += data.individual_students.map(s=>`<tr><td>${escapeHtml(s.child_name)}</td><td>${instrumentLabel(s.instrument)}</td><td>${fmtDate(s.last_lesson)}</td></tr>`).join('');
-              html += '</tbody></table>';
-            }
-            resultBox.innerHTML = html || '<div class="empty-state">Нема деца доделени кај овoj professor.</div>';
-          } catch(err){ resultBox.innerHTML = `<div class="empty-state">Грешка: ${err.message}</div>`; }
-        });
+      const prevVal = profSelect.value;
+      let unlinked = [];
+      try{ unlinked = await authApiCall('/finance/roster/professors'); } catch(e){}
+      profSelect.innerHTML = '<option value="">Избери професор...</option>'
+        + profs.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join('')
+        + (unlinked.length ? '<optgroup label="Од листата (без профил на платформата)">' + unlinked.map(u=>`<option value="r:${escapeHtml(u.professor_name)}">${escapeHtml(u.professor_name)} (${u.cnt})</option>`).join('') + '</optgroup>' : '');
+      if(prevVal && [...profSelect.options].some(o=>o.value===prevVal)) profSelect.value = prevVal;
+      const pm = document.getElementById('profKidsMonth');
+      if(!pm.value) pm.value = new Date().toISOString().slice(0,7);
+      if(!profSelect.dataset.bound){
+        profSelect.dataset.bound = '1';
+        profSelect.addEventListener('change', loadProfKids);
+        pm.addEventListener('change', loadProfKids);
+        document.getElementById('profKidsImportBtn').addEventListener('click', openRosterImport);
       }
+      loadProfKids();
     } catch(err){ console.error(err); }
 
     // --- архива на отписи (истата видлива и од Финансии) ---
@@ -5017,7 +5286,7 @@
       errBox.textContent = err.message || 'Грешка при креирање.';
       errBox.style.display = 'block';
     } finally {
-      btn.disabled = false; btn.textContent = 'Креирај professor сметка';
+      btn.disabled = false; btn.textContent = 'Креирај професор сметка';
     }
   });
 
@@ -5069,7 +5338,7 @@
 
     const forInstrument = packages.filter(p=>p.instrument===selectedPkgInstrument);
     const trial = forInstrument.find(p=>p.package_type==='trial');
-    const annual = forInstrument.find(p=>p.package_type==='annual');
+    const annuals = forInstrument.filter(p=>p.package_type==='annual');
     const individual = forInstrument.find(p=>p.package_type==='individual');
     const isViolin = selectedPkgInstrument === 'violina';
 
@@ -5105,36 +5374,41 @@
       </div>`;
     }
 
-    if(annual){
+    annuals.forEach(annual=>{
       const monthly = Number(annual.price_mkd);
-      const annualTotal = monthly * 8;
-      const halfPrice = Math.round((annualTotal/2) * (1 - HALF_PLAN_DISCOUNT));
-      const fullPrice = Math.round(annualTotal * (1 - FULL_PLAN_DISCOUNT));
+      const m = schoolMonthsLeftNow();
       const isEarlyDev = selectedPkgInstrument === 'ran-razvoj';
-
-      if(isEarlyDev){
-        html += `<div class="pkg-table-section">
-          <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-          <div class="pkg-table">
-            ${tableHead()}
-            ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 4-5 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'eight')}
-            ${rowHtml('Полугодишен пакет (18 часа)', halfPrice, '−3%', `Се состои од 18 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'two')}
-            ${rowHtml('Целогодишен пакет (36 часа)', fullPrice, '−5%', `Се состои од 36 часа, по 1 час неделно во групна настава, секој час со времетраење од 45 мин. Програмата е наменета за деца на 4-5 години.`, annual.id, 'annual', 'full')}
-          </div>
-        </div>`;
-      } else {
-        const hourDesc = isViolin ? '(45 мин. групен и 45 мин. индивидуален час)' : 'во групна настава, секој час со времетраење од 45 мин.';
-        html += `<div class="pkg-table-section">
-          <h3>${escapeHtml(annual.name)} програма (целогодишна, групна) — <span style="color:var(--sand-deep);">${annualTotal.toLocaleString('mk-MK')} ден.</span></h3>
-          <div class="pkg-table">
-            ${tableHead()}
-            ${rowHtml('Рата (1 од 8) од целогодишниот пакет', monthly, null, `Се состои од 9 часа, по 2 часа неделно ${hourDesc}`, annual.id, 'annual', 'eight')}
-            ${rowHtml('Полугодишен пакет (36 часа)', halfPrice, '−3%', `Се состои од 36 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 18 часа солфеж (комбинирано „online" или во живо, 45 мин неделно).`, annual.id, 'annual', 'two')}
-            ${rowHtml('Целогодишен пакет (72 часа)', fullPrice, '−5%', `Се состои од 72 часа, по 2 часа неделно ${hourDesc} Како бонус, вклучени се 36 часа солфеж (комбинирано „online" или во живо, 45 мин неделно).`, annual.id, 'annual', 'full')}
-          </div>
-        </div>`;
+      const lpm = isEarlyDev ? 4.5 : 9;                       // часови месечно
+      const lessons = (n)=>Math.round(lpm*n);
+      const bonus = (n)=>Math.round(4.5*n);                   // бонус солфеж (не за Изворче)
+      const hourDesc = isEarlyDev ? t('pk_hour_early') : (isViolin ? t('pk_hour_violin') : t('pk_hour_group'));
+      const bonusTxt = (n)=> isEarlyDev ? '' : t('pk_bonus').replace('{b}', bonus(n));
+      const early = isEarlyDev ? ' ' + t('pk_early_note') : '';
+      const sFull = buildScheduleFE('full', monthly, m), sTwo = buildScheduleFE('two', monthly, m);
+      const m1 = Math.ceil(m/2), m2 = m - m1;
+      const total = monthly * m;
+      const discPct = (v)=>v;
+      let rows = '';
+      rows += rowHtml(m===8 ? t('pk_inst_row') : t('pk_inst_row_n').replace('{n}', m), monthly, null,
+        t('pk_desc_inst').replace('{l}', lessons(1)).replace('{h}', hourDesc) + early, annual.id, 'annual', 'eight');
+      if(m >= 2){
+        rows += rowHtml(m===8 ? t('pk_half_row').replace('{l}', lessons(m1)) : t('pk_split_row').replace('{a}', m1).replace('{b}', m2),
+          sTwo[0].amount, '−3%',
+          t('pk_desc_total').replace('{l}', lessons(m1)).replace('{h}', hourDesc) + bonusTxt(m1) + (sTwo[1] && sTwo[1].amount !== sTwo[0].amount ? ' ' + t('pk_second_pay').replace('{a}', sTwo[1].amount.toLocaleString('mk-MK')) : '') + early,
+          annual.id, 'annual', 'two');
+        rows += rowHtml(m===8 ? t('pk_full_row').replace('{l}', lessons(m)) : t('pk_rest_row').replace('{n}', m).replace('{l}', lessons(m)),
+          sFull[0].amount, '−5%',
+          t('pk_desc_total').replace('{l}', lessons(m)).replace('{h}', hourDesc) + bonusTxt(m) + early, annual.id, 'annual', 'full');
       }
-    }
+      html += `<div class="pkg-table-section">
+        <h3>${escapeHtml(annual.name)} ${t('pk_title_suffix')} — <span style="color:var(--sand-deep);">${total.toLocaleString('mk-MK')} ${t('x_mkd')}</span></h3>
+        ${m < 8 ? `<div style="font-size:12.5px;color:var(--mist);margin:-4px 0 10px;">${t('pk_late_note').replace('{n}', m)}</div>` : ''}
+        <div class="pkg-table">
+          ${tableHead()}
+          ${rows}
+        </div>
+      </div>`;
+    });
 
     if(individual){
       html += `<div class="pkg-table-section">
@@ -5382,17 +5656,41 @@
   const HALF_PLAN_DISCOUNT = 0.03;
   let selectedPlan = 'eight';
 
-  function planSummaryText(plan, monthlyPrice){
-    const annual = monthlyPrice * SCHOOL_YEAR_MONTHS;
+  // Преостанати месечни уплати до крајот на учебната година (сеп–апр = 8 уплати)
+  function schoolMonthsLeftNow(){
+    const mo = new Date().getMonth();
+    if(mo >= 8) return Math.max(1, 8 - (mo - 8));
+    if(mo <= 3) return Math.max(1, 8 - (mo + 4));
+    return 8;
+  }
+  function buildScheduleFE(plan, monthly, m){
+    m = Math.max(1, Math.min(8, m||8));
+    if(m === 1) return [{ amount: Math.round(monthly) }];
+    if(plan === 'full') return [{ amount: Math.round(monthly*m*(1-FULL_PLAN_DISCOUNT)) }];
+    if(plan === 'two'){
+      const m1 = Math.ceil(m/2), m2 = m - m1;
+      return [{ amount: Math.round(monthly*m1*(1-HALF_PLAN_DISCOUNT)) }, { amount: Math.round(monthly*m2*(1-HALF_PLAN_DISCOUNT)) }];
+    }
+    return Array.from({length:m}, ()=>({ amount: Math.round(monthly) }));
+  }
+
+  function planSummaryText(plan, monthlyPrice, isEarly){
+    const m = schoolMonthsLeftNow();
+    const lpm = isEarly ? 4.5 : 9;
+    const L = (n)=>Math.round(lpm*n);
+    const B = (n)=> isEarly ? '' : t('ps_bonus').replace('{b}', Math.round(4.5*n));
+    const fmt = (v)=>Number(v).toLocaleString('mk-MK');
+    if(m === 1) return t('ps_one').replace('{a}', fmt(monthlyPrice));
     if(plan === 'full'){
-      const amount = Math.round(annual * (1 - FULL_PLAN_DISCOUNT));
-      return t('ps_full').replace('{a}', amount.toLocaleString('mk-MK')).replace('{b}', annual.toLocaleString('mk-MK'));
+      const amount = buildScheduleFE('full', monthlyPrice, m)[0].amount;
+      return t('ps_full').replace('{a}', fmt(amount)).replace('{b}', fmt(monthlyPrice*m)).replace('{l}', L(m)).replace('{bn}', B(m));
     }
     if(plan === 'two'){
-      const half = Math.round((annual/2) * (1 - HALF_PLAN_DISCOUNT));
-      return t('ps_two').replace('{a}', half.toLocaleString('mk-MK'));
+      const sc = buildScheduleFE('two', monthlyPrice, m);
+      const m1 = Math.ceil(m/2), m2 = m - m1;
+      return t('ps_two').replace('{a}', fmt(sc[0].amount)).replace('{c}', fmt(sc[1].amount)).replace('{l1}', L(m1)).replace('{l2}', L(m2)).replace('{bn}', B(m));
     }
-    return t('ps_eight').replace('{a}', monthlyPrice.toLocaleString('mk-MK'));
+    return t('ps_eight').replace('{n}', m).replace('{a}', fmt(monthlyPrice)).replace('{l}', Math.round(lpm));
   }
 
   const overlay = document.getElementById('paymentOverlay');
@@ -5444,7 +5742,7 @@
     document.getElementById('paymentSub').textContent = g ? `${p.name} · ${g.name} · ${slotsLabel(g.id)}` : `${p.name} · ${t('x_slot_after_pay')}`;
     document.getElementById('planSummary').textContent = isTrial
       ? t('x_one_time').replace('{a}', Number(p.price_mkd).toLocaleString('mk-MK')).replace('{n}', p.lessons_per_month)
-      : planSummaryText(selectedPlan, Number(p.price_mkd));
+      : planSummaryText(selectedPlan, Number(p.price_mkd), p.instrument==='ran-razvoj');
     overlay.classList.add('show');
   }
 
@@ -5454,7 +5752,7 @@
     btn.classList.add('active');
     selectedPlan = btn.dataset.plan;
     const p = packages.find(x=>x.id===chosenPackage);
-    document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd));
+    document.getElementById('planSummary').textContent = planSummaryText(selectedPlan, Number(p.price_mkd), p.instrument==='ran-razvoj');
   });
 
   document.getElementById('payChildSelect').addEventListener('change', e=>{
@@ -5546,24 +5844,79 @@
         document.getElementById('specialPaymentContent').style.display = 'block';
         document.getElementById('specialPaymentDesc').textContent = data.description;
         document.getElementById('specialPaymentAmount').textContent = Number(data.amount).toLocaleString('mk-MK') + ' ' + t('x_mkd');
-        document.getElementById('specialPaymentPayBtn').addEventListener('click', async ()=>{
-          const btn = document.getElementById('specialPaymentPayBtn');
-          btn.disabled = true; btn.textContent = t('x_to_payment');
+        const payBtn = document.getElementById('specialPaymentPayBtn');
+        const submitCpay = (initResult)=>{
+          const form = document.createElement('form');
+          form.method = 'POST'; form.action = initResult.cpay_url;
+          Object.entries(initResult.fields).forEach(([key, value])=>{
+            if(value === null || value === undefined) return;
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = key; input.value = value;
+            form.appendChild(input);
+          });
+          document.body.appendChild(form);
+          form.submit();
+        };
+
+        if(data.link_type === 'plan'){
+          // ПЛАН: потребна е најава (претплатата се врзува за детето на родителот)
+          const info = document.getElementById('specialPlanInfo');
+          const fmt = (v)=>Number(v).toLocaleString('mk-MK');
+          const n = Number(data.installments_total) || 1;
+          info.style.display = 'block';
+          info.textContent = n > 1
+            ? t('sp_plan_info').replace('{first}', fmt(data.amount)).replace('{n}', n - 1).replace('{m}', fmt(data.monthly_amount))
+            : t('sp_plan_one');
+          const stored = loadSessionFromStorage();
+          let kids = [];
+          if(stored && stored.token){
+            session = stored;
+            try{ kids = await authApiCall('/children'); } catch(e){ kids = null; }
+          } else { kids = null; }
+          const note = document.getElementById('specialPlanLoginNote');
+          if(kids === null){
+            // не е најавен → прати го на најава, па врати го овде
+            note.style.display = 'block'; note.textContent = t('sp_need_login');
+            payBtn.textContent = t('sp_login_btn');
+            payBtn.addEventListener('click', ()=>{
+              try{ localStorage.setItem('pf_return_hash', window.location.hash); }catch(e){}
+              window.location.href = '/app/';
+            });
+            return;
+          }
+          if(!kids.length){
+            note.style.display = 'block'; note.textContent = t('sp_need_child');
+            payBtn.textContent = t('sp_open_app');
+            payBtn.addEventListener('click', ()=>{
+              try{ localStorage.setItem('pf_return_hash', window.location.hash); }catch(e){}
+              window.location.href = '/app/';
+            });
+            return;
+          }
+          const sel = document.getElementById('specialPlanChild');
+          sel.innerHTML = kids.map(c=>`<option value="${c.id}">${escapeHtml(c.full_name)}</option>`).join('');
+          document.getElementById('specialPlanChildRow').style.display = 'block';
+          payBtn.addEventListener('click', async ()=>{
+            payBtn.disabled = true; payBtn.textContent = t('x_to_payment');
+            try{
+              const initResult = await authApiCall('/payments/init-special-plan/' + spToken, { method:'POST', body: JSON.stringify({ child_id: Number(sel.value) }) });
+              submitCpay(initResult);
+            } catch(err){
+              alert(err.message || t('x_init_pay_err'));
+              payBtn.disabled = false; payBtn.textContent = t('x_pay_now');
+            }
+          });
+          return;
+        }
+
+        payBtn.addEventListener('click', async ()=>{
+          payBtn.disabled = true; payBtn.textContent = t('x_to_payment');
           try{
             const initResult = await apiCall('/payments/init-special/' + spToken, { method:'POST' });
-            const form = document.createElement('form');
-            form.method = 'POST'; form.action = initResult.cpay_url;
-            Object.entries(initResult.fields).forEach(([key, value])=>{
-              if(value === null || value === undefined) return;
-              const input = document.createElement('input');
-              input.type = 'hidden'; input.name = key; input.value = value;
-              form.appendChild(input);
-            });
-            document.body.appendChild(form);
-            form.submit();
+            submitCpay(initResult);
           } catch(err){
             alert(err.message || t('x_init_pay_err'));
-            btn.disabled = false; btn.textContent = t('x_pay_now');
+            payBtn.disabled = false; payBtn.textContent = t('x_pay_now');
           }
         });
       } catch(err){
