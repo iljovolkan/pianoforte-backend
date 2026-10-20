@@ -4,8 +4,8 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво, professor
-// ВАЖНО: за ученик/родител, идентитетот на professor-от е СКРИЕН (анонимен)
+// GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво, професор
+// ВАЖНО: за ученик/родител, идентитетот на професорот е СКРИЕН (анонимен)
 // додека не резервираат термин во таa група — professor_name/professor_id
 // се отстрануваат од одговорот, освен ако веќе имаат дете запишано таму.
 router.get('/', requireAuth, async (req, res) => {
@@ -51,8 +51,8 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /groups  { name, capacity, age_range, level }  — само професор/админ
 // Инструментот НЕ доаѓа од телото на барањето — секогаш се презема од
-// сопствениот профил на professor-от (кого admin-от го "заклучил" на еден
-// инструмент при создавање на сметката). Ова спречува professor по пијано
+// сопствениот профил на професорот (кого admin-от го "заклучил" на еден
+// инструмент при создавање на сметката). Ова спречува професор по пијано
 // случајно (или намерно) да создаде група за гитара.
 router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
@@ -97,7 +97,7 @@ router.post('/', requireAuth, requireRole('professor', 'admin'), async (req, res
 });
 
 // POST /groups/:id/members  { student_id }  — рачно додава дете во група (без купување),
-// проверува капацитет и дека детето постои. Professor може да додава само во сопствени групи.
+// проверува капацитет и дека детето постои. Професор може да додава само во сопствени групи.
 router.post('/:id/members', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -141,7 +141,7 @@ router.delete('/:id/members/:studentId', requireAuth, requireRole('professor', '
 });
 
 // GET /groups/search-students?q=име — пребарува деца по име (за рачно додавање во група).
-// Достапно и за professor и за admin — professor мора да може да најде ученик за да го додаде.
+// Достапно и за професор и за admin — професор мора да може да најде ученик за да го додаде.
 router.get('/search-students', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
@@ -160,7 +160,7 @@ router.get('/search-students', requireAuth, requireRole('professor', 'admin'), a
 });
 
 // DELETE /groups/:id — бришe цела група (за грешки при креирање). Members се
-// бришат автоматски (ON DELETE CASCADE). Professor може да брише само сопствени групи.
+// бришат автоматски (ON DELETE CASCADE). Професор може да брише само сопствени групи.
 router.delete('/:id', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
     const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [req.params.id]);
@@ -178,7 +178,7 @@ router.delete('/:id', requireAuth, requireRole('professor', 'admin'), async (req
 
 // POST /groups/:id/move-member  { student_id, new_group_id }
 // Ja префрла детето од оваa група во НОВА група (можно да е и кај друг
-// professor, дури и различен инструмент — admin/professor одлучува).
+// професор, дури и различен инструмент — admin/professor одлучува).
 // Ги ажурира и member-ствата и активната претплата (за идните рати).
 router.post('/:id/move-member', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const { student_id, new_group_id } = req.body;
@@ -210,7 +210,7 @@ router.post('/:id/move-member', requireAuth, requireRole('professor', 'admin'), 
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [new_group_id, student_id]);
 
     // ажурирaj ja и активната претплата (пакетот и цената остануваат исти —
-    // само групата/терминот/professor-от се менуваат за идните рати)
+    // само групата/терминот/професорот се менуваат за идните рати)
     await pool.query(
       `UPDATE subscriptions SET group_id = ? WHERE student_id = ? AND group_id = ? AND released = FALSE`,
       [new_group_id, student_id, oldGroupId]
@@ -223,7 +223,7 @@ router.post('/:id/move-member', requireAuth, requireRole('professor', 'admin'), 
   }
 });
 
-// PUT /groups/:id/close  { is_closed }  — professor рано ja затвора/отвора
+// PUT /groups/:id/close  { is_closed }  — професор рано ja затвора/отвора
 // групата (не прима повеќе нови деца, дури и да има уште слободно место)
 router.put('/:id/close', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   const { is_closed } = req.body;
