@@ -137,13 +137,25 @@ router.get('/summary', async (req, res) => {
      FROM expenses WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?`, [month]
   );
 
-  const income = Number(incomeRow.total);
+  // + уплати од увезената листа (пр. рачно/готовина/банка) за истиот месец
+  let rosterIncome = 0;
+  try {
+    const my = Number(month.slice(0, 4)), mm = Number(month.slice(5, 7));
+    const sy = schoolYearStr(mm >= 9 ? my : my - 1);
+    const [[rr]] = await pool.query(
+      `SELECT COALESCE(SUM(rp.amount),0) AS total FROM roster_payments rp
+       JOIN roster_students rs ON rs.id = rp.roster_id WHERE rs.school_year = ? AND rp.pay_month = ?`, [sy, month]);
+    rosterIncome = Number(rr.total);
+  } catch (e) { /* табелите од листата можеби уште не постојат */ }
+
+  const incomePlatform = Number(incomeRow.total);
+  const income = incomePlatform + rosterIncome;
   const salaries = Number(salaryRow.total);
   const trosoci = Number(expenseRow.trosoci);
   const marketing = Number(expenseRow.marketing);
   const remainder = income - salaries - trosoci - marketing;
 
-  res.json({ month, income, salaries, trosoci, marketing, total_expenses: trosoci + marketing, remainder });
+  res.json({ month, income, income_platform: incomePlatform, income_roster: rosterIncome, salaries, trosoci, marketing, total_expenses: trosoci + marketing, remainder });
 });
 
 // ---------- 5. НЕПЛАТЕНИ ШКОЛАРИНИ по месец ----------
@@ -187,6 +199,33 @@ router.get('/professor-revenue', async (req, res) => {
   query += ` WHERE u.role = 'professor'` + (conditions.length ? ' AND ' + conditions.join(' AND ') : '');
   query += ' GROUP BY u.id, u.full_name, u.instrument ORDER BY total_revenue DESC';
   const [rows] = await pool.query(query, params);
+
+  // + ученици и уплати од увезената листа (по професор)
+  try {
+    const sy = schoolYearStr(defaultStartYear());
+    const [kids] = await pool.query('SELECT full_name FROM children');
+    const kidKeys = new Set(kids.map(k => roster.nameKey(k.full_name)));
+    const [rs] = await pool.query('SELECT id, professor_id, professor_name, full_name FROM roster_students WHERE school_year = ?', [sy]);
+    const [pays] = rs.length ? await pool.query(
+      `SELECT roster_id, pay_month, amount FROM roster_payments WHERE roster_id IN (?)`, [rs.map(x => x.id)]) : [[]];
+    const inRange = (ym) => (!from || ym >= from) && (!to || ym <= to);
+    const paidBy = {};
+    pays.forEach(p => { if (inRange(p.pay_month)) paidBy[p.roster_id] = (paidBy[p.roster_id] || 0) + Number(p.amount); });
+    const byProf = new Map();
+    rs.forEach(r => {
+      const k = r.professor_id ? 'id' + r.professor_id : 'n' + r.professor_name;
+      const e = byProf.get(k) || { professor_id: r.professor_id, professor_name: r.professor_name, revenue: 0, only: 0 };
+      e.revenue += paidBy[r.id] || 0;
+      if (!kidKeys.has(roster.nameKey(r.full_name))) e.only++;
+      byProf.set(k, e);
+    });
+    byProf.forEach(e => {
+      const row = e.professor_id ? rows.find(r => r.professor_id === e.professor_id) : null;
+      if (row) { row.total_revenue = Number(row.total_revenue) + e.revenue; row.student_count = Number(row.student_count) + e.only; }
+      else rows.push({ professor_id: null, professor_name: e.professor_name + ' (од листата)', instrument: null, total_revenue: e.revenue, student_count: e.only });
+    });
+    rows.sort((a, b) => Number(b.total_revenue) - Number(a.total_revenue));
+  } catch (e) { /* листата уште не е увезена */ }
   res.json(rows);
 });
 
