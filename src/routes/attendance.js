@@ -63,7 +63,7 @@ router.post('/log', requireAuth, requireRole('professor'), async (req, res) => {
   }
 });
 
-// GET /attendance/my-logs?from=YYYY-MM-DD&to=YYYY-MM-DD — professor ги гледа сопствените евиденции
+// GET /attendance/my-logs?from=YYYY-MM-DD&to=YYYY-MM-DD — професор ги гледа сопствените евиденции
 router.get('/my-logs', requireAuth, requireRole('professor'), async (req, res) => {
   const { from, to } = req.query;
   let query = `
