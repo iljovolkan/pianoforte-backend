@@ -386,10 +386,24 @@ async function issueInvoice(args) {
 }
 
 async function completeSubscriptionPurchase(intent, payload, cpayRef) {
-  const { child_id, package_id, group_id, secondary_group_id, payment_plan } = payload;
+  const { child_id, package_id, payment_plan } = payload;
+  let group_id = payload.group_id || null;
+  let secondary_group_id = payload.secondary_group_id || null;
   const customSchedule = Array.isArray(payload.custom_schedule) ? payload.custom_schedule : null;
 
   const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
+
+  // Професорот можеби веќе го ставил детето во група. Ако при плаќањето не е избрана група,
+  // автоматски ја врзуваме претплатата со групата во која детето веќе е (ист инструмент).
+  const [existingGroups] = await pool.query(
+    `SELECT g.id, g.instrument FROM group_members gm JOIN groups_table g ON g.id = gm.group_id WHERE gm.student_id = ?`, [child_id]);
+  if (!group_id) {
+    const main = existingGroups.find(g => g.instrument === pkg.instrument);
+    const solf = existingGroups.find(g => g.instrument === 'solfez');
+    if (pkg.is_combo) { if (main && solf) { group_id = main.id; secondary_group_id = solf.id; } }
+    else if (main) group_id = main.id;
+  }
+  const alreadyIn = (gid) => existingGroups.some(g => g.id === gid);
   const [[child]] = await pool.query('SELECT full_name FROM children WHERE id = ?', [child_id]);
   const [[userRow]] = await pool.query('SELECT email FROM users WHERE id = ?', [intent.user_id]);
 
@@ -399,10 +413,10 @@ async function completeSubscriptionPurchase(intent, payload, cpayRef) {
     [child_id, package_id, group_id, cpayRef]
   );
 
-  if (group_id) {
+  if (group_id && !alreadyIn(group_id)) {
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [group_id, child_id]);
   }
-  if (secondary_group_id) {
+  if (secondary_group_id && !alreadyIn(secondary_group_id)) {
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [secondary_group_id, child_id]);
   }
 
