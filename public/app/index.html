@@ -4824,6 +4824,9 @@
        <select id="mePlan" class="login-select">
          <option value="eight">8 месечни рати</option><option value="two">2 полугодишни рати (−3%)</option>
          <option value="full">Целосно (1 уплата, −5%)</option><option value="trial">Пробен (1 уплата)</option></select>
+       <div id="meRosterBox" style="display:none;background:rgba(47,125,79,.08);border:1px solid rgba(47,125,79,.35);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12.5px;">
+         <label style="display:flex;gap:8px;align-items:center;margin:0;"><input type="checkbox" id="meUseRoster" checked> <span id="meRosterTxt"></span></label>
+       </div>
        <label>Колку рати се веќе платени?</label>
        <input type="number" id="mePaid" class="login-input" min="0" value="1">
        <label>Како се платени</label>
@@ -4846,12 +4849,13 @@
           method:'POST',
           body: JSON.stringify({
             child_id, package_id: ov.querySelector('#mePkg').value, payment_plan: ov.querySelector('#mePlan').value,
+            use_roster: ov.querySelector('#meUseRoster').checked && ov.querySelector('#meRosterBox').style.display !== 'none',
             paid_count: ov.querySelector('#mePaid').value, method: ov.querySelector('#meMethod').value,
             start_date: ov.querySelector('#meStart').value, next_due_date: ov.querySelector('#meNextDue').value || undefined, paid_date: ov.querySelector('#mePaidDate').value,
             note: ov.querySelector('#meNote').value.trim(), send_invoice: ov.querySelector('#meInvoice').checked
           })
         });
-        alert('Запишано.' + (out.invoices_sent ? ` Испратени фактури: ${out.invoices_sent}.` : '') + (out.group_linked ? '' : '\nДетето нема група — родителот може да избере термин во апликацијата.'));
+        alert('Запишано.' + (out.paid_count ? ` Означени платени рати: ${out.paid_count}.` : '') + (out.invoices_sent ? ` Испратени фактури: ${out.invoices_sent}.` : '') + (out.group_linked ? '' : '\nДетето нема група — родителот може да избере термин во апликацијата.'));
         renderFinancePage();
       });
     const doSearch = async ()=>{
@@ -4864,9 +4868,26 @@
           : '<option value="">Нема деца без претплата</option>';
       } catch(err){ sel.innerHTML = '<option value="">Грешка</option>'; }
     };
-    ov.querySelector('#meSearch').onclick = doSearch;
+    const checkRoster = async ()=>{
+      const box = ov.querySelector('#meRosterBox'), paidInp = ov.querySelector('#mePaid');
+      const cid = ov.querySelector('#meChild').value;
+      box.style.display = 'none'; paidInp.disabled = false;
+      if(!cid) return;
+      try{
+        const q = new URLSearchParams({ child_id: cid, package_id: ov.querySelector('#mePkg').value, payment_plan: ov.querySelector('#mePlan').value, start_date: ov.querySelector('#meStart').value });
+        const c = await authApiCall('/finance/roster-coverage?' + q.toString());
+        if(!c.found) return;
+        ov.querySelector('#meRosterTxt').textContent = `Најдено во школската листа (проф. ${c.professor_name}): платено ${fmtMoney(c.paid_total)} од ${fmtMoney(c.full_price)} → покрива ${c.paid_count} од ${c.installments} рати. Користи ги.`;
+        box.style.display = '';
+        paidInp.value = c.paid_count;
+        const apply = ()=>{ paidInp.disabled = ov.querySelector('#meUseRoster').checked; };
+        ov.querySelector('#meUseRoster').onchange = apply; apply();
+      }catch(e){}
+    };
+    ['#meChild','#mePkg','#mePlan','#meStart'].forEach(sel=> ov.querySelector(sel).addEventListener('change', checkRoster));
+    ov.querySelector('#meSearch').onclick = async ()=>{ await doSearch(); checkRoster(); };
     ov.querySelector('#meQ').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doSearch(); } });
-    doSearch();
+    doSearch().then(checkRoster);
   }
   document.getElementById('payBoardSearchBtn').addEventListener('click', loadPaymentBoard);
   document.getElementById('payBoardQ').addEventListener('keydown', e=>{ if(e.key==='Enter') loadPaymentBoard(); });
