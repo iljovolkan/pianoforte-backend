@@ -386,16 +386,56 @@ router.get('/unenrolled-children', async (req, res) => {
   }
 });
 
+
+// Колку рати од планот се веќе покриени со уплатите од увезената листа (за дете со истото име)
+async function rosterCoverageFor(db, childName, schedule) {
+  const sy = schoolYearStr(defaultStartYear());
+  const key = roster.nameKey(childName);
+  const [rows] = await db.query('SELECT id, full_name, professor_name, full_price FROM roster_students WHERE school_year = ?', [sy]);
+  const matches = rows.filter(r => roster.nameKey(r.full_name) === key);
+  if (!matches.length) return { found: false, paid_total: 0, paid_count: 0 };
+  matches.sort((a, b) => Number(b.full_price) - Number(a.full_price));
+  const st = matches[0];
+  const [[sum]] = await db.query('SELECT COALESCE(SUM(amount),0) AS total FROM roster_payments WHERE roster_id = ?', [st.id]);
+  const paidTotal = Number(sum.total);
+  let cum = 0, count = 0;
+  for (const it of schedule) {
+    cum += Number(it.amount);
+    if (paidTotal + 1 >= cum - cum * 0.005) count++; else break;   // толеранција ~0.5%
+  }
+  return { found: true, paid_total: paidTotal, full_price: Number(st.full_price), professor_name: st.professor_name, paid_count: count };
+}
+
+// GET /finance/roster-coverage?child_id=&package_id=&payment_plan=&start_date=
+router.get('/roster-coverage', async (req, res) => {
+  try {
+    const { child_id, package_id, payment_plan, start_date } = req.query;
+    if (!child_id || !package_id || !['full', 'two', 'eight', 'trial'].includes(payment_plan)) return res.json({ found: false });
+    const [[child]] = await pool.query('SELECT full_name FROM children WHERE id = ?', [child_id]);
+    const [[pkg]] = await pool.query('SELECT * FROM packages WHERE id = ?', [package_id]);
+    if (!child || !pkg) return res.json({ found: false });
+    const start = isDate(start_date) ? start_date : todayStr();
+    const schedule = payment_plan === 'trial'
+      ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
+      : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
+    const cov = await rosterCoverageFor(pool, child.full_name, schedule);
+    res.json({ ...cov, installments: schedule.length });
+  } catch (err) { console.error('roster-coverage error:', err); res.json({ found: false }); }
+});
+
 // POST /finance/manual-enrollment
 // body: { child_id, package_id, payment_plan: full|two|eight|trial, paid_count, method, paid_date, start_date, note, send_invoice }
 router.post('/manual-enrollment', async (req, res) => {
-  const { child_id, package_id, payment_plan, paid_count, method, paid_date, start_date, next_due_date, note, send_invoice } = req.body;
+  const { child_id, package_id, payment_plan, paid_count, paid_date, start_date, next_due_date, send_invoice } = req.body;
+  const useRoster = req.body.use_roster === true;
+  let { method, note } = req.body;
   if (!child_id || !package_id || !['full', 'two', 'eight', 'trial'].includes(payment_plan)) {
     return res.status(400).json({ error: 'Избери дете, пакет и начин на плаќање.' });
   }
-  const paidN = Number(paid_count);
-  if (!Number.isInteger(paidN) || paidN < 0) return res.status(400).json({ error: 'Невалиден број на платени рати.' });
-  if (paidN > 0 && !MANUAL_METHODS.includes(method)) return res.status(400).json({ error: 'Избери начин на плаќање (кеш/банка/друго).' });
+  let paidN = Number(paid_count);
+  if (useRoster) { method = MANUAL_METHODS.includes(method) ? method : 'other'; }   // бројот на рати се определува од листата подолу
+  else if (!Number.isInteger(paidN) || paidN < 0) return res.status(400).json({ error: 'Невалиден број на платени рати.' });
+  if (!useRoster && paidN > 0 && !MANUAL_METHODS.includes(method)) return res.status(400).json({ error: 'Избери начин на плаќање (кеш/банка/друго).' });
   const start = isDate(start_date) ? start_date : todayStr();
   const paidOn = isDate(paid_date) ? paid_date : start;
 
@@ -414,6 +454,11 @@ router.post('/manual-enrollment', async (req, res) => {
     const schedule = payment_plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
       : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
+    if (useRoster) {
+      const cov = await rosterCoverageFor(conn, child.full_name, schedule);
+      paidN = cov.found ? cov.paid_count : 0;
+      if (paidN > 0 && !note) note = 'Платено според школската листа';
+    }
     if (paidN > schedule.length) { conn.release(); return res.status(400).json({ error: `Овој план има само ${schedule.length} рат(и).` }); }
 
     // групи на детето (ако е веќе вклучено во група)
@@ -466,7 +511,7 @@ router.post('/manual-enrollment', async (req, res) => {
         if (inv) { invoices++; await invoiceLib.emailInvoice(await invoiceLib.getInvoice(inv.id)); }
       }
     }
-    res.status(201).json({ ok: true, subscription_id: sub.insertId, invoices_sent: invoices, group_linked: !!groupId });
+    res.status(201).json({ ok: true, subscription_id: sub.insertId, invoices_sent: invoices, group_linked: !!groupId, paid_count: paidN });
   } catch (err) {
     try { await conn.rollback(); } catch (e) {}
     conn.release();
