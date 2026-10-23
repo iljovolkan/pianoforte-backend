@@ -4728,7 +4728,7 @@
         : `<span class="status-pill status-done" style="margin-left:8px;">✓ платено</span>`;
       return `<div style="border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div><strong>${escapeHtml(r.full_name)}</strong>${pill}${r.has_profile ? ' <span style="font-size:11px;opacity:.7;">· има профил</span>' : ''}</div>
+          <div><strong>${escapeHtml(r.full_name)}</strong>${pill}${r.has_profile ? ' <span class="status-pill status-done" style="margin-left:6px;font-size:10.5px;">има профил</span>' : ' <span class="status-pill status-queued" style="margin-left:6px;font-size:10.5px;">нема профил</span>'}</div>
           <div style="font-size:12px;opacity:.8;">${r.module ? escapeHtml(r.module) + ' · ' : ''}цена ${fmtMoney(r.full_price)}${r.discount ? ' · попуст ' + escapeHtml(r.discount) : ''} · платено ${fmtMoney(r.paid_total)} од ${fmtMoney(r.full_price)}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${chips}</div>
