@@ -132,7 +132,15 @@ router.post('/:id/members', requireAuth, requireRole('professor', 'admin'), asyn
 // DELETE /groups/:id/members/:studentId
 router.delete('/:id/members/:studentId', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
   try {
+    const [[group]] = await pool.query('SELECT professor_id FROM groups_table WHERE id = ?', [req.params.id]);
+    if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+    if (req.user.role === 'professor' && group.professor_id !== req.user.id) {
+      return res.status(403).json({ error: 'Можеш да отстрануваш ученици само од сопствените групи.' });
+    }
     await pool.query('DELETE FROM group_members WHERE group_id = ? AND student_id = ?', [req.params.id, req.params.studentId]);
+    // претплатата да не покажува група во која детето повеќе не е → „чека термин“
+    await pool.query('UPDATE subscriptions SET group_id = NULL WHERE student_id = ? AND group_id = ? AND released = FALSE', [req.params.studentId, req.params.id]);
+    await pool.query('UPDATE subscriptions SET secondary_group_id = NULL WHERE student_id = ? AND secondary_group_id = ? AND released = FALSE', [req.params.studentId, req.params.id]);
     res.json({ ok: true });
   } catch (err) {
     console.error('DELETE /groups/:id/members error:', err);
