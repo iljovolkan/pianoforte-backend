@@ -3468,7 +3468,7 @@
             </div>
           `).join('')}
         </div>
-        <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip" style="display:inline-flex; align-items:center; gap:4px;">${escapeHtml(m.full_name)}<button class="move-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Премести во друга група" style="background:none; border:none; color:var(--lilac-deep); cursor:pointer; font-size:11px; padding:0;">↔️</button></span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip" style="display:inline-flex; align-items:center; gap:4px;">${escapeHtml(m.full_name)}<button class="move-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Премести во друга група" style="background:none; border:none; color:var(--lilac-deep); cursor:pointer; font-size:11px; padding:0;">↔️</button><button class="remove-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Отстрани од групата" style="background:none; border:none; color:var(--wine); cursor:pointer; font-size:12px; padding:0;">✕</button></span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
         <div class="move-child-panel" data-for-group="${g.id}" style="display:none; margin-top:8px; padding:10px; background:var(--surface-2); border-radius:8px;">
           <div style="font-size:12px; margin-bottom:6px;">Премести го <strong class="move-child-name"></strong> во:</div>
           <select class="login-select move-target-group" style="margin-bottom:8px;"></select>
@@ -3573,6 +3573,17 @@
             ? '<option value="">Нема други достапни групи за овoj инструмент</option>'
             : sameInstrumentGroups.map(gr => `<option value="${gr.id}">${escapeHtml(gr.name)} (${gr.members ? gr.members.length : 0}/${gr.capacity})</option>`).join('');
           panel.style.display = 'block';
+        });
+      });
+      card.querySelectorAll('.remove-child-btn').forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          if(!confirm('Да се отстрани „' + btn.dataset.childName + '“ од групата „' + g.name + '“?\n\nПрофилот и плаќањата остануваат; ако има платена претплата, детето ќе чека нов термин.')) return;
+          try{
+            await authApiCall('/groups/' + g.id + '/members/' + btn.dataset.childId, { method:'DELETE' });
+            await loadGroups();
+            renderSchedulePage();
+          } catch(err){ alert('Грешка: ' + err.message); }
         });
       });
       const moveCancelBtn = card.querySelector('.move-cancel-btn');
