@@ -673,12 +673,25 @@ async function loadRoster(where, params, ym) {
     const row = rosterRowCalc(st, by[st.id] || [], ym);
     const k = kidKeys[roster.nameKey(st.full_name)];
     row.has_profile = !!k; row.has_subscription = !!(k && k.has_sub);
+    row.child_id = k ? k.id : null; row.child_name = k ? k.full_name : null;
     return row;
   });
 }
 async function rosterForProfessor(profId, ym) {
   return loadRoster('school_year = ? AND professor_id = ?', [schoolYearStr(defaultStartYear()), profId], ym);
 }
+
+// GET /finance/roster-pending — деца од листата што веќе имаат профил, но сè уште немаат претплата (чекаат запишување)
+router.get('/roster-pending', async (req, res) => {
+  try {
+    const rows = await loadRoster('school_year = ?', [schoolYearStr(defaultStartYear())], currentYm());
+    const pending = rows.filter(r => r.has_profile && !r.has_subscription).map(r => ({
+      roster_id: r.id, child_id: r.child_id, child_name: r.child_name, full_name: r.full_name,
+      professor_name: r.professor_name, module: r.module, full_price: r.full_price, paid_total: r.paid_total
+    }));
+    res.json({ count: pending.length, rows: pending });
+  } catch (err) { console.error('GET /finance/roster-pending error:', err); res.status(500).json({ error: 'Грешка.' }); }
+});
 
 // GET /finance/roster?professor_name=...&month=YYYY-MM  (за професори без поврзан профил)
 router.get('/roster', async (req, res) => {
