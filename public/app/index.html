@@ -1302,6 +1302,18 @@
       </div>
 
       <!-- НЕПЛАТЕНИ ШКОЛАРИНИ -->
+      <!-- ЧЕКААТ ЗАПИШУВАЊЕ -->
+      <div class="card" style="margin-top:20px;">
+        <div class="fin-section-title"><h3>Чекаат запишување</h3><span class="fin-section-total" id="pendingEnrollTotal"></span></div>
+        <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Деца од школската листа што веќе се регистрирале на платформата, но сè уште немаат пакет. Кликни „Запиши“ — уплатите од листата автоматски се означуваат.</p>
+        <div class="fin-table-wrap">
+          <table class="fin-table">
+            <thead><tr><th>Дете</th><th>Професор</th><th>Модул</th><th>Платено (листа)</th><th></th></tr></thead>
+            <tbody id="pendingEnrollTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- НЕПЛАТЕНО ДО ИЗБРАН МЕСЕЦ -->
       <div class="card" style="margin-top:20px;">
         <div class="fin-section-title"><h3>Неплатено до избраниот месец</h3><span class="fin-section-total" id="unpaidOvTotal"></span></div>
@@ -4791,6 +4803,18 @@
   }
 
   /* ===================== НЕПЛАТЕНО ДО МЕСЕЦ + ГОДИШЕН ПРЕГЛЕД ===================== */
+  async function loadPendingEnroll(){
+    const tb = document.getElementById('pendingEnrollTbody');
+    if(!tb) return;
+    try{
+      const d = await authApiCall('/finance/roster-pending');
+      document.getElementById('pendingEnrollTotal').textContent = d.count ? d.count + ' деца' : '';
+      tb.innerHTML = d.rows.length
+        ? d.rows.map(r=>`<tr><td>${escapeHtml(r.child_name)}</td><td>${escapeHtml(r.professor_name)}</td><td>${escapeHtml(r.module || '—')}</td><td class="num">${fmtMoney(r.paid_total)} / ${fmtMoney(r.full_price)}</td><td><button class="mc-btn" style="flex:none;" data-pend-enroll="${r.child_id}" data-name="${escapeHtml(r.child_name)}">Запиши</button></td></tr>`).join('')
+        : '<tr><td colspan="5" class="fin-table-empty">Нема деца што чекаат запишување.</td></tr>';
+      tb.querySelectorAll('button[data-pend-enroll]').forEach(b=> b.addEventListener('click', ()=> openManualEnrollment({ child_id: b.dataset.pendEnroll, name: b.dataset.name })));
+    } catch(err){ tb.innerHTML = `<tr><td colspan="5" class="fin-table-empty">Грешка: ${escapeHtml(err.message)}</td></tr>`; }
+  }
   async function loadUnpaidOverview(){
     const inp = document.getElementById('unpaidOvMonth');
     if(!inp) return;
@@ -4822,7 +4846,7 @@
   }
   (function(){ const b=document.getElementById('unpaidOvBtn'); if(b) b.addEventListener('click', loadUnpaidOverview); const m=document.getElementById('unpaidOvMonth'); if(m) m.addEventListener('change', loadUnpaidOverview); })();
 
-  async function openManualEnrollment(){
+  async function openManualEnrollment(prefill){
     let packages = [];
     try{ packages = await authApiCall('/packages'); } catch(e){}
     const pkgOpts = packages.filter(p=>p.package_type!=='individual').map(p=>`<option value="${p.id}">${escapeHtml(p.name)} — ${Number(p.price_mkd).toLocaleString('mk-MK')} ден.</option>`).join('');
@@ -4869,6 +4893,7 @@
         alert('Запишано.' + (out.paid_count ? ` Означени платени рати: ${out.paid_count}.` : '') + (out.invoices_sent ? ` Испратени фактури: ${out.invoices_sent}.` : '') + (out.group_linked ? '' : '\nДетето нема група — родителот може да избере термин во апликацијата.'));
         renderFinancePage();
       });
+    if(prefill && prefill.name) ov.querySelector('#meQ').value = prefill.name;
     const doSearch = async ()=>{
       const sel = ov.querySelector('#meChild');
       sel.innerHTML = '<option value="">Се бара...</option>';
@@ -4877,6 +4902,7 @@
         sel.innerHTML = rows.length
           ? rows.map(c=>`<option value="${c.id}">${escapeHtml(c.full_name)} — ${escapeHtml(c.parent_email)}${c.groups_list ? ' ('+escapeHtml(c.groups_list)+')' : ''}</option>`).join('')
           : '<option value="">Нема деца без претплата</option>';
+        if(prefill && prefill.child_id) sel.value = String(prefill.child_id);
       } catch(err){ sel.innerHTML = '<option value="">Грешка</option>'; }
     };
     const checkRoster = async ()=>{
@@ -4902,7 +4928,7 @@
   }
   document.getElementById('payBoardSearchBtn').addEventListener('click', loadPaymentBoard);
   document.getElementById('payBoardQ').addEventListener('keydown', e=>{ if(e.key==='Enter') loadPaymentBoard(); });
-  document.getElementById('payBoardAddBtn').addEventListener('click', openManualEnrollment);
+  document.getElementById('payBoardAddBtn').addEventListener('click', ()=>openManualEnrollment());
 
   async function loadAttendanceRecords(){
     const tbody = document.getElementById('attendanceListTbody');
@@ -4961,6 +4987,7 @@
     loadPaymentBoard();
     loadAttendanceRecords();
     loadUnpaidOverview();
+    loadPendingEnroll();
     loadAnnual();
 
     // --- пристап (само admin може да менаџира кој има финансиски пристап) ---
