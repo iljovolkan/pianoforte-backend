@@ -5296,10 +5296,10 @@
       } else {
         listBox.innerHTML = profs.map(p => `
           <div class="sent-item">
-            <div class="sent-icon">${p.instrument ? instrumentInfo(p.instrument).icon : '🎹'}</div>
+            <div class="sent-icon">${p.job_title ? '💼' : (p.instrument ? instrumentInfo(p.instrument).icon : '🎹')}</div>
             <div class="sent-meta">
               <div class="t">${escapeHtml(p.full_name)}</div>
-              <div class="sub">${escapeHtml(p.email)} · ${p.instrument ? instrumentLabel(p.instrument) : 'нема доделен инструмент'} · ${p.group_count} ${p.group_count===1?'група':'групи'} · ${p.student_count} ${p.student_count===1?'ученик':'ученици'}</div>
+              <div class="sub">${escapeHtml(p.email)} · ${p.job_title ? escapeHtml(p.job_title) : (p.instrument ? instrumentLabel(p.instrument) : 'нема доделен инструмент') + ' · ' + p.group_count + ' ' + (p.group_count===1?'група':'групи') + ' · ' + p.student_count + ' ' + (p.student_count===1?'ученик':'ученици')}</div>
             </div>
             <button class="mc-btn" style="flex:none; color:var(--wine); border-color:var(--wine-pale);" onclick="deleteUser(${p.id}, '${escapeHtml(p.full_name)}')">Избриши</button>
           </div>
