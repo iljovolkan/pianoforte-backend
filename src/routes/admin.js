@@ -81,7 +81,10 @@ router.get('/professors', requireAuth, requireRole('admin'), async (req, res) =>
     GROUP BY u.id
     ORDER BY u.created_at DESC
   `);
+  let titles = {};
+  try { const [t] = await pool.query("SELECT id, job_title FROM users WHERE role = 'professor' AND job_title IS NOT NULL"); t.forEach(x => { titles[x.id] = x.job_title; }); } catch (e) { /* миграција 35 сè уште не е извршена */ }
   for (const p of rows) {
+    p.job_title = titles[p.id] || null;
     const [insts] = await pool.query('SELECT instrument FROM professor_instruments WHERE professor_id = ?', [p.id]);
     p.instruments = insts.map(i => i.instrument);
     const [locs] = await pool.query('SELECT location FROM professor_locations WHERE professor_id = ?', [p.id]);
