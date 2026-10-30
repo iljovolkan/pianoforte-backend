@@ -2,7 +2,24 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
+const roster = require('../roster');
+
 const router = express.Router();
+
+// GET /groups/my-roster — ученици од школската листа за најавениот професор + дали имаат профил (без финансии)
+router.get('/my-roster', requireAuth, requireRole('professor'), async (req, res) => {
+  try {
+    const d = new Date();
+    const y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+    const [mine] = await pool.query('SELECT id, full_name FROM users WHERE id = ?', [req.user.id]);
+    const [rs] = await pool.query(
+      'SELECT full_name, module FROM roster_students WHERE school_year = ? AND professor_id = ? ORDER BY full_name', [`${y}/${y + 1}`, req.user.id]);
+    const [kids] = await pool.query('SELECT full_name FROM children');
+    const keys = new Set(kids.map(k => roster.nameKey(k.full_name)));
+    const rows = rs.map(r => ({ full_name: r.full_name, module: r.module, has_profile: keys.has(roster.nameKey(r.full_name)) }));
+    res.json({ total: rows.length, with_profile: rows.filter(r => r.has_profile).length, rows });
+  } catch (err) { console.error('GET /groups/my-roster error:', err); res.json({ total: 0, with_profile: 0, rows: [] }); }
+});
 
 // GET /groups — листа на групи со членови, капацитет, инструмент, возраст, ниво, професор
 // ВАЖНО: за ученик/родител, идентитетот на професорот е СКРИЕН (анонимен)
