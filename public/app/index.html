@@ -1768,7 +1768,7 @@
     if(session){
       buildNav();
       const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
-      document.getElementById('uRole').textContent = t(roleKey);
+      document.getElementById('uRole').textContent = (session.role==='professor' && session.jobTitle) ? session.jobTitle : t(roleKey);
       if(session.role==='admin'){ renderAdminPage(); }
       else { renderIndexPage(); renderSchedulePage(); renderPackagesPage(); renderBillingPage(); }
     }
@@ -2096,7 +2096,7 @@
       } else if(user.role === 'admin'){
         session = {role:'admin', name:user.full_name, email:user.email, realUserId:user.id, token, refreshToken, isRealAccount:true};
       } else {
-        session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, financeAccess:!!user.finance_access, token, refreshToken, isRealAccount:true};
+        session = {role:'professor', name:user.full_name, email:user.email, realUserId:user.id, instrument:user.instrument, jobTitle:user.job_title||null, financeAccess:!!user.finance_access, token, refreshToken, isRealAccount:true};
       }
       rememberMe = document.getElementById('rememberMeCheckbox').checked;
       try{ localStorage.setItem('pf_remember_me', rememberMe ? '1' : '0'); }catch(e){}
@@ -2486,6 +2486,7 @@
         try{
           const freshUser = await authApiCall('/auth/me');
           session.financeAccess = !!freshUser.finance_access;
+          session.jobTitle = freshUser.job_title || null;
           saveSessionToStorage();
           buildNav();
         } catch(e){}
@@ -2769,7 +2770,7 @@
     avatar.className = 'avatar ' + session.role;
     document.getElementById('uName').textContent = session.name;
     const roleKey = session.role==='professor' ? 'role_professor' : session.role==='admin' ? 'role_admin' : 'role_student';
-    document.getElementById('uRole').textContent = t(roleKey);
+    document.getElementById('uRole').textContent = (session.role==='professor' && session.jobTitle) ? session.jobTitle : t(roleKey);
     buildNav();
     if(session.role==='admin'){
       renderAdminPage();
@@ -6038,6 +6039,7 @@
     try{
       const freshUser = await authApiCall('/auth/me'); // проверка дали токенот важи + освежи ги полињата (пр. finance_access, кои admin може да ги смени по последната најава)
       session.financeAccess = !!freshUser.finance_access;
+      session.jobTitle = freshUser.job_title || null;
       session.instrument = freshUser.instrument;
       session.name = freshUser.full_name;
       saveSessionToStorage();
