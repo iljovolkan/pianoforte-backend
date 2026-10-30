@@ -958,6 +958,12 @@
 
       <div class="groups-overview" id="groupsOverview"></div>
 
+      <div class="card" id="profRosterCard" style="margin-bottom:24px; display:none;">
+        <h3 style="font-size:15px; margin-bottom:6px;">Моите ученици — кои имаат профил</h3>
+        <p id="profRosterSub" style="font-size:12px; color:var(--mist); margin-bottom:10px;"></p>
+        <div id="profRosterList"></div>
+      </div>
+
       <div class="card" id="profAvailabilityCard" style="margin-bottom:24px; display:none;">
         <h3 style="font-size:15px; margin-bottom:6px;" data-i18n="prof_avail_title">Понуди термини за индивидуална настава</h3>
         <p style="font-size:12.5px; color:var(--mist); margin-bottom:14px;" data-i18n="prof_avail_sub">Учениците можат да закажат индивидуален час само во термините што ти ги понудуваш овде.</p>
@@ -3888,7 +3894,24 @@
     }
   }
 
+  async function renderProfRoster(){
+    const card = document.getElementById('profRosterCard');
+    if(!card) return;
+    if(session.role !== 'professor'){ card.style.display = 'none'; return; }
+    try{
+      const d = await authApiCall('/groups/my-roster');
+      if(!d.total){ card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      document.getElementById('profRosterSub').textContent = d.with_profile + ' од ' + d.total + ' ученици имаат профил на платформата.';
+      document.getElementById('profRosterList').innerHTML = d.rows.map(r=>
+        `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,.15);font-size:13px;">
+          <span>${escapeHtml(r.full_name)}${r.module ? ' <span style="opacity:.6;">· ' + escapeHtml(r.module) + '</span>' : ''}</span>
+          <span class="status-pill ${r.has_profile ? 'status-done' : 'status-queued'}" style="font-size:10.5px;">${r.has_profile ? 'има профил' : 'нема профил'}</span>
+        </div>`).join('');
+    } catch(e){ card.style.display = 'none'; }
+  }
   function renderSchedulePage(){
+    renderProfRoster();
     renderGroupsOverview();
     renderProfessorIndivBookings();
     renderProfAvailability();
