@@ -199,7 +199,7 @@ router.post('/child-login', loginLimiter, async (req, res) => {
     res.json({
       token: accessToken,
       refreshToken,
-      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access },
+      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access, job_title: user.job_title || null },
       restricted_child_id: child.id,
       restricted_child_name: child.full_name
     });
@@ -241,7 +241,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       token: accessToken,
       refreshToken,
-      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access }
+      user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access, job_title: user.job_title || null }
     });
   } catch (err) {
     console.error(err);
@@ -270,7 +270,7 @@ router.post('/refresh', async (req, res) => {
   res.json({
     token: accessToken,
     refreshToken: newRefreshToken,
-    user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access }
+    user: { id: user.id, email: user.email, role: user.role, full_name: user.full_name, email_verified: !!user.email_verified, instrument: user.instrument, finance_access: !!user.finance_access, job_title: user.job_title || null }
   });
 });
 
@@ -285,11 +285,11 @@ router.get('/me', requireAuth, async (req, res) => {
   let rows;
   try {
     [rows] = await pool.query(
-      'SELECT id, email, role, full_name, email_verified, instrument, finance_access, phone, created_at FROM users WHERE id = ?',
+      'SELECT id, email, role, full_name, email_verified, instrument, finance_access, phone, job_title, created_at FROM users WHERE id = ?',
       [req.user.id]
     );
   } catch (e) {
-    if (e.code !== 'ER_BAD_FIELD_ERROR') throw e; // миграцијата за телефон сè уште не е извршена
+    if (e.code !== 'ER_BAD_FIELD_ERROR') throw e; // миграција (телефон/титула) сè уште не е извршена
     [rows] = await pool.query(
       'SELECT id, email, role, full_name, email_verified, instrument, finance_access, created_at FROM users WHERE id = ?',
       [req.user.id]
