@@ -740,6 +740,11 @@ router.delete('/roster/:id', async (req, res) => {
 router.post('/roster/import', async (req, res) => {
   const conn = await pool.getConnection();
   try {
+    // Заштита: листа за „нови уплати“ (ред: име TAB ГГГГ-ММ TAB износ) не смее да оди во целосниот увоз — би ги пребришала цените
+    if (/\t20\d\d-\d\d\t/.test(req.body.text || '')) {
+      conn.release();
+      return res.status(400).json({ error: 'Ова се НОВИ УПЛАТИ (имаат колона со месец ГГГГ-ММ). Користи „➕ Додај нови уплати“, не „Увоз на листа“.' });
+    }
     const startYear = Number(req.body.start_year) || defaultStartYear();
     const parsed = roster.parseRoster(req.body.text || '', startYear);
     if (!parsed.length) { conn.release(); return res.status(400).json({ error: 'Не пронајдов податоци. Залепи ја целата табела (со имињата на професорите и колоните).' }); }
