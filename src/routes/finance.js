@@ -423,19 +423,19 @@ router.get('/roster-coverage', async (req, res) => {
   } catch (err) { console.error('roster-coverage error:', err); res.json({ found: false }); }
 });
 
-// POST /finance/manual-enrollment
+// Заедничка логика (поединечно + масовно запишување)
 // body: { child_id, package_id, payment_plan: full|two|eight|trial, paid_count, method, paid_date, start_date, note, send_invoice }
-router.post('/manual-enrollment', async (req, res) => {
-  const { child_id, package_id, payment_plan, paid_count, paid_date, start_date, next_due_date, send_invoice } = req.body;
-  const useRoster = req.body.use_roster === true;
-  let { method, note } = req.body;
+async function doManualEnrollment(body, userId) {
+  const { child_id, package_id, payment_plan, paid_count, paid_date, start_date, next_due_date, send_invoice } = body;
+  const useRoster = body.use_roster === true;
+  let { method, note } = body;
   if (!child_id || !package_id || !['full', 'two', 'eight', 'trial'].includes(payment_plan)) {
-    return res.status(400).json({ error: 'Избери дете, пакет и начин на плаќање.' });
+    throw { http: 400, message: 'Избери дете, пакет и начин на плаќање.' };
   }
   let paidN = Number(paid_count);
   if (useRoster) { method = MANUAL_METHODS.includes(method) ? method : 'other'; }   // бројот на рати се определува од листата подолу
-  else if (!Number.isInteger(paidN) || paidN < 0) return res.status(400).json({ error: 'Невалиден број на платени рати.' });
-  if (!useRoster && paidN > 0 && !MANUAL_METHODS.includes(method)) return res.status(400).json({ error: 'Избери начин на плаќање (кеш/банка/друго).' });
+  else if (!Number.isInteger(paidN) || paidN < 0) throw { http: 400, message: 'Невалиден број на платени рати.' };
+  if (!useRoster && paidN > 0 && !MANUAL_METHODS.includes(method)) throw { http: 400, message: 'Избери начин на плаќање (кеш/банка/друго).' };
   const start = isDate(start_date) ? start_date : todayStr();
   const paidOn = isDate(paid_date) ? paid_date : start;
 
@@ -445,11 +445,11 @@ router.post('/manual-enrollment', async (req, res) => {
     const [[child]] = await conn.query(
       `SELECT c.id, c.full_name, u.email FROM children c JOIN users u ON u.id = c.parent_id WHERE c.id = ?`, [child_id]);
     const [[pkg]] = await conn.query('SELECT * FROM packages WHERE id = ?', [package_id]);
-    if (!child) { conn.release(); return res.status(404).json({ error: 'Детето не постои.' }); }
-    if (!pkg) { conn.release(); return res.status(404).json({ error: 'Пакетот не постои.' }); }
+    if (!child) { throw { http: 404, message: 'Детето не постои.' }; }
+    if (!pkg) { throw { http: 404, message: 'Пакетот не постои.' }; }
 
     const [[existing]] = await conn.query('SELECT id FROM subscriptions WHERE student_id = ? AND released = FALSE LIMIT 1', [child_id]);
-    if (existing) { conn.release(); return res.status(409).json({ error: 'Ова дете веќе има активна претплата. Означи ги ратите во листата.' }); }
+    if (existing) { throw { http: 409, message: 'Ова дете веќе има активна претплата. Означи ги ратите во листата.' }; }
 
     const schedule = payment_plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
@@ -459,7 +459,7 @@ router.post('/manual-enrollment', async (req, res) => {
       paidN = cov.found ? cov.paid_count : 0;
       if (paidN > 0 && !note) note = 'Платено според школската листа';
     }
-    if (paidN > schedule.length) { conn.release(); return res.status(400).json({ error: `Овој план има само ${schedule.length} рат(и).` }); }
+    if (paidN > schedule.length) { throw { http: 400, message: `Овој план има само ${schedule.length} рат(и).` }; }
 
     // групи на детето (ако е веќе вклучено во група)
     const [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY group_id ASC LIMIT 2', [child_id]);
@@ -491,7 +491,7 @@ router.post('/manual-enrollment', async (req, res) => {
         `INSERT INTO installments (subscription_id, installment_number, total_installments, amount, due_date, status, paid_at, paid_method, paid_note, marked_by)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [sub.insertId, it.number, it.total, it.amount, due, paid ? 'paid' : 'pending',
-         paid ? paidOn + ' 12:00:00' : null, paid ? method : null, paid ? (note || null) : null, req.user.id]
+         paid ? paidOn + ' 12:00:00' : null, paid ? method : null, paid ? (note || null) : null, userId]
       );
       if (paid) toInvoice.push({ installment_id: r.insertId, number: it.number, total: it.total, amount: it.amount });
       else if (!nextDue) nextDue = due;
@@ -511,13 +511,108 @@ router.post('/manual-enrollment', async (req, res) => {
         if (inv) { invoices++; await invoiceLib.emailInvoice(await invoiceLib.getInvoice(inv.id)); }
       }
     }
-    res.status(201).json({ ok: true, subscription_id: sub.insertId, invoices_sent: invoices, group_linked: !!groupId, paid_count: paidN });
+    return { ok: true, subscription_id: sub.insertId, invoices_sent: invoices, group_linked: !!groupId, paid_count: paidN, installments: schedule.length };
   } catch (err) {
     try { await conn.rollback(); } catch (e) {}
-    conn.release();
-    console.error('POST /finance/manual-enrollment error:', err);
-    res.status(500).json({ error: 'Грешка при запишување: ' + err.message });
+    try { conn.release(); } catch (e) {}
+    if (err && err.http) throw err;
+    console.error('manual-enrollment error:', err);
+    throw { http: 500, message: 'Грешка при запишување: ' + err.message };
   }
+}
+
+
+router.post('/manual-enrollment', async (req, res) => {
+  try { res.status(201).json(await doManualEnrollment(req.body, req.user.id)); }
+  catch (e) { res.status(e.http || 500).json({ error: e.message || 'Грешка.' }); }
+});
+
+// ── Масовно запишување (деца од листата со профил, без претплата) ──
+const BULK_PKG = { piano: 10, violin: 11, guitar: 12, drums: 13, izvorce: 29, izvorceCombo: 28 };
+const BULK_PROFS = {
+  piano: ['Теодора Фазекаш', 'Кристина Ангелова Ановски', 'Мими Дучева', 'Ангела Николовска', 'Филип Наневски', 'Иван Трајковски', 'Анастасија Кочева'],
+  violin: ['Тереза Крцоска', 'Крстина Шокароска'],
+  guitar: ['Христијан Тасевски'],
+  drums: ['Дамир Ибраимовски'],
+  izvorce: ['Ана Ценевска Мучевска']
+};
+function tokPref(name) { return roster.nameKey(name).split(' ').filter(Boolean).map(t => t.slice(0, 3)); }
+function profFamily(profName) {
+  const mine = tokPref(profName);
+  for (const fam of Object.keys(BULK_PROFS)) {
+    for (const p of BULK_PROFS[fam]) {
+      if (tokPref(p).filter(x => mine.includes(x)).length >= 2) return fam;
+    }
+  }
+  return null;
+}
+async function planBulk(rows) {
+  const [pk] = await pool.query('SELECT * FROM packages WHERE id IN (?)', [Object.values(BULK_PKG)]);
+  const pkgs = {}; pk.forEach(p => { pkgs[p.id] = p; });
+  const ml = schoolMonthsLeft(new Date('2026-09-01T12:00:00'));
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const base = { child_id: r.child_id, child_name: r.child_name, roster_name: r.full_name, professor_name: r.professor_name, module: r.module, full_price: Number(r.full_price) };
+    const skip = reason => out.push({ ...base, ready: false, reason });
+    if (seen.has(r.child_id)) { skip('Дупликат во листата (исто дете двапати)'); continue; }
+    seen.add(r.child_id);
+    const mod = String(r.module || '').toLowerCase();
+    if (/пеење|певање|pevanje|peenje|sing/.test(mod)) { skip('Модул пеење — рачно'); continue; }
+    const fam = profFamily(r.professor_name);
+    if (!fam) { skip('Непозната група професор — рачно'); continue; }
+    let pkgId = BULK_PKG[fam];
+    if (fam === 'izvorce') {
+      if (/пијано|пиано|комбин|piano|kombin/.test(mod)) pkgId = BULK_PKG.izvorceCombo;
+      else if (/изворче|izvorce/.test(mod) || !mod) pkgId = BULK_PKG.izvorce;
+      else { skip('Нејасен модул „' + r.module + '“'); continue; }
+    } else if (/електр|electric/.test(mod)) { skip('Електрична гитара — рачно'); continue; }
+    const pkg = pkgs[pkgId];
+    if (!pkg) { skip('Пакетот #' + pkgId + ' не постои'); continue; }
+    const price = Number(r.full_price);
+    let plan = null, schedule = null;
+    for (const p of ['eight', 'full', 'two']) {
+      const s = buildAnnualSchedule(p, Number(pkg.price_mkd), ml);
+      const total = s.reduce((sum, it) => sum + Number(it.amount), 0);
+      if (Math.abs(total - price) <= 1) { plan = p; schedule = s; break; }
+    }
+    if (!plan) { skip('Нестандардна цена ' + price + ' (' + pkg.name + ') — рачно'); continue; }
+    const cov = await rosterCoverageFor(pool, r.child_name || r.full_name, schedule);
+    const [g] = await pool.query('SELECT COUNT(*) n FROM group_members WHERE student_id = ?', [r.child_id]);
+    out.push({ ...base, ready: true, package_id: pkgId, package_name: pkg.name, payment_plan: plan, installments: schedule.length,
+      paid_count: cov.found ? cov.paid_count : 0, in_group: g[0].n > 0 });
+  }
+  return out;
+}
+async function bulkPendingRows() {
+  const rows = await loadRoster('school_year = ?', [schoolYearStr(defaultStartYear())], currentYm());
+  return rows.filter(r => r.has_profile && !r.has_subscription);
+}
+
+// GET /finance/bulk-enroll-preview
+router.get('/bulk-enroll-preview', async (req, res) => {
+  try {
+    const items = await planBulk(await bulkPendingRows());
+    res.json({ ready: items.filter(i => i.ready).length, skipped: items.filter(i => !i.ready).length, items });
+  } catch (err) { console.error('bulk-enroll-preview error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
+});
+
+// POST /finance/bulk-enroll  body: { child_ids: [..] }  (запишува само „ready“ од прегледот)
+router.post('/bulk-enroll', async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.child_ids) ? req.body.child_ids.map(Number) : [];
+    if (!ids.length) return res.status(400).json({ error: 'Нема избрани деца.' });
+    const items = (await planBulk(await bulkPendingRows())).filter(i => i.ready && ids.includes(Number(i.child_id)));
+    const results = [];
+    for (const it of items) {
+      try {
+        const r = await doManualEnrollment({ child_id: it.child_id, package_id: it.package_id, payment_plan: it.payment_plan,
+          start_date: '2026-09-01', use_roster: true, method: 'other', send_invoice: false }, req.user.id);
+        results.push({ child_id: it.child_id, name: it.child_name, ok: true, paid_count: r.paid_count });
+      } catch (e) { results.push({ child_id: it.child_id, name: it.child_name, ok: false, error: e.message }); }
+    }
+    res.json({ done: results.filter(x => x.ok).length, failed: results.filter(x => !x.ok).length, results });
+  } catch (err) { console.error('bulk-enroll error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
 });
 
 // POST /finance/installments/:id/mark-paid  body: { method, paid_date, note, send_invoice }
