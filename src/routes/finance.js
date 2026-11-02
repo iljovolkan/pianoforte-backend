@@ -760,6 +760,12 @@ router.post('/roster/import', async (req, res) => {
 
     const summary = { school_year: sy, professors: [], students: 0, payments: 0, payments_sum: 0, matched_children: 0, dry_run: dry };
     if (!dry) await conn.beginTransaction();
+    // постоечки редови: споредба по тековниот клуч на името (не по зачуваниот, кој можеби е од постара верзија)
+    const existingMap = new Map();
+    if (!dry) {
+      const [exRows] = await conn.query('SELECT id, professor_name, full_name FROM roster_students WHERE school_year = ?', [sy]);
+      exRows.forEach(r => existingMap.set(r.professor_name + '|' + roster.nameKey(r.full_name), r.id));
+    }
     for (const p of parsed) {
       const m = matchProf(p.professor_name);
       summary.professors.push({ name: p.professor_name, students: p.students.length, matched_to: m ? m.name : null, note: p.note });
@@ -770,18 +776,19 @@ router.post('/roster/import', async (req, res) => {
         pays.forEach(([, v]) => { summary.payments++; summary.payments_sum += v; });
         if (dry) continue;
         const key = roster.nameKey(st.full_name);
-        const [[ex]] = await conn.query('SELECT id FROM roster_students WHERE school_year = ? AND professor_name = ? AND name_key = ?', [sy, p.professor_name, key]);
+        const exId = existingMap.get(p.professor_name + '|' + key);
         let id;
-        if (ex) {
-          id = ex.id;
-          await conn.query(`UPDATE roster_students SET professor_id = ?, full_name = ?, module = ?, full_price = ?, half1 = ?, half2 = ?, discount = ? WHERE id = ?`,
-            [m ? m.id : null, st.full_name, st.module, st.full_price, st.half1, st.half2, st.discount, id]);
+        if (exId) {
+          id = exId;
+          await conn.query(`UPDATE roster_students SET professor_id = ?, full_name = ?, name_key = ?, module = ?, full_price = ?, half1 = ?, half2 = ?, discount = ? WHERE id = ?`,
+            [m ? m.id : null, st.full_name, key, st.module, st.full_price, st.half1, st.half2, st.discount, id]);
         } else {
           const [r] = await conn.query(
             `INSERT INTO roster_students (school_year, professor_id, professor_name, full_name, name_key, module, full_price, half1, half2, discount)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [sy, m ? m.id : null, p.professor_name, st.full_name, key, st.module, st.full_price, st.half1, st.half2, st.discount]);
           id = r.insertId;
+          existingMap.set(p.professor_name + '|' + key, id);
         }
         for (const [ym, v] of pays) {
           await conn.query('INSERT INTO roster_payments (roster_id, pay_month, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = VALUES(amount)', [id, ym, v]);
@@ -869,10 +876,10 @@ router.get('/annual-forecast', async (req, res) => {
 
     // листа: добиени = уплати по месец; идни = преостанато / преостанати месеци
     const sy = schoolYearStr(startYear);
-    const [rsAll] = await pool.query('SELECT id, full_price, name_key FROM roster_students WHERE school_year = ?', [sy]);
+    const [rsAll] = await pool.query('SELECT id, full_price, full_name FROM roster_students WHERE school_year = ?', [sy]);
     const [subKids] = await pool.query('SELECT DISTINCT c.full_name FROM children c JOIN subscriptions s ON s.student_id = c.id AND s.released = FALSE');
     const subKeys = new Set(subKids.map(k => roster.nameKey(k.full_name)));
-    const rs = rsAll.filter(r => !subKeys.has(r.name_key)); // веќе броени преку платформата
+    const rs = rsAll.filter(r => !subKeys.has(roster.nameKey(r.full_name))); // веќе броени преку платформата
     if (rs.length) {
       const [rp] = await pool.query('SELECT roster_id, pay_month, amount FROM roster_payments WHERE roster_id IN (?)', [rs.map(x => x.id)]);
       const by = {};
