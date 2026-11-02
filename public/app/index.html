@@ -1262,6 +1262,7 @@
           <select id="profStudentsSelect" class="login-select" style="margin-bottom:0; flex:1; min-width:220px;"></select>
           <input type="month" id="profKidsMonth" class="login-select" style="max-width:170px; margin-bottom:0;">
           <button class="mc-btn" id="profKidsImportBtn" style="flex:none; padding:8px 14px;">📥 Увоз на листа</button>
+          <button class="mc-btn" id="profKidsAddPayBtn" style="flex:none; padding:8px 14px;">➕ Додај нови уплати</button>
         </div>
         <div id="profStudentsResult"></div>
       </div>
@@ -4805,6 +4806,26 @@
     });
   }
 
+  function openAddPayments(){
+    finModal('Додај нови уплати (од листата на професори)',
+      `<p style="font-size:12.5px;margin:0 0 8px;">Залепи редови: <code>Име Презиме [TAB] 2026-10 [TAB] 9000</code> (по име на професор во големи букви). За НОВ ученик додај и цена за цела година како четврта колона. Постоечките ученици не им се менува цената.</p>
+       <textarea id="addPayText" class="login-input" rows="12" style="width:100%;font-size:12px;font-family:monospace;"></textarea>`,
+      'Провери и додај',
+      async (ov)=>{
+        const text = ov.querySelector('#addPayText').value;
+        if(!text.trim()){ alert('Залепи ги редовите.'); return true; }
+        const dry = await authApiCall('/finance/roster/add-payments', { method:'POST', body: JSON.stringify({ text, dry_run: true }) });
+        const msg = `Нови уплати: ${dry.added}, ажурирани постоечки: ${dry.updated}, нови ученици: ${dry.created_students}. Вкупно ${Number(dry.sum).toLocaleString('mk-MK')} ден.\n`
+          + (dry.created.length ? '\nНОВИ ученици (ќе се создадат):\n - ' + dry.created.join('\n - ') + '\n' : '')
+          + (dry.changed.length ? '\nСе МЕНУВААТ постоечки износи:\n - ' + dry.changed.join('\n - ') + '\n' : '')
+          + (dry.unmatched.length ? '\nНЕ СЕ ПРЕПОЗНАЕНИ (нема да се внесат):\n - ' + dry.unmatched.join('\n - ') + '\n' : '')
+          + '\nДа се внесе?';
+        if(!confirm(msg)) return true;
+        const out = await authApiCall('/finance/roster/add-payments', { method:'POST', body: JSON.stringify({ text }) });
+        alert(`Внесено: ${out.added + out.updated} уплати, ${out.created_students} нови ученици.`);
+        renderFinancePage();
+      });
+  }
   function openRosterImport(){
     finModal('Увоз на листа (деца по професор)',
       `<p style="font-size:12.5px;margin:0 0 8px;">Означи ја целата табела во Excel/Google Sheets (со имињата на професорите и колоните), копирај (Ctrl+C) и залепи тука (Ctrl+V). Може повторно да се залепи подоцна (пр. со нов месец) — постоечките ученици само се ажурираат, ништо не се дуплира.</p>
@@ -5106,6 +5127,7 @@
         profSelect.addEventListener('change', loadProfKids);
         pm.addEventListener('change', loadProfKids);
         document.getElementById('profKidsImportBtn').addEventListener('click', openRosterImport);
+        document.getElementById('profKidsAddPayBtn').addEventListener('click', openAddPayments);
       }
       loadProfKids();
     } catch(err){ console.error(err); }
