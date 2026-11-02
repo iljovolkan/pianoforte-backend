@@ -139,6 +139,11 @@ router.post('/:id/members', requireAuth, requireRole('professor', 'admin'), asyn
     }
 
     await pool.query('INSERT INTO group_members (group_id, student_id) VALUES (?, ?)', [groupId, student_id]);
+    // ако детето веќе има платена претплата без група за истиот инструмент, автоматски ја врзуваме
+    await pool.query(
+      `UPDATE subscriptions s JOIN packages p ON p.id = s.package_id
+       SET s.group_id = ? WHERE s.student_id = ? AND s.group_id IS NULL AND s.released = FALSE AND p.instrument = ?`,
+      [groupId, student_id, group.instrument]);
     res.status(201).json({ ok: true, student_name: child.full_name });
   } catch (err) {
     console.error('POST /groups/:id/members error:', err);
