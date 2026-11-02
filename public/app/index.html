@@ -1311,7 +1311,7 @@
       <!-- НЕПЛАТЕНИ ШКОЛАРИНИ -->
       <!-- ЧЕКААТ ЗАПИШУВАЊЕ -->
       <div class="card" style="margin-top:20px;">
-        <div class="fin-section-title"><h3>Чекаат запишување</h3><span class="fin-section-total" id="pendingEnrollTotal"></span></div>
+        <div class="fin-section-title"><h3>Чекаат запишување</h3><span class="fin-section-total" id="pendingEnrollTotal"></span><button class="mc-btn" id="bulkEnrollBtn" style="flex:none;margin-left:10px;">⚡ Масовно запишување</button></div>
         <p style="font-size:12px; color:var(--mist); margin-bottom:12px;">Деца од школската листа што веќе се регистрирале на платформата, но сè уште немаат пакет. Кликни „Запиши“ — уплатите од листата автоматски се означуваат.</p>
         <div class="fin-table-wrap">
           <table class="fin-table">
@@ -4848,9 +4848,31 @@
   }
 
   /* ===================== НЕПЛАТЕНО ДО МЕСЕЦ + ГОДИШЕН ПРЕГЛЕД ===================== */
+  async function openBulkEnroll(){
+    let d;
+    try{ d = await authApiCall('/finance/bulk-enroll-preview'); }catch(err){ alert(err.message); return; }
+    const ready = d.items.filter(i=>i.ready), skipped = d.items.filter(i=>!i.ready);
+    const rr = ready.map(i=>`<tr><td>${escapeHtml(i.child_name)}</td><td>${escapeHtml(i.professor_name)}</td><td>${escapeHtml(i.package_name)}</td><td>${({eight:'8 рати',two:'Полугодие',full:'Цела година'})[i.payment_plan]}</td><td class="num">${i.paid_count}/${i.installments}</td><td>${i.in_group?'✓ група':'чека термин'}</td></tr>`).join('');
+    const sr = skipped.map(i=>`<tr><td>${escapeHtml(i.child_name||i.roster_name)}</td><td>${escapeHtml(i.professor_name)}</td><td colspan="4" style="color:var(--wine);">${escapeHtml(i.reason)}</td></tr>`).join('');
+    const ov = finModal('Масовно запишување', `
+      <p style="font-size:13px;">Подготвени: <b>${ready.length}</b> · Прескокнати (рачно): <b>${skipped.length}</b>. Датум на почеток 01.09.2026, уплатите од листата се означуваат како платени, без испраќање фактури.</p>
+      <div style="overflow:auto;max-height:45vh;"><table class="fin-table" style="font-size:12px;"><thead><tr><th>Дете</th><th>Професор</th><th>Пакет</th><th>План</th><th>Платени</th><th>Група</th></tr></thead><tbody>${rr || '<tr><td colspan="6">Нема.</td></tr>'}</tbody></table></div>
+      ${skipped.length?`<details style="margin-top:10px;"><summary>Прескокнати (${skipped.length})</summary><div style="overflow:auto;max-height:30vh;"><table class="fin-table" style="font-size:12px;"><tbody>${sr}</tbody></table></div></details>`:''}`,
+      ready.length ? `Запиши ги ${ready.length}` : 'Затвори', async ()=>{
+        if(!ready.length) return false;
+        if(!confirm('Да се запишат '+ready.length+' деца?')) return true;
+        const r = await authApiCall('/finance/bulk-enroll', { method:'POST', body: JSON.stringify({ child_ids: ready.map(i=>i.child_id) }) });
+        const bad = r.results.filter(x=>!x.ok).map(x=>x.name+': '+x.error).join('\n');
+        alert('Запишани: '+r.done+(r.failed?'\nГрешки ('+r.failed+'):\n'+bad:''));
+        loadPendingEnroll();
+        return false;
+      });
+    ov.firstElementChild.style.maxWidth = '900px';
+  }
   async function loadPendingEnroll(){
     const tb = document.getElementById('pendingEnrollTbody');
     if(!tb) return;
+    const bb = document.getElementById('bulkEnrollBtn'); if(bb) bb.onclick = openBulkEnroll;
     try{
       const d = await authApiCall('/finance/roster-pending');
       document.getElementById('pendingEnrollTotal').textContent = d.count ? d.count + ' деца' : '';
