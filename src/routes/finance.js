@@ -806,6 +806,73 @@ router.post('/roster/import', async (req, res) => {
   }
 });
 
+// POST /finance/roster/add-payments { text, dry_run }
+// Безбедно додавање на НОВИ уплати (без да се преснимува цената). Формат на редовите (одделени со TAB):
+//   ИМЕ ПРЕЗИМЕ <TAB> ГГГГ-ММ <TAB> износ [<TAB> цена за цела година (само за НОВ ученик)] [<TAB> модул]
+// Редови со ИМЕ НА ПРОФЕСОР (само големи букви) ги означуваат групите.
+router.post('/roster/add-payments', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const dry = !!req.body.dry_run;
+    const sy = schoolYearStr(defaultStartYear());
+    const toNum = (v) => { const n = Number(String(v || '').replace(/\s+/g, '').replace(/,(?=\d{3}(\D|$))/g, '').replace(',', '.')); return Number.isFinite(n) && String(v || '').trim() !== '' ? n : null; };
+    const lines = String(req.body.text || '').replace(/\r/g, '').split('\n').map(l => l.split('\t'));
+    const [rows] = await conn.query('SELECT id, professor_id, professor_name, full_name FROM roster_students WHERE school_year = ?', [sy]);
+    const profNames = [...new Set(rows.map(r => r.professor_name))];
+    const tokensOf = (n) => new Set(roster.nameKey(n).split(' '));
+    const bestProf = (header) => {
+      if (!header) return null;
+      const ht = tokensOf(header); let best = null, score = 0;
+      for (const pn of profNames) { const sc = [...tokensOf(pn)].filter(t => ht.has(t)).length; if (sc > score) { score = sc; best = pn; } }
+      return score >= 2 ? best : null;
+    };
+    const out = { dry_run: dry, school_year: sy, added: 0, updated: 0, created_students: 0, sum: 0, unmatched: [], changed: [], created: [] };
+    let header = null, headerProf = null;
+    if (!dry) await conn.beginTransaction();
+    for (const c of lines) {
+      const first = String(c[0] || '').trim();
+      if (!first) continue;
+      const rest = c.slice(1).map(x => String(x || '').trim());
+      if (!rest.some(Boolean)) {
+        if (first === first.toUpperCase() && first.length >= 5) { header = first.replace(/^ПРОФ\.?\s*/i, ''); headerProf = bestProf(header); }
+        continue;
+      }
+      const ym = rest[0], amount = toNum(rest[1]), price = toNum(rest[2]), module = rest[3] || null;
+      if (!/^\d{4}-\d{2}$/.test(ym) || amount === null || amount <= 0) { out.unmatched.push(first + ' — невалиден ред'); continue; }
+      const key = roster.nameKey(first);
+      let cand = rows.filter(r => roster.nameKey(r.full_name) === key);
+      if (cand.length > 1 && headerProf) { const f = cand.filter(r => r.professor_name === headerProf); if (f.length) cand = f; }
+      let st = cand[0];
+      if (!st) {
+        if (price === null || !headerProf) { out.unmatched.push(first + (price === null ? ' (нема во листата, нема цена)' : ' (непознат професор)')); continue; }
+        const refRow = rows.find(r => r.professor_name === headerProf);
+        if (!dry) {
+          const [r] = await conn.query(
+            `INSERT INTO roster_students (school_year, professor_id, professor_name, full_name, name_key, module, full_price, half1, half2, discount)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)`, [sy, refRow ? refRow.professor_id : null, headerProf, first, key, module, price]);
+          st = { id: r.insertId, professor_id: refRow ? refRow.professor_id : null, professor_name: headerProf, full_name: first };
+          rows.push(st);
+        } else st = { id: -1, professor_name: headerProf, full_name: first };
+        out.created_students++; out.created.push(first + ' (' + headerProf + ', цена ' + price + ')');
+      }
+      if (st.id > 0) {
+        const [[old]] = await conn.query('SELECT amount FROM roster_payments WHERE roster_id = ? AND pay_month = ?', [st.id, ym]);
+        if (old) { if (Number(old.amount) !== amount) out.changed.push(`${first} ${ym}: ${Number(old.amount)} → ${amount}`); out.updated++; } else out.added++;
+        if (!dry) await conn.query('INSERT INTO roster_payments (roster_id, pay_month, amount) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE amount = VALUES(amount)', [st.id, ym, amount]);
+      } else out.added++;
+      out.sum += amount;
+    }
+    if (!dry) await conn.commit();
+    conn.release();
+    res.json(out);
+  } catch (err) {
+    try { await conn.rollback(); } catch (e) {}
+    conn.release();
+    console.error('POST /finance/roster/add-payments error:', err);
+    res.status(500).json({ error: 'Грешка: ' + err.message });
+  }
+});
+
 // GET /finance/unpaid-overview?month=YYYY-MM — кој не платил до избраниот месец
 router.get('/unpaid-overview', async (req, res) => {
   try {
