@@ -29,7 +29,7 @@ router.get('/income', async (req, res) => {
   let query = `
     SELECT DATE_FORMAT(paid_at, '%Y-%m') AS month, SUM(amount) AS total
     FROM installments
-    WHERE status = 'paid' AND paid_at IS NOT NULL`;
+    WHERE status = 'paid' AND paid_at IS NOT NULL AND (paid_note IS NULL OR paid_note <> 'Платено според школската листа')`;
   const params = [];
   if (from) { query += ' AND paid_at >= ?'; params.push(from + '-01'); }
   if (to) { query += ' AND paid_at <= LAST_DAY(?)'; params.push(to + '-01'); }
@@ -125,7 +125,7 @@ router.get('/summary', async (req, res) => {
 
   const [[incomeRow]] = await pool.query(
     `SELECT COALESCE(SUM(amount),0) AS total FROM installments
-     WHERE status='paid' AND DATE_FORMAT(paid_at, '%Y-%m') = ?`, [month]
+     WHERE status='paid' AND (paid_note IS NULL OR paid_note <> 'Платено според школската листа') AND DATE_FORMAT(paid_at, '%Y-%m') = ?`, [month]
   );
   const [[salaryRow]] = await pool.query(
     `SELECT COALESCE(SUM(amount + cash_amount),0) AS total FROM staff_salaries WHERE DATE_FORMAT(month, '%Y-%m') = ?`, [month]
@@ -191,7 +191,7 @@ router.get('/professor-revenue', async (req, res) => {
     FROM users u
     LEFT JOIN groups_table g ON g.professor_id = u.id
     LEFT JOIN subscriptions s ON s.group_id = g.id
-    LEFT JOIN installments i ON i.subscription_id = s.id AND i.status = 'paid'`;
+    LEFT JOIN installments i ON i.subscription_id = s.id AND i.status = 'paid' AND (i.paid_note IS NULL OR i.paid_note <> 'Платено според школската листа')`;
   const params = [];
   const conditions = [];
   if (from) { conditions.push('(i.paid_at IS NULL OR i.paid_at >= ?)'); params.push(from + '-01'); }
@@ -1121,7 +1121,7 @@ router.get('/annual-forecast', async (req, res) => {
     months.forEach(m => { data[m] = { month: m, paid: 0, expected: 0 }; });
 
     const [paid] = await pool.query(
-      `SELECT DATE_FORMAT(paid_at, '%Y-%m') AS ym, SUM(amount) AS total FROM installments WHERE status = 'paid' AND paid_at IS NOT NULL GROUP BY ym`);
+      `SELECT DATE_FORMAT(paid_at, '%Y-%m') AS ym, SUM(amount) AS total FROM installments WHERE status = 'paid' AND paid_at IS NOT NULL AND (paid_note IS NULL OR paid_note <> 'Платено според школската листа') GROUP BY ym`);
     paid.forEach(r => { if (r.ym >= first && r.ym <= last) data[r.ym].paid += Number(r.total); });
     const [pend] = await pool.query(
       `SELECT DATE_FORMAT(i.due_date, '%Y-%m') AS ym, SUM(i.amount) AS total FROM installments i
@@ -1134,13 +1134,14 @@ router.get('/annual-forecast', async (req, res) => {
     const [rsAll] = await pool.query('SELECT id, full_price, full_name FROM roster_students WHERE school_year = ?', [sy]);
     const [subKids] = await pool.query('SELECT DISTINCT c.full_name FROM children c JOIN subscriptions s ON s.student_id = c.id AND s.released = FALSE');
     const subKeys = new Set(subKids.map(k => roster.nameKey(k.full_name)));
-    const rs = rsAll.filter(r => !subKeys.has(roster.nameKey(r.full_name))); // веќе броени преку платформата
+    const rs = rsAll;   // уплатите од листата се бројат за сите; очекуваното само за незапишаните (запишаните имаат свои рати)
     if (rs.length) {
       const [rp] = await pool.query('SELECT roster_id, pay_month, amount FROM roster_payments WHERE roster_id IN (?)', [rs.map(x => x.id)]);
       const by = {};
       rp.forEach(p => { (by[p.roster_id] = by[p.roster_id] || []).push(p); if (data[p.pay_month]) data[p.pay_month].paid += Number(p.amount); });
       const curIdx = Math.max(0, months.indexOf(clamp(cur)));
       rs.forEach(st => {
+        if (subKeys.has(roster.nameKey(st.full_name))) return;   // има претплата — очекуваното е во нејзините рати
         const list = by[st.id] || [];
         const total = list.reduce((a, p) => a + Number(p.amount), 0);
         const remaining = Math.max(0, Number(st.full_price) - total);
