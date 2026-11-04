@@ -1552,9 +1552,15 @@
     <div style="background:var(--surface-2); border-radius:10px; padding:14px; font-size:12.5px; color:var(--mist); margin-bottom:16px;">
       <span data-i18n="cpay_note">По кликот на „Плати" ќе бидеш пренасочен кон cPay (сигурна, банкарска страница) каде ги внесуваш податоците за картичка. Ние никогаш не ги гледаме и не ги чуваме твоите податоци за картичка.</span>
     </div>
-    <label id="payTermsLabel" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
-      <input type="checkbox" id="payTermsCheckbox" style="margin-top:2px;">
+    <div id="payTermsScroll" style="max-height:170px; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:12px; font-size:12px; line-height:1.6; margin-bottom:6px;"></div>
+    <div id="payScrollHint" style="font-size:11.5px; color:var(--wine); margin-bottom:10px;"></div>
+    <label id="payTermsLabel" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:14px; cursor:pointer;">
+      <input type="checkbox" id="payTermsCheckbox" style="margin-top:2px;" disabled>
       <span id="payTermsText"></span>
+    </label>
+    <label id="payPhotoBox" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--ink); margin-bottom:16px; cursor:pointer;">
+      <input type="checkbox" id="payPhotoCheckbox" style="margin-top:2px;">
+      <span id="payPhotoQ"></span>
     </label>
 
     <button class="pay-btn" id="payConfirmBtn" data-i18n="pay_first_installment">Плати ja првата рата</button>
@@ -1609,7 +1615,7 @@
       finance_unpaid_title:'Неплатени школарини', th_student:'Ученик', th_parent:'Родител', th_package:'Пакет', th_installment:'Рата', th_due:'Доспева',
       finance_revenue_title:'Приход по професор', th_students:'Ученици', th_total_revenue:'Вкупен приход',
       placeholder_prof_name:'пр. Никола Тодоровски',
-      photo_consent_text:'Се согласувам моето дете да биде фотографирано и/или снимано за време на часови, настапи и настани на PianoForte, и материjaлот да се користи за промотивни цели (веб-сajт, социjaлни мрежи, брошури).',
+      pay_scroll_hint:'Скролирај го текстот до крај за да можеш да се согласиш.', pay_photo_q:'(Опционално) Се согласувам јас и моето дете да бидеме фотографирани и/или снимани за потребите на маркетинг тимот на PianoForte.', pay_photo_yes:'Да, се согласувам', pay_photo_no:'Не, не се согласувам', pay_photo_required:'Одговори на прашањето за фотографирање.', photo_consent_text:'Се согласувам моето дете да биде фотографирано и/или снимано за време на часови, настапи и настани на PianoForte, и материjaлот да се користи за промотивни цели (веб-сajт, социjaлни мрежи, брошури).',
       child_login_link:'👦 Најави се како ученик (со код)', child_code_label:'Внеси го твojot код', child_login_btn:'Најави се',
       child_code_required:'Внеси го кодот.', child_code_invalid:'Невалиден код. Провери и пробaj повторно.',
       nav_materials_child:'Материjaли', child_access_code_title:'Код за најава на детето',
@@ -1698,7 +1704,7 @@
       finance_unpaid_title:'Unpaid tuition', th_student:'Student', th_parent:'Parent', th_package:'Package', th_installment:'Installment', th_due:'Due',
       finance_revenue_title:'Revenue per professor', th_students:'Students', th_total_revenue:'Total revenue',
       placeholder_prof_name:'e.g. Nikola Todorovski',
-      photo_consent_text:'I agree that my child may be photographed and/or filmed during lessons, performances and events at PianoForte, and that this material may be used for promotional purposes (website, social media, brochures).',
+      pay_scroll_hint:'Scroll the text to the end to be able to agree.', pay_photo_q:'(Optional) I and my child agree to be photographed and/or filmed for the marketing needs of the PianoForte team.', pay_photo_yes:'Yes, I agree', pay_photo_no:'No, I do not agree', pay_photo_required:'Please answer the photography question.', photo_consent_text:'I agree that my child may be photographed and/or filmed during lessons, performances and events at PianoForte, and that this material may be used for promotional purposes (website, social media, brochures).',
       child_login_link:'👦 Log in as a student (with a code)', child_code_label:'Enter your code', child_login_btn:'Log in',
       child_code_required:'Enter your code.', child_code_invalid:'Invalid code. Check it and try again.',
       nav_materials_child:'Materials', child_access_code_title:'Student login code',
@@ -5894,7 +5900,24 @@
     }
   });
 
+  function setupPayConsent(){
+    const box = document.getElementById('payTermsScroll');
+    const src = document.getElementById(currentLang === 'en' ? 'termsBodyEn' : 'termsBodyMk');
+    box.innerHTML = src ? src.innerHTML : '';
+    box.scrollTop = 0;
+    const cb = document.getElementById('payTermsCheckbox');
+    cb.checked = false; cb.disabled = true;
+    document.getElementById('payScrollHint').textContent = t('pay_scroll_hint');
+    document.getElementById('payPhotoQ').textContent = t('pay_photo_q');
+    document.getElementById('payPhotoCheckbox').checked = false;
+    const check = ()=>{
+      if(box.scrollTop + box.clientHeight >= box.scrollHeight - 6){ cb.disabled = false; document.getElementById('payScrollHint').textContent = ''; }
+    };
+    box.onscroll = check;
+    setTimeout(check, 50);
+  }
   function openPaymentModal(){
+    setupPayConsent();
     document.getElementById('payTermsCheckbox').checked = false;
 
     const childRow = document.getElementById('payChildSelectorRow');
@@ -5957,8 +5980,16 @@
       setTimeout(()=>{ label.style.color=''; }, 1200);
       return;
     }
+    const photoYes = document.getElementById('payPhotoCheckbox').checked;   // опционално — ненаштиклирано = не се согласува
     const payBtn = document.getElementById('payConfirmBtn');
     payBtn.disabled = true; payBtn.textContent = t('x_to_cpay');
+    try{
+      await authApiCall('/payments/consent', { method:'POST', body: JSON.stringify({ child_id: activeChildId, photo_consent: photoYes }) });
+    } catch(err){
+      alert(t('x_pay_failed') + err.message);
+      payBtn.disabled = false; payBtn.textContent = t('x_pay_first');
+      return;
+    }
 
     // ja поднесуваме формата кон cPay (browser-от целосно ja напушта страницава)
     function redirectToCpay(initResult){
