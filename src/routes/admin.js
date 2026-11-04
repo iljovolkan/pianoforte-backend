@@ -168,7 +168,10 @@ router.get('/overview', requireAuth, requireRole('admin'), async (req, res) => {
   const [[activeSubCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE released = FALSE');
   const [[releasedSubCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE released = TRUE');
   const [[pendingGroupCount]] = await pool.query('SELECT COUNT(*) AS cnt FROM subscriptions WHERE group_id IS NULL AND released = FALSE');
-  const [[revenue]] = await pool.query("SELECT COALESCE(SUM(amount),0) AS total FROM installments WHERE status = 'paid'");
+  const [[revenue0]] = await pool.query("SELECT COALESCE(SUM(amount),0) AS total FROM installments WHERE status = 'paid' AND (paid_note IS NULL OR paid_note <> 'Платено според школската листа')");
+  let rosterPaid = 0;
+  try { const [[rp]] = await pool.query('SELECT COALESCE(SUM(rp.amount),0) AS total FROM roster_payments rp'); rosterPaid = Number(rp.total); } catch (e) {}
+  const revenue = { total: Number(revenue0.total) + rosterPaid };
   const [[lateCount]] = await pool.query(
     "SELECT COUNT(*) AS cnt FROM installments WHERE status = 'pending' AND due_date < CURDATE()"
   );
