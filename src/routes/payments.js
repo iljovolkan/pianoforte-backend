@@ -83,6 +83,23 @@ function respondAndRedirect(res, targetPath) {
 // ===================================================================
 // POST /payments/init-subscription
 // ===================================================================
+// POST /payments/consent  { child_id, photo_consent }
+// Се повикува пред плаќање откако родителот ги прифатил Условите (со скрол до крај) и одговорил за фотографирање.
+const TERMS_VERSION = '2026-11';
+router.post('/consent', requireAuth, requireRole('student'), async (req, res) => {
+  try {
+    const { child_id, photo_consent } = req.body;
+    if (typeof photo_consent !== 'boolean') return res.status(400).json({ error: 'Одговори дали се согласуваш за фотографирање.' });
+    const [[child]] = await pool.query('SELECT id FROM children WHERE id = ? AND parent_id = ?', [child_id, req.user.id]);
+    if (!child) return res.status(403).json({ error: 'Ова дете не е поврзано со твојот профил.' });
+    await pool.query(
+      'INSERT INTO consents (user_id, child_id, terms_version, terms_accepted, photo_consent, ip) VALUES (?, ?, ?, 1, ?, ?)',
+      [req.user.id, child.id, TERMS_VERSION, photo_consent ? 1 : 0, String(req.ip || '').slice(0, 64)]);
+    await pool.query('UPDATE children SET photo_consent = ? WHERE id = ?', [photo_consent ? 1 : 0, child.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error('POST /payments/consent error:', err); res.status(500).json({ error: 'Грешка при зачувување на согласноста.' }); }
+});
+
 router.post('/init-subscription', requireAuth, requireRole('student'), async (req, res) => {
   try {
     const { package_id, group_id, secondary_group_id, child_id } = req.body;
