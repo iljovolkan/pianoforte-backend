@@ -253,6 +253,37 @@ router.post('/:id/move-member', requireAuth, requireRole('professor', 'admin'), 
   }
 });
 
+// PUT /groups/:id  { capacity, sessions_per_week, name, duration_minutes } — професорот ја уредува својата група
+router.put('/:id', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  try {
+    const [[group]] = await pool.query('SELECT * FROM groups_table WHERE id = ?', [req.params.id]);
+    if (!group) return res.status(404).json({ error: 'Групата не постои.' });
+    if (req.user.role === 'professor' && group.professor_id !== req.user.id) return res.status(403).json({ error: 'Оваа група не е твоја.' });
+    const [[mc]] = await pool.query('SELECT COUNT(*) n FROM group_members WHERE group_id = ?', [group.id]);
+    const sets = [], vals = [];
+    if (req.body.capacity !== undefined) {
+      const cap = Number(req.body.capacity);
+      if (!Number.isInteger(cap) || cap < 1 || cap > 30) return res.status(400).json({ error: 'Капацитетот мора да е број од 1 до 30.' });
+      if (cap < mc.n) return res.status(400).json({ error: `Во групата има ${mc.n} ученици — капацитетот не може да е помал.` });
+      sets.push('capacity = ?'); vals.push(cap);
+    }
+    if (req.body.sessions_per_week !== undefined) {
+      const spw = Number(req.body.sessions_per_week);
+      if (![1, 2, 3, 4, 5].includes(spw)) return res.status(400).json({ error: 'Часови неделно: 1 до 5.' });
+      sets.push('sessions_per_week = ?'); vals.push(spw);
+    }
+    if (req.body.duration_minutes !== undefined) {
+      const d = Number(req.body.duration_minutes);
+      if (!Number.isInteger(d) || d < 15 || d > 180) return res.status(400).json({ error: 'Траење: 15 до 180 минути.' });
+      sets.push('duration_minutes = ?'); vals.push(d);
+    }
+    if (typeof req.body.name === 'string' && req.body.name.trim()) { sets.push('name = ?'); vals.push(req.body.name.trim().slice(0, 100)); }
+    if (!sets.length) return res.status(400).json({ error: 'Нема што да се смени.' });
+    await pool.query(`UPDATE groups_table SET ${sets.join(', ')} WHERE id = ?`, [...vals, group.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error('PUT /groups/:id error:', err); res.status(500).json({ error: 'Грешка при уредување.' }); }
+});
+
 // PUT /groups/:id/close  { is_closed }  — професор рано ja затвора/отвора
 // групата (не прима повеќе нови деца, дури и да има уште слободно место)
 router.put('/:id/close', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
