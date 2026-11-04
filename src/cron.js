@@ -12,6 +12,13 @@ const REMINDER_DAYS_BEFORE = 3; // потсетник точно 3 дена пр
  *    GRACE_DAYS дена — ги откажува и преостанатите чекачки рати, и известува
  */
 async function runDailyMaintenance() {
+  // Додека не е сигурно дека уплатите во платформата се усогласени со школската листа,
+  // автоматските потсетници и ослободувањето на термини се ИСКЛУЧЕНИ.
+  // Вклучи ги на Railway: AUTO_RELEASE_ENABLED=true
+  if (process.env.AUTO_RELEASE_ENABLED !== 'true') {
+    console.log('[cron] Автоматските потсетници и ослободувањето на термини се паузирани (AUTO_RELEASE_ENABLED не е true).');
+    return { remindersSent: 0, released: 0, checked: 0, paused: true };
+  }
   const [installments] = await pool.query(
     `SELECT i.*, s.id AS subscription_id, s.student_id, s.group_id, s.secondary_group_id, s.released AS sub_released,
             u.email, u.full_name, c.full_name AS child_name, p.name AS package_name, g.name AS group_name
