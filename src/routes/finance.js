@@ -387,6 +387,20 @@ router.get('/unenrolled-children', async (req, res) => {
 });
 
 
+// Дете со две дисциплини (два реда во листата): кој професор одговара на пакетот
+async function guessRosterProfessor(db, childName, pkg) {
+  if (!pkg) return null;
+  const key = roster.nameKey(childName);
+  const [rows] = await db.query('SELECT professor_name, full_name, module FROM roster_students WHERE school_year = ?', [schoolYearStr(defaultStartYear())]);
+  const mine = rows.filter(r => roster.nameKey(r.full_name) === key);
+  if (mine.length < 2) return null;
+  const isSing = r => SINGING_RE.test(String(r.module || '').toLowerCase());
+  let pick;
+  if (pkg.instrument === 'peenje') pick = mine.filter(isSing);
+  else { const fam = FAM_OF_PKG[pkg.id]; pick = fam ? mine.filter(r => !isSing(r) && profFamily(r.professor_name) === fam) : []; }
+  return pick.length === 1 ? pick[0].professor_name : null;
+}
+
 // Колку рати од планот се веќе покриени со уплатите од увезената листа (за дете со истото име)
 async function rosterCoverageFor(db, childName, schedule, professorName, cache) {
   const sy = schoolYearStr(defaultStartYear());
@@ -423,7 +437,7 @@ router.get('/roster-coverage', async (req, res) => {
     const schedule = payment_plan === 'trial'
       ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
       : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
-    const cov = await rosterCoverageFor(pool, child.full_name, schedule);
+    const cov = await rosterCoverageFor(pool, child.full_name, schedule, await guessRosterProfessor(pool, child.full_name, pkg));
     res.json({ ...cov, installments: schedule.length });
   } catch (err) { console.error('roster-coverage error:', err); res.json({ found: false }); }
 });
@@ -473,7 +487,7 @@ async function doManualEnrollment(body, userId) {
         : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
     }
     if (useRoster) {
-      const cov = await rosterCoverageFor(conn, child.full_name, schedule, body.roster_professor || null);
+      const cov = await rosterCoverageFor(conn, child.full_name, schedule, body.roster_professor || await guessRosterProfessor(conn, child.full_name, pkg));
       paidN = cov.found ? cov.paid_count : 0;
       if (paidN > 0 && !note) note = 'Платено според школската листа';
     }
