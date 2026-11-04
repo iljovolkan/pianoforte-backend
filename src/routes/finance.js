@@ -388,11 +388,16 @@ router.get('/unenrolled-children', async (req, res) => {
 
 
 // Колку рати од планот се веќе покриени со уплатите од увезената листа (за дете со истото име)
-async function rosterCoverageFor(db, childName, schedule) {
+async function rosterCoverageFor(db, childName, schedule, professorName) {
   const sy = schoolYearStr(defaultStartYear());
   const key = roster.nameKey(childName);
   const [rows] = await db.query('SELECT id, full_name, professor_name, full_price FROM roster_students WHERE school_year = ?', [sy]);
-  const matches = rows.filter(r => roster.nameKey(r.full_name) === key);
+  let matches = rows.filter(r => roster.nameKey(r.full_name) === key);
+  if (professorName) {   // дете со две дисциплини: се броат само уплатите кај тој професор
+    const pk = String(professorName).trim().toLowerCase();
+    const own = matches.filter(r => String(r.professor_name || '').trim().toLowerCase() === pk);
+    if (own.length) matches = own;
+  }
   if (!matches.length) return { found: false, paid_total: 0, paid_count: 0 };
   matches.sort((a, b) => Number(b.full_price) - Number(a.full_price));
   const st = matches[0];
@@ -448,21 +453,42 @@ async function doManualEnrollment(body, userId) {
     if (!child) { throw { http: 404, message: 'Детето не постои.' }; }
     if (!pkg) { throw { http: 404, message: 'Пакетот не постои.' }; }
 
-    const [[existing]] = await conn.query('SELECT id FROM subscriptions WHERE student_id = ? AND released = FALSE LIMIT 1', [child_id]);
-    if (existing) { throw { http: 409, message: 'Ова дете веќе има активна претплата. Означи ги ратите во листата.' }; }
+    // Дозволена е втора претплата само за друг инструмент (на пр. пијано + пеење)
+    const [[existing]] = await conn.query(
+      `SELECT s.id FROM subscriptions s JOIN packages p ON p.id = s.package_id
+       WHERE s.student_id = ? AND s.released = FALSE AND (s.package_id = ? OR (? IS NOT NULL AND p.instrument = ?)) LIMIT 1`,
+      [child_id, package_id, pkg.instrument || null, pkg.instrument || null]);
+    if (existing) { throw { http: 409, message: 'Ова дете веќе има активна претплата за овој инструмент. Означи ги ратите во листата.' }; }
 
-    const schedule = payment_plan === 'trial'
-      ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
-      : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
+    const customTotal = Number(body.custom_total) > 0 ? Math.round(Number(body.custom_total)) : null;
+    const customCount = customTotal ? (Number(body.custom_count) === 1 ? 1 : 8) : null;
+    let schedule;
+    if (customTotal) {   // договорена цена од листата, поделена на рати
+      const base = Math.floor(customTotal / customCount);
+      schedule = [];
+      for (let i = 0; i < customCount; i++) schedule.push({ number: i + 1, total: customCount, amount: i === customCount - 1 ? customTotal - base * (customCount - 1) : base, offsetDays: i * 30 });
+    } else {
+      schedule = payment_plan === 'trial'
+        ? [{ number: 1, total: 1, amount: Number(pkg.price_mkd), offsetDays: 0 }]
+        : buildAnnualSchedule(payment_plan, Number(pkg.price_mkd), schoolMonthsLeft(new Date(start + 'T12:00:00')));
+    }
     if (useRoster) {
-      const cov = await rosterCoverageFor(conn, child.full_name, schedule);
+      const cov = await rosterCoverageFor(conn, child.full_name, schedule, body.roster_professor || null);
       paidN = cov.found ? cov.paid_count : 0;
       if (paidN > 0 && !note) note = 'Платено според школската листа';
     }
     if (paidN > schedule.length) { throw { http: 400, message: `Овој план има само ${schedule.length} рат(и).` }; }
 
     // групи на детето (ако е веќе вклучено во група)
-    const [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY group_id ASC LIMIT 2', [child_id]);
+    let groups;
+    if (pkg.instrument) {   // само групи од истиот инструмент (дете со две дисциплини)
+      [groups] = await conn.query(
+        `SELECT gm.group_id FROM group_members gm JOIN groups_table g ON g.id = gm.group_id
+         WHERE gm.student_id = ? AND (g.instrument = ? OR ? = 1) ORDER BY gm.group_id ASC LIMIT 2`,
+        [child_id, pkg.instrument, pkg.is_combo ? 1 : 0]);
+    } else {
+      [groups] = await conn.query('SELECT group_id FROM group_members WHERE student_id = ? ORDER BY group_id ASC LIMIT 2', [child_id]);
+    }
     const groupId = groups[0] ? groups[0].group_id : null;
     const secondaryId = pkg.is_combo && groups[1] ? groups[1].group_id : null;
 
@@ -546,73 +572,130 @@ function profFamily(profName) {
   }
   return null;
 }
-async function planBulk(rows) {
+const FAM_OF_PKG = { 10: 'piano', 11: 'violin', 12: 'guitar', 15: 'guitar', 13: 'drums', 28: 'izvorce', 29: 'izvorce' };
+const SINGING_RE = /пеење|певање|pevanje|peenje|sing/;
+// custom=false: само стандардни цени; custom=true: и договорени (нестандардни) цени → рати од листата
+async function planBulk(rows, custom) {
   const [pk] = await pool.query('SELECT * FROM packages WHERE id IN (?)', [Object.values(BULK_PKG)]);
   const pkgs = {}; pk.forEach(p => { pkgs[p.id] = p; });
+  const [subs] = await pool.query('SELECT student_id, package_id FROM subscriptions WHERE released = FALSE');
+  const have = new Set(subs.map(x => x.student_id + ':' + (FAM_OF_PKG[x.package_id] || 'p' + x.package_id)));
   const ml = schoolMonthsLeft(new Date('2026-09-01T12:00:00'));
   const seen = new Set();
   const out = [];
   for (const r of rows) {
     const base = { child_id: r.child_id, child_name: r.child_name, roster_name: r.full_name, professor_name: r.professor_name, module: r.module, full_price: Number(r.full_price) };
     const skip = reason => out.push({ ...base, ready: false, reason });
-    if (seen.has(r.child_id)) { skip('Дупликат во листата (исто дете двапати)'); continue; }
-    seen.add(r.child_id);
     const mod = String(r.module || '').toLowerCase();
-    if (/пеење|певање|pevanje|peenje|sing/.test(mod)) { skip('Модул пеење — рачно'); continue; }
+    if (SINGING_RE.test(mod)) { if (!have.has(r.child_id + ':singing')) skip('Пеење — чека договор за цена'); continue; }
     const fam = profFamily(r.professor_name);
     if (!fam) { skip('Непозната група професор — рачно'); continue; }
+    if (have.has(r.child_id + ':' + fam)) continue;            // веќе запишано за овој инструмент
+    const key = r.child_id + ':' + fam;
+    if (seen.has(key)) { skip('Дупликат во листата (исто дете двапати)'); continue; }
+    seen.add(key);
     let pkgId = BULK_PKG[fam];
     if (fam === 'izvorce') {
       if (/пијано|пиано|комбин|piano|kombin/.test(mod)) pkgId = BULK_PKG.izvorceCombo;
       else if (/изворче|izvorce/.test(mod) || !mod) pkgId = BULK_PKG.izvorce;
       else { skip('Нејасен модул „' + r.module + '“'); continue; }
-    } else if (/електр|electric/.test(mod)) { skip('Електрична гитара — рачно'); continue; }
+    } else if (/електр|electric/.test(mod)) { pkgId = 15; if (!pkgs[15]) { const [[p15]] = await pool.query('SELECT * FROM packages WHERE id = 15'); if (p15) pkgs[15] = p15; } }
     const pkg = pkgs[pkgId];
     if (!pkg) { skip('Пакетот #' + pkgId + ' не постои'); continue; }
     const price = Number(r.full_price);
     let plan = null, schedule = null;
     for (const p of ['eight', 'full', 'two']) {
-      const s = buildAnnualSchedule(p, Number(pkg.price_mkd), ml);
-      const total = s.reduce((sum, it) => sum + Number(it.amount), 0);
-      if (Math.abs(total - price) <= 1) { plan = p; schedule = s; break; }
+      const sc = buildAnnualSchedule(p, Number(pkg.price_mkd), ml);
+      const total = sc.reduce((sum, it) => sum + Number(it.amount), 0);
+      if (Math.abs(total - price) <= 1) { plan = p; schedule = sc; break; }
     }
-    if (!plan) { skip('Нестандардна цена ' + price + ' (' + pkg.name + ') — рачно'); continue; }
-    const cov = await rosterCoverageFor(pool, r.child_name || r.full_name, schedule);
+    const item = { ...base, ready: true, package_id: pkgId, package_name: pkg.name };
+    if (plan) { item.payment_plan = plan; item.installments = schedule.length; }
+    else if (custom && price > 0) {
+      const count = (fam === 'drums' && price === 4500) ? 1 : 8;
+      item.custom = true; item.custom_total = price; item.custom_count = count;
+      item.payment_plan = count === 1 ? 'trial' : 'eight'; item.installments = count;
+      const per = Math.floor(price / count);
+      schedule = Array.from({ length: count }, (_, i) => ({ number: i + 1, amount: i === count - 1 ? price - per * (count - 1) : per }));
+    } else { skip('Нестандардна цена ' + price + ' (' + pkg.name + ') — рачно'); continue; }
+    const cov = await rosterCoverageFor(pool, r.child_name || r.full_name, schedule, r.professor_name);
     const [g] = await pool.query('SELECT COUNT(*) n FROM group_members WHERE student_id = ?', [r.child_id]);
-    out.push({ ...base, ready: true, package_id: pkgId, package_name: pkg.name, payment_plan: plan, installments: schedule.length,
-      paid_count: cov.found ? cov.paid_count : 0, in_group: g[0].n > 0 });
+    item.paid_count = cov.found ? cov.paid_count : 0; item.in_group = g[0].n > 0;
+    out.push(item);
   }
   return out;
 }
 async function bulkPendingRows() {
   const rows = await loadRoster('school_year = ?', [schoolYearStr(defaultStartYear())], currentYm());
-  return rows.filter(r => r.has_profile && !r.has_subscription);
+  return rows.filter(r => r.has_profile && r.child_id);
 }
 
-// GET /finance/bulk-enroll-preview
+// GET /finance/bulk-enroll-preview?custom=1
 router.get('/bulk-enroll-preview', async (req, res) => {
   try {
-    const items = await planBulk(await bulkPendingRows());
+    const items = await planBulk(await bulkPendingRows(), req.query.custom === '1');
     res.json({ ready: items.filter(i => i.ready).length, skipped: items.filter(i => !i.ready).length, items });
   } catch (err) { console.error('bulk-enroll-preview error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
 });
 
-// POST /finance/bulk-enroll  body: { child_ids: [..] }  (запишува само „ready“ од прегледот)
+// POST /finance/bulk-enroll  body: { child_ids: [..], custom: bool }  (запишува само „ready“ од прегледот)
 router.post('/bulk-enroll', async (req, res) => {
   try {
     const ids = Array.isArray(req.body.child_ids) ? req.body.child_ids.map(Number) : [];
     if (!ids.length) return res.status(400).json({ error: 'Нема избрани деца.' });
-    const items = (await planBulk(await bulkPendingRows())).filter(i => i.ready && ids.includes(Number(i.child_id)));
+    const items = (await planBulk(await bulkPendingRows(), req.body.custom === true)).filter(i => i.ready && ids.includes(Number(i.child_id)));
     const results = [];
     for (const it of items) {
       try {
         const r = await doManualEnrollment({ child_id: it.child_id, package_id: it.package_id, payment_plan: it.payment_plan,
-          start_date: '2026-09-01', use_roster: true, method: 'other', send_invoice: false }, req.user.id);
+          custom_total: it.custom ? it.custom_total : undefined, custom_count: it.custom ? it.custom_count : undefined,
+          roster_professor: it.professor_name, start_date: '2026-09-01', use_roster: true, method: 'other', send_invoice: false }, req.user.id);
         results.push({ child_id: it.child_id, name: it.child_name, ok: true, paid_count: r.paid_count });
       } catch (e) { results.push({ child_id: it.child_id, name: it.child_name, ok: false, error: e.message }); }
     }
     res.json({ done: results.filter(x => x.ok).length, failed: results.filter(x => !x.ok).length, results });
   } catch (err) { console.error('bulk-enroll error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
+});
+
+// GET /finance/name-mismatches — редови од листата без профил + најблиски профили по име
+router.get('/name-mismatches', async (req, res) => {
+  try {
+    const rows = (await loadRoster('school_year = ?', [schoolYearStr(defaultStartYear())], currentYm())).filter(r => !r.has_profile);
+    const [kids] = await pool.query(
+      `SELECT c.id, c.full_name, u.email AS parent_email,
+              EXISTS(SELECT 1 FROM subscriptions s WHERE s.student_id = c.id AND s.released = FALSE) AS has_sub
+       FROM children c JOIN users u ON u.id = c.parent_id`);
+    const kidToks = kids.map(k => ({ k, t: roster.nameKey(k.full_name).split(' ').filter(Boolean).map(x => x.slice(0, 3)) }));
+    const out = rows.map(r => {
+      const rt = roster.nameKey(r.full_name).split(' ').filter(Boolean).map(x => x.slice(0, 3));
+      const cands = kidToks.map(({ k, t }) => ({ k, score: t.filter(x => rt.includes(x)).length }))
+        .filter(c => c.score >= 1).sort((a, b) => b.score - a.score).slice(0, 4)
+        .map(c => ({ child_id: c.k.id, name: c.k.full_name, parent_email: c.k.parent_email, has_sub: !!c.k.has_sub, score: c.score }));
+      return { roster_id: r.id, full_name: r.full_name, professor_name: r.professor_name, module: r.module, paid_total: r.paid_total, candidates: cands };
+    });
+    res.json({ count: out.length, rows: out });
+  } catch (err) { console.error('name-mismatches error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
+});
+
+// POST /finance/fix-name  body: { mode: 'child'|'roster', child_id, roster_id }
+//  child  → името на профилот станува исто како во листата
+//  roster → името во листата станува исто како на профилот
+router.post('/fix-name', async (req, res) => {
+  try {
+    const { mode, child_id, roster_id } = req.body;
+    const [[st]] = await pool.query('SELECT * FROM roster_students WHERE id = ?', [roster_id]);
+    const [[kid]] = await pool.query('SELECT id, full_name FROM children WHERE id = ?', [child_id]);
+    if (!st || !kid) return res.status(404).json({ error: 'Не е пронајдено.' });
+    if (mode === 'child') {
+      await pool.query('UPDATE children SET full_name = ? WHERE id = ?', [st.full_name, kid.id]);
+    } else if (mode === 'roster') {
+      const key = roster.nameKey(kid.full_name);
+      const [[dup]] = await pool.query('SELECT id FROM roster_students WHERE school_year = ? AND professor_name = ? AND name_key = ? AND id <> ?', [st.school_year, st.professor_name, key, st.id]);
+      if (dup) return res.status(409).json({ error: 'Во листата веќе постои ученик со тоа име кај истиот професор.' });
+      await pool.query('UPDATE roster_students SET full_name = ?, name_key = ? WHERE id = ?', [kid.full_name, key, st.id]);
+    } else return res.status(400).json({ error: 'Невалиден режим.' });
+    res.json({ ok: true });
+  } catch (err) { console.error('fix-name error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
 });
 
 // POST /finance/installments/:id/mark-paid  body: { method, paid_date, note, send_invoice }
