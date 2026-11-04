@@ -4889,7 +4889,12 @@
   }
   async function openBulkEnroll(custom){
     let d;
-    try{ d = await authApiCall('/finance/bulk-enroll-preview' + (custom ? '?custom=1' : '')); }catch(err){ alert(err.message); return; }
+    const btn = document.getElementById(custom ? 'bulkCustomBtn' : 'bulkEnrollBtn');
+    const btnTxt = btn ? btn.textContent : '';
+    if(btn){ btn.disabled = true; btn.textContent = 'Се вчитува… (може да потрае)'; }
+    try{ d = await authApiCall('/finance/bulk-enroll-preview' + (custom ? '?custom=1' : '')); }
+    catch(err){ alert(err.message); return; }
+    finally { if(btn){ btn.disabled = false; btn.textContent = btnTxt; } }
     const ready = d.items.filter(i=>i.ready), skipped = d.items.filter(i=>!i.ready);
     const rr = ready.map(i=>`<tr><td>${escapeHtml(i.child_name)}</td><td>${escapeHtml(i.professor_name)}</td><td>${escapeHtml(i.package_name)}</td><td>${i.custom ? (fmtMoney(i.custom_total) + ' / ' + i.custom_count + (i.custom_count===1?' рата (пробен)':' рати')) : ({eight:'8 рати',two:'Полугодие',full:'Цела година'})[i.payment_plan]}</td><td class="num">${i.paid_count}/${i.installments}</td><td>${i.in_group?'✓ група':'чека термин'}</td></tr>`).join('');
     const sr = skipped.map(i=>`<tr><td>${escapeHtml(i.child_name||i.roster_name)}</td><td>${escapeHtml(i.professor_name)}</td><td colspan="4" style="color:var(--wine);">${escapeHtml(i.reason)}</td></tr>`).join('');
@@ -4900,6 +4905,7 @@
       ready.length ? `Запиши ги ${ready.length}` : 'Затвори', async ()=>{
         if(!ready.length) return false;
         if(!confirm('Да се запишат '+ready.length+' деца?')) return true;
+        const okBtn = document.getElementById('finModalOk'); if(okBtn) okBtn.textContent = 'Се запишува… не го затворај прозорецот';
         const r = await authApiCall('/finance/bulk-enroll', { method:'POST', body: JSON.stringify({ child_ids: ready.map(i=>i.child_id), custom: !!custom }) });
         const bad = r.results.filter(x=>!x.ok).map(x=>x.name+': '+x.error).join('\n');
         alert('Запишани: '+r.done+(r.failed?'\nГрешки ('+r.failed+'):\n'+bad:''));
