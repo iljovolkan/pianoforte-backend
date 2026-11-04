@@ -388,10 +388,10 @@ router.get('/unenrolled-children', async (req, res) => {
 
 
 // Колку рати од планот се веќе покриени со уплатите од увезената листа (за дете со истото име)
-async function rosterCoverageFor(db, childName, schedule, professorName) {
+async function rosterCoverageFor(db, childName, schedule, professorName, cache) {
   const sy = schoolYearStr(defaultStartYear());
   const key = roster.nameKey(childName);
-  const [rows] = await db.query('SELECT id, full_name, professor_name, full_price FROM roster_students WHERE school_year = ?', [sy]);
+  const rows = cache ? cache.rows : (await db.query('SELECT id, full_name, professor_name, full_price FROM roster_students WHERE school_year = ?', [sy]))[0];
   let matches = rows.filter(r => roster.nameKey(r.full_name) === key);
   if (professorName) {   // дете со две дисциплини: се броат само уплатите кај тој професор
     const pk = String(professorName).trim().toLowerCase();
@@ -401,8 +401,8 @@ async function rosterCoverageFor(db, childName, schedule, professorName) {
   if (!matches.length) return { found: false, paid_total: 0, paid_count: 0 };
   matches.sort((a, b) => Number(b.full_price) - Number(a.full_price));
   const st = matches[0];
-  const [[sum]] = await db.query('SELECT COALESCE(SUM(amount),0) AS total FROM roster_payments WHERE roster_id = ?', [st.id]);
-  const paidTotal = Number(sum.total);
+  const paidTotal = cache ? Number(cache.sums[st.id] || 0)
+    : Number((await db.query('SELECT COALESCE(SUM(amount),0) AS total FROM roster_payments WHERE roster_id = ?', [st.id]))[0][0].total);
   let cum = 0, count = 0;
   for (const it of schedule) {
     cum += Number(it.amount);
@@ -581,6 +581,12 @@ async function planBulk(rows, custom) {
   const [subs] = await pool.query('SELECT student_id, package_id FROM subscriptions WHERE released = FALSE');
   const have = new Set(subs.map(x => x.student_id + ':' + (FAM_OF_PKG[x.package_id] || 'p' + x.package_id)));
   const ml = schoolMonthsLeft(new Date('2026-09-01T12:00:00'));
+  const sy = schoolYearStr(defaultStartYear());
+  const [rrows] = await pool.query('SELECT id, full_name, professor_name, full_price FROM roster_students WHERE school_year = ?', [sy]);
+  const [rsum] = await pool.query('SELECT roster_id, SUM(amount) t FROM roster_payments GROUP BY roster_id');
+  const cache = { rows: rrows, sums: {} }; rsum.forEach(x => { cache.sums[x.roster_id] = Number(x.t); });
+  const [gm] = await pool.query('SELECT student_id, COUNT(*) n FROM group_members GROUP BY student_id');
+  const inGroup = new Set(gm.map(x => x.student_id));
   const seen = new Set();
   const out = [];
   for (const r of rows) {
@@ -618,9 +624,8 @@ async function planBulk(rows, custom) {
       const per = Math.floor(price / count);
       schedule = Array.from({ length: count }, (_, i) => ({ number: i + 1, amount: i === count - 1 ? price - per * (count - 1) : per }));
     } else { skip('Нестандардна цена ' + price + ' (' + pkg.name + ') — рачно'); continue; }
-    const cov = await rosterCoverageFor(pool, r.child_name || r.full_name, schedule, r.professor_name);
-    const [g] = await pool.query('SELECT COUNT(*) n FROM group_members WHERE student_id = ?', [r.child_id]);
-    item.paid_count = cov.found ? cov.paid_count : 0; item.in_group = g[0].n > 0;
+    const cov = await rosterCoverageFor(pool, r.child_name || r.full_name, schedule, r.professor_name, cache);
+    item.paid_count = cov.found ? cov.paid_count : 0; item.in_group = inGroup.has(r.child_id);
     out.push(item);
   }
   return out;
