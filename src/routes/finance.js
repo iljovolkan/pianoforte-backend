@@ -589,6 +589,10 @@ function profFamily(profName) {
 const FAM_OF_PKG = { 10: 'piano', 11: 'violin', 12: 'guitar', 15: 'guitar', 13: 'drums', 28: 'izvorce', 29: 'izvorce' };
 const SINGING_RE = /пеење|певање|pevanje|peenje|sing/;
 // custom=false: само стандардни цени; custom=true: и договорени (нестандардни) цени → рати од листата
+// Броеви на рати што Искра ги договорила поинаку од стандардните 8 (клуч = фонетски клуч на името)
+const BULK_COUNT = new Map([
+  ['Petra Miletikj', 7], ['Viktor Lukikj', 7], ['Деа Мерџаноски', 7], ['Siara Ramadani', 7], ['Ajlijana Kadrievska', 4], ['Ајљијана Кадриевска', 4], ['Ајлијана Кадриевска', 4]
+].map(([n, c]) => [roster.nameKey(n), c]));
 async function planBulk(rows, custom) {
   const [pk] = await pool.query('SELECT * FROM packages WHERE id IN (?)', [Object.values(BULK_PKG)]);
   const pkgs = {}; pk.forEach(p => { pkgs[p.id] = p; });
@@ -632,7 +636,7 @@ async function planBulk(rows, custom) {
     const item = { ...base, ready: true, package_id: pkgId, package_name: pkg.name };
     if (plan) { item.payment_plan = plan; item.installments = schedule.length; }
     else if (custom && price > 0) {
-      const count = (fam === 'drums' && price === 4500) ? 1 : 8;
+      const count = (fam === 'drums' && price === 4500) ? 1 : (BULK_COUNT.get(roster.nameKey(r.full_name)) || BULK_COUNT.get(roster.nameKey(r.child_name || '')) || 8);
       item.custom = true; item.custom_total = price; item.custom_count = count;
       item.payment_plan = count === 1 ? 'trial' : 'eight'; item.installments = count;
       const per = Math.floor(price / count);
