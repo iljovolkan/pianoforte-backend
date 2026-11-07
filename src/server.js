@@ -19,6 +19,21 @@ const attendanceRoutes = require('./routes/attendance');
 const paymentsRoutes = require('./routes/payments');
 const { startCronJobs } = require('./cron');
 
+// Express 4 не ги фаќа одбиените promise-и од async рути: една грешка во база го урнува процесот (502).
+// Ова ги проследува до централниот error handler (исто како пакетот express-async-errors).
+const Layer = require('express/lib/router/layer');
+const origHandleRequest = Layer.prototype.handle_request;
+Layer.prototype.handle_request = function (req, res, next) {
+  const fn = this.handle;
+  if (fn.length > 3) return next();
+  try {
+    const out = fn(req, res, next);
+    if (out && typeof out.catch === 'function') out.catch(next);
+  } catch (e) { next(e); }
+};
+process.on('unhandledRejection', (err) => { console.error('unhandledRejection:', err); });
+process.on('uncaughtException', (err) => { console.error('uncaughtException:', err); });
+
 const app = express();
 
 // Railway (и слични хостинзи) работат преку reverse proxy — без ова, Express
