@@ -591,7 +591,7 @@ const SINGING_RE = /пеење|певање|pevanje|peenje|sing/;
 // custom=false: само стандардни цени; custom=true: и договорени (нестандардни) цени → рати од листата
 // Броеви на рати што Искра ги договорила поинаку од стандардните 8 (клуч = фонетски клуч на името)
 const BULK_COUNT = new Map([
-  ['Petra Miletikj', 7], ['Viktor Lukikj', 7], ['Деа Мерџаноски', 7], ['Siara Ramadani', 7], ['Ajlijana Kadrievska', 4], ['Ајљијана Кадриевска', 4], ['Ајлијана Кадриевска', 4]
+  ['Petra Miletikj', 7], ['Aleksandar Riordan', 4], ['Александар Риордан', 4], ['Viktor Lukikj', 7], ['Деа Мерџаноски', 7], ['Siara Ramadani', 7], ['Ajlijana Kadrievska', 4], ['Ајљијана Кадриевска', 4], ['Ајлијана Кадриевска', 4]
 ].map(([n, c]) => [roster.nameKey(n), c]));
 async function planBulk(rows, custom) {
   const [pk] = await pool.query('SELECT * FROM packages WHERE id IN (?)', [Object.values(BULK_PKG)]);
