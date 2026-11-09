@@ -118,7 +118,7 @@ app.use('/attendance', attendanceRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error('UNHANDLED ' + req.method + ' ' + req.originalUrl + ' ->', err && err.code ? err.code + ': ' : '', err && err.message ? err.message : err);
   res.status(500).json({ error: 'Неочекувана грешка на серверот.' });
 });
 
