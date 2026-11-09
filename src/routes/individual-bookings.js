@@ -197,11 +197,24 @@ router.post('/manual', requireAuth, requireRole('professor'), async (req, res) =
   if (!child) return res.status(404).json({ error: 'Детето не постои.' });
 
   const durMin = [30, 45].includes(Number(duration_minutes)) ? Number(duration_minutes) : 45;
-  const [result] = await pool.query(
+  // Термин што веќе е зафатен од активен час → јасна порака; откажан час го ослободува терминот.
+  const [[taken]] = await pool.query(
+    "SELECT id FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status <> 'cancelled' LIMIT 1",
+    [req.user.id, booking_date, start_time]);
+  if (taken) return res.status(409).json({ error: 'Во тој термин веќе има закажан час. Избери друго време.' });
+  await pool.query("DELETE FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status = 'cancelled'",
+    [req.user.id, booking_date, start_time]);
+  let result;
+  try {
+    [result] = await pool.query(
     `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref, duration_minutes)
      VALUES (?, ?, ?, ?, ?, 0, 'manual', ?)`,
     [child_id, req.user.id, instrument, booking_date, start_time, durMin]
-  );
+    );
+  } catch (err) {
+    if (err && err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Во тој термин веќе има закажан час. Избери друго време.' });
+    throw err;
+  }
   res.status(201).json({ id: result.insertId });
 });
 
