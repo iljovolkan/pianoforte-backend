@@ -475,7 +475,7 @@ async function doManualEnrollment(body, userId) {
     if (existing) { throw { http: 409, message: 'Ова дете веќе има активна претплата за овој инструмент. Означи ги ратите во листата.' }; }
 
     const customTotal = Number(body.custom_total) > 0 ? Math.round(Number(body.custom_total)) : null;
-    const customCount = customTotal ? (Number(body.custom_count) === 1 ? 1 : 8) : null;
+    const customCount = customTotal ? Math.min(12, Math.max(1, Math.round(Number(body.custom_count)) || 8)) : null;
     let schedule;
     if (customTotal) {   // договорена цена од листата, поделена на рати
       const base = Math.floor(customTotal / customCount);
