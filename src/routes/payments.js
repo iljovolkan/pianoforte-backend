@@ -596,6 +596,9 @@ async function completeIndividualBooking(intent, payload, cpayRef) {
     }
   }
 
+  // откажан час на истиот термин не смее да го блокира новиот (уникатен клуч професор+датум+време)
+  await pool.query("DELETE FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status = 'cancelled'",
+    [professor_id, booking_date, start_time]);
   await pool.query(
     `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref, duration_minutes)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
