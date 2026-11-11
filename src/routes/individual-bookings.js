@@ -186,7 +186,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // индивидуален час (без онлajн плаќање — пр. кога плаќањето е решено
 // одделно, преку специjaлен линк или готовина).
 router.post('/manual', requireAuth, requireRole('professor'), async (req, res) => {
-  const { child_id, instrument, booking_date, start_time, duration_minutes } = req.body;
+  const { child_id, instrument, booking_date, start_time, duration_minutes, repeat_weekly } = req.body;
   if (!child_id || !instrument || !booking_date || !start_time) {
     return res.status(400).json({ error: 'child_id, instrument, booking_date и start_time се задолжителни.' });
   }
@@ -215,7 +215,34 @@ router.post('/manual', requireAuth, requireRole('professor'), async (req, res) =
     if (err && err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Во тој термин веќе има закажан час. Избери друго време.' });
     throw err;
   }
-  res.status(201).json({ id: result.insertId });
+  // Повторување секоја недела во ист термин до крајот на учебната година (15 јуни).
+  // Зафатените недели се прескокнуваат; секој час подоцна се откажува одделно (болест, празник).
+  let created = 1, skipped = [];
+  if (repeat_weekly === true || repeat_weekly === 'true') {
+    const m = String(booking_date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) {
+      const d0 = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+      const endYear = (+m[2]) >= 8 ? +m[1] + 1 : +m[1];
+      const end = new Date(Date.UTC(endYear, 5, 15));
+      for (let i = 1; i <= 45; i++) {
+        const d = new Date(d0.getTime() + i * 7 * 86400000);
+        if (d > end) break;
+        const ds = d.toISOString().slice(0, 10);
+        const [[busy]] = await pool.query(
+          "SELECT id FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status <> 'cancelled' LIMIT 1",
+          [req.user.id, ds, start_time]);
+        if (busy) { skipped.push(ds); continue; }
+        await pool.query("DELETE FROM individual_bookings WHERE professor_id = ? AND booking_date = ? AND start_time = ? AND status = 'cancelled'", [req.user.id, ds, start_time]);
+        try {
+          await pool.query(
+            `INSERT INTO individual_bookings (student_id, professor_id, instrument, booking_date, start_time, amount, payment_provider_ref, duration_minutes)
+             VALUES (?, ?, ?, ?, ?, 0, 'manual', ?)`, [child_id, req.user.id, instrument, ds, start_time, durMin]);
+          created++;
+        } catch (e) { if (e && e.code === 'ER_DUP_ENTRY') skipped.push(ds); else throw e; }
+      }
+    }
+  }
+  res.status(201).json({ id: result.insertId, created, skipped });
 });
 
 module.exports = router;
