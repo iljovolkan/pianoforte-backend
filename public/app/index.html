@@ -5024,8 +5024,8 @@
       try{
         const rows = await authApiCall('/finance/unenrolled-children?q=' + encodeURIComponent(ov.querySelector('#meQ').value.trim()));
         sel.innerHTML = rows.length
-          ? rows.map(c=>`<option value="${c.id}">${escapeHtml(c.full_name)} — ${escapeHtml(c.parent_email)}${c.groups_list ? ' ('+escapeHtml(c.groups_list)+')' : ''}</option>`).join('')
-          : '<option value="">Нема деца без претплата</option>';
+          ? rows.map(c=>`<option value="${c.id}">${escapeHtml(c.full_name)} — ${escapeHtml(c.parent_email)}${c.groups_list ? ' ('+escapeHtml(c.groups_list)+')' : ''}${Number(c.active_subs) > 0 ? ' — веќе има претплата (втор предмет)' : ''}</option>`).join('')
+          : '<option value="">Нема деца</option>';
         if(prefill && prefill.child_id) sel.value = String(prefill.child_id);
       } catch(err){ sel.innerHTML = '<option value="">Грешка</option>'; }
     };
