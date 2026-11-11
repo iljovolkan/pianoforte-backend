@@ -4982,6 +4982,10 @@
        <div id="meRosterBox" style="display:none;background:rgba(47,125,79,.08);border:1px solid rgba(47,125,79,.35);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12.5px;">
          <label style="display:flex;gap:8px;align-items:center;margin:0;"><input type="checkbox" id="meUseRoster" checked> <span id="meRosterTxt"></span></label>
        </div>
+       <label>Договорена вкупна сума (незадолжително — за посебни цени)</label>
+       <input type="number" id="meCustomTotal" class="login-input" min="0" placeholder="пр. 36200">
+       <label>Број на рати (при договорена сума, 1–12)</label>
+       <input type="number" id="meCustomCount" class="login-input" min="1" max="12" placeholder="пр. 7">
        <label>Колку рати се веќе платени?</label>
        <input type="number" id="mePaid" class="login-input" min="0" value="1">
        <label>Како се платени</label>
@@ -5007,7 +5011,7 @@
             use_roster: ov.querySelector('#meUseRoster').checked && ov.querySelector('#meRosterBox').style.display !== 'none',
             paid_count: ov.querySelector('#mePaid').value, method: ov.querySelector('#meMethod').value,
             start_date: ov.querySelector('#meStart').value, next_due_date: ov.querySelector('#meNextDue').value || undefined, paid_date: ov.querySelector('#mePaidDate').value,
-            note: ov.querySelector('#meNote').value.trim(), send_invoice: ov.querySelector('#meInvoice').checked
+            custom_total: Number(ov.querySelector('#meCustomTotal').value) || undefined, custom_count: Number(ov.querySelector('#meCustomCount').value) || undefined, note: ov.querySelector('#meNote').value.trim(), send_invoice: ov.querySelector('#meInvoice').checked
           })
         });
         alert('Запишано.' + (out.paid_count ? ` Означени платени рати: ${out.paid_count}.` : '') + (out.invoices_sent ? ` Испратени фактури: ${out.invoices_sent}.` : '') + (out.group_linked ? '' : '\nДетето нема група — родителот може да избере термин во апликацијата.'));
