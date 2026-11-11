@@ -362,7 +362,7 @@ router.get('/payment-board', async (req, res) => {
   }
 });
 
-// GET /finance/unenrolled-children?q= — деца без активна претплата
+// GET /finance/unenrolled-children?q= — деца без активна претплата (при пребарување: и деца што веќе имаат претплата — за втор предмет)
 router.get('/unenrolled-children', async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
@@ -371,12 +371,13 @@ router.get('/unenrolled-children', async (req, res) => {
     if (q) { extra = ' AND (c.full_name LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
     const [rows] = await pool.query(
       `SELECT c.id, c.full_name, u.email AS parent_email, u.full_name AS parent_name,
-              GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') AS groups_list
+              GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') AS groups_list,
+              (SELECT COUNT(*) FROM subscriptions s2 WHERE s2.student_id = c.id AND s2.released = FALSE) AS active_subs
        FROM children c
        JOIN users u ON u.id = c.parent_id
        LEFT JOIN group_members gm ON gm.student_id = c.id
        LEFT JOIN groups_table g ON g.id = gm.group_id
-       WHERE NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.student_id = c.id AND s.released = FALSE) ${extra}
+       WHERE ${q ? '1=1' : 'NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.student_id = c.id AND s.released = FALSE)'} ${extra}
        GROUP BY c.id ORDER BY c.full_name ASC LIMIT 200`, params
     );
     res.json(rows);
