@@ -1023,6 +1023,7 @@
             <option value="30">30 минути</option>
             <option value="45" selected>45 минути</option>
           </select>
+          <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:13px;"><input type="checkbox" id="manualIndivRepeat"> Повторувај секоја недела во истиот термин до крајот на учебната година</label>
           <button class="send-btn" id="manualIndivSaveBtn" style="padding:9px;">Зачувaj</button>
         </div>
       </div>
@@ -3240,10 +3241,11 @@
         const btn = document.getElementById('manualIndivSaveBtn');
         btn.disabled = true; btn.textContent = 'Се зачувува...';
         try{
-          await authApiCall('/individual-bookings/manual', {
+          const rep = await authApiCall('/individual-bookings/manual', {
             method:'POST',
-            body: JSON.stringify({ child_id, instrument: session.instrument, booking_date, start_time, duration_minutes })
+            body: JSON.stringify({ child_id, instrument: session.instrument, booking_date, start_time, duration_minutes, repeat_weekly: document.getElementById('manualIndivRepeat').checked })
           });
+          if(rep && rep.created > 1) alert('Закажани часови: ' + rep.created + (rep.skipped && rep.skipped.length ? '\nПрескокнати (зафатено): ' + rep.skipped.join(', ') : ''));
           await loadIndividualBookings();
           renderProfessorIndivBookings();
           document.getElementById('manualIndivBox').style.display = 'none';
