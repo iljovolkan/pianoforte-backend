@@ -395,7 +395,7 @@ async function guessRosterProfessor(db, childName, pkg) {
   const [rows] = await db.query('SELECT professor_name, full_name, module FROM roster_students WHERE school_year = ?', [schoolYearStr(defaultStartYear())]);
   const mine = rows.filter(r => roster.nameKey(r.full_name) === key);
   if (mine.length < 2) return null;
-  const isSing = r => SINGING_RE.test(String(r.module || '').toLowerCase());
+  const isSing = r => SINGING_RE.test(String(r.module || '').toLowerCase()) || /минела|богдановик|богдановиќ|minela|bogdanov/i.test(String(r.professor_name || ''));
   let pick;
   if (pkg.instrument === 'peenje') pick = mine.filter(isSing);
   else { const fam = FAM_OF_PKG[pkg.id]; pick = fam ? mine.filter(r => !isSing(r) && profFamily(r.professor_name) === fam) : []; }
