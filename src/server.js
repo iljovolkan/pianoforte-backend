@@ -16,6 +16,7 @@ const individualBookingsRoutes = require('./routes/individual-bookings');
 const childrenRoutes = require('./routes/children');
 const financeRoutes = require('./routes/finance');
 const attendanceRoutes = require('./routes/attendance');
+const schoolRoutes = require('./routes/school');
 const paymentsRoutes = require('./routes/payments');
 const { startCronJobs } = require('./cron');
 
@@ -115,6 +116,7 @@ app.use('/individual-bookings', individualBookingsRoutes);
 app.use('/children', childrenRoutes);
 app.use('/finance', financeRoutes);
 app.use('/attendance', attendanceRoutes);
+app.use('/school', schoolRoutes);
 
 // централен error handler — да не пропаѓаат необработени грешки како HTML стек трага
 app.use((err, req, res, next) => {
