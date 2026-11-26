@@ -1692,7 +1692,7 @@
       status_queued:'Во ред', status_delivered:'Ново', status_opened:'Отворено', status_done:'Завршено',
       pay_paid:'Платено', pay_due_soon:'Наближува рок', pay_late:'Задоцнето', pay_released:'Термин ослободен', pay_none:'Нема пакет',
       plan_full:'Целосно (1 уплата)', plan_two:'2 полугодишни рати', plan_eight:'8 месечни рати', plan_trial:'Пробен пакет (1 уплата)',
-      inst_pending:'Чека', inst_paid:'Платена', inst_released:'Откажана',
+      rep_btn:'Веќе платив', rep_title:'Пријави уплата', rep_info:'Ако си платил/а кеш, во банка или во школа — пријави ја уплатата. Ратата ќе се означи како платена кога школата ќе ја потврди.', rep_method:'Начин на плаќање', rep_cash:'Кеш (во школа)', rep_bank:'Банка', rep_other:'Друго', rep_date:'Датум на уплата', rep_note:'Белешка (незадолжително)', rep_submit:'Пријави уплата', rep_sent:'Пријавата е испратена. Школата ќе ја потврди наскоро.', rep_pending:'Пријавено — чека потврда', rep_rejected:'Одбиена: {r}', rep_withdraw:'Повлечи', rep_withdraw_confirm:'Да ја повлечеш пријавата?', inst_pending:'Чека', inst_paid:'Платена', inst_released:'Откажана',
       mat_note:'Ноти', mat_audio:'Аудио', mat_task:'Задача'
     },
     en: {
@@ -1781,7 +1781,7 @@
       status_queued:'Queued', status_delivered:'New', status_opened:'Opened', status_done:'Done',
       pay_paid:'Paid', pay_due_soon:'Due soon', pay_late:'Overdue', pay_released:'Slot released', pay_none:'No package',
       plan_full:'Full (1 payment)', plan_two:'2 half-year installments', plan_eight:'8 monthly installments', plan_trial:'Trial package (1 payment)',
-      inst_pending:'Pending', inst_paid:'Paid', inst_released:'Cancelled',
+      rep_btn:'I already paid', rep_title:'Report a payment', rep_info:'If you paid in cash, by bank transfer or at the school — report the payment. The installment will be marked as paid once the school confirms it.', rep_method:'Payment method', rep_cash:'Cash (at school)', rep_bank:'Bank transfer', rep_other:'Other', rep_date:'Payment date', rep_note:'Note (optional)', rep_submit:'Report payment', rep_sent:'Report sent. The school will confirm it shortly.', rep_pending:'Reported — awaiting confirmation', rep_rejected:'Rejected: {r}', rep_withdraw:'Withdraw', rep_withdraw_confirm:'Withdraw this report?', inst_pending:'Pending', inst_paid:'Paid', inst_released:'Cancelled',
       mat_note:'Notes', mat_audio:'Audio', mat_task:'Task'
     }
   };
@@ -3532,6 +3532,7 @@
           `).join('')}
         </div>
         <div class="member-chips">${memberCount ? g.members.map(m=>`<span class="chip" style="display:inline-flex; align-items:center; gap:4px;">${escapeHtml(m.full_name)}<button class="move-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Премести во друга група" style="background:none; border:none; color:var(--lilac-deep); cursor:pointer; font-size:11px; padding:0;">↔️</button><button class="remove-child-btn" data-child-id="${m.id}" data-child-name="${escapeHtml(m.full_name)}" data-from-group="${g.id}" title="Отстрани од групата" style="background:none; border:none; color:var(--wine); cursor:pointer; font-size:12px; padding:0;">✕</button></span>`).join('') : '<span class="chip" style="opacity:.6;">Нема деца сè уште</span>'}</div>
+        ${memberCount ? `<button class="parent-phones-btn" data-group="${g.id}" style="background:none; border:none; color:var(--lilac-deep); font-size:12px; font-weight:600; cursor:pointer; padding:6px 0 0;">📞 Телефони на родители</button>` : ''}
         <div class="move-child-panel" data-for-group="${g.id}" style="display:none; margin-top:8px; padding:10px; background:var(--surface-2); border-radius:8px;">
           <div style="font-size:12px; margin-bottom:6px;">Премести го <strong class="move-child-name"></strong> во:</div>
           <select class="login-select move-target-group" style="margin-bottom:8px;"></select>
@@ -4480,7 +4481,10 @@
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="status-pill ${installmentStatusClass[inst.status]}">${installmentStatusLabel[inst.status]}</span>
               ${isPending ? `<button class="mc-btn" style="flex:none;" onclick="payInstallment(${inst.id})">${t('x_pay')}</button>` : ''}
+              ${isPending && inst.report_status !== 'pending' ? `<button class="mc-btn" style="flex:none;" onclick="reportInstallmentPaid(${inst.id}, ${Number(inst.amount)})">${t('rep_btn')}</button>` : ''}
             </div>
+            ${isPending && inst.report_status === 'pending' ? `<div style="grid-column:1/-1; font-size:12.5px; color:var(--lilac-deep); display:flex; gap:10px; align-items:center;">⏳ ${t('rep_pending')} <button class="mc-btn" style="flex:none; padding:2px 10px;" onclick="withdrawInstallmentReport(${inst.id})">${t('rep_withdraw')}</button></div>` : ''}
+            ${isPending && inst.report_status === 'rejected' ? `<div style="grid-column:1/-1; font-size:12.5px; color:var(--wine);">✗ ${escapeHtml(t('rep_rejected').replace('{r}', inst.report_reject_reason || ''))}</div>` : ''}
           </div>`;
         });
         section.appendChild(instTable);
@@ -4490,6 +4494,28 @@
     }
   }
 
+
+
+  window.reportInstallmentPaid = function(installmentId, amount){
+    finModal(t('rep_title'),
+      `<p style="font-size:13px;opacity:.8;margin:0 0 10px;">${t('rep_info')}</p>
+       <p style="margin:0 0 10px;font-size:14px;"><strong>${Number(amount).toLocaleString('mk-MK')} ${t('x_mkd')}</strong></p>
+       <label>${t('rep_method')}</label><select id="repMethod" class="login-select"><option value="cash">${t('rep_cash')}</option><option value="bank">${t('rep_bank')}</option><option value="other">${t('rep_other')}</option></select>
+       <label>${t('rep_date')}</label><input type="date" id="repDate" class="login-input" value="${todayIso()}" max="${todayIso()}">
+       <label>${t('rep_note')}</label><input type="text" id="repNote" class="login-input" maxlength="200">`,
+      t('rep_submit'),
+      async (ov)=>{
+        await authApiCall('/installments/' + installmentId + '/report-paid', { method:'POST', body: JSON.stringify({
+          method: ov.querySelector('#repMethod').value, paid_date: ov.querySelector('#repDate').value, note: ov.querySelector('#repNote').value.trim() }) });
+        alert(t('rep_sent'));
+        await loadInstallments(); renderBillingPage();
+      });
+  };
+  window.withdrawInstallmentReport = async function(installmentId){
+    if(!confirm(t('rep_withdraw_confirm'))) return;
+    try{ await authApiCall('/installments/' + installmentId + '/report-paid', { method:'DELETE' }); await loadInstallments(); renderBillingPage(); }
+    catch(err){ alert(err.message || t('x_error_dot')); }
+  };
 
   window.payInstallment = async function(installmentId){
     if(!PAYMENTS_ENABLED){ alert(PAYMENTS_DISABLED_MSG); return; }
@@ -4769,6 +4795,37 @@
   }
 
 
+
+  /* ---- Телефони на родители (за професор / Школа) ---- */
+  async function openParentPhones(groupId){
+    let rows = [];
+    try{ rows = (await authApiCall('/children/my-group-parents')).filter(r=>r.group_id===groupId); }
+    catch(err){ alert(err.message || 'Грешка.'); return; }
+    const old = document.getElementById('phonesModal'); if(old) old.remove();
+    const ov = document.createElement('div'); ov.id = 'phonesModal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto;';
+    ov.innerHTML = '<div style="background:var(--surface);color:var(--ink);border-radius:14px;max-width:560px;width:100%;padding:20px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;">Телефони на родители</h3><button class="mc-btn" id="phonesClose" style="flex:none;padding:4px 12px;">Затвори</button></div>'
+      + '<p style="font-size:12.5px;opacity:.75;margin:0 0 12px;">Внеси или поправи го бројот на родителот. Родителот може и самиот да го смени од својот профил.</p>'
+      + (rows.length ? rows.map(r=>'<div style="display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);">'
+          + '<div><b style="font-size:13.5px;">'+escapeHtml(r.child_name)+'</b><div style="font-size:12px;opacity:.7;">'+escapeHtml(r.parent_name)+'</div></div>'
+          + '<input type="tel" class="login-input ph-inp" data-child="'+r.child_id+'" value="'+escapeHtml(r.parent_phone||'')+'" placeholder="07x xxx xxx" style="margin:0;padding:8px;">'
+          + '<button class="send-btn ph-save" data-child="'+r.child_id+'" style="padding:8px 12px;font-size:12.5px;width:auto;">Зачувај</button></div>').join('')
+        : '<div class="empty-state">Нема деца во групата.</div>')
+      + '</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#phonesClose').onclick = ()=>ov.remove();
+    ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+    ov.querySelectorAll('.ph-save').forEach(b=>b.addEventListener('click', async ()=>{
+      const inp = ov.querySelector('.ph-inp[data-child="'+b.dataset.child+'"]'); const v = inp.value.trim();
+      b.disabled = true;
+      try{ await authApiCall('/children/' + b.dataset.child + '/parent-phone', { method:'PUT', body: JSON.stringify({ phone: v }) }); b.textContent = '✓ Зачувано'; setTimeout(()=>{ b.textContent = 'Зачувај'; }, 1500); }
+      catch(err){ alert(err.message || 'Грешка.'); }
+      finally{ b.disabled = false; }
+    }));
+  }
+  document.addEventListener('click', e=>{ const b = e.target.closest && e.target.closest('.parent-phones-btn'); if(b) openParentPhones(Number(b.dataset.group)); });
+
   /* ===================== ШКОЛА — единствен преглед за Искра и господата ===================== */
   const SCH = { tab:'overview', month:null, payMode:'due', students:null, stFilter:{ q:'', prof:'', view:'' }, payFilter:{ q:'', prof:'', overdueOnly:false }, profAll:false };
   const SCH_TABS = [['overview','Преглед'],['pay','Уплати'],['students','Ученици'],['profs','Професори'],['lessons','Часови'],['fin','Финансии']];
@@ -4830,6 +4887,7 @@
     const d = await authApiCall('/school/overview?month=' + schMonth());
     const p = d.people, m = d.money, c = d.collection, l = d.lessons;
     const act = [];
+    if(c.reports_pending > 0) act.push({ warn:true, txt:'<b>'+c.reports_pending+' родители пријавиле</b> дека платиле — чекаат твоја потврда', go:'pay', mode:'reports', btn:'Потврди' });
     if(c.overdue_count > 0) act.push({ warn:true, txt:'<b>'+c.overdue_count+' задоцнети рати</b> ('+fmtMoney(c.overdue_total)+') кај '+c.overdue_kids+' ученици', go:'pay', btn:'Види кој' });
     if(c.roster_owed_count > 0) act.push({ warn:true, txt:'<b>'+c.roster_owed_count+' ученици од листата</b> должат вкупно '+fmtMoney(c.roster_owed_total), go:'pay', btn:'Види кој' });
     if(p.no_group > 0) act.push({ warn:false, txt:'<b>'+p.no_group+' ученици</b> имаат платена претплата, но немаат група', go:'students', view:'nogroup', btn:'Прикажи' });
@@ -4856,22 +4914,26 @@
       + '</div>'
       + (p.no_group ? '' : '');
     schWireMonth();
-    schBody().querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click', ()=>{ const a = act[Number(b.dataset.act)]; schGo(a.go, a.view ? { view:a.view } : undefined); }));
+    schBody().querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click', ()=>{ const a = act[Number(b.dataset.act)]; if(a.mode) SCH.payMode = a.mode; schGo(a.go, a.view ? { view:a.view } : undefined); }));
   }
 
   /* ---------- УПЛАТИ ---------- */
-  function schMarkPaid(instId, label, amount, done){
-    finModal('Означи рата како платена',
+  function schMarkPaid(instId, label, amount, done, pre, reportId){
+    pre = pre || {};
+    const sel = (v)=> (pre.method||'bank') === v ? ' selected' : '';
+    finModal(reportId ? 'Потврди ја пријавената уплата' : 'Означи рата како платена',
       '<p style="margin:0 0 10px;font-size:14px;"><strong>'+escapeHtml(label)+'</strong> · '+fmtMoney(amount)+'</p>'
-      + '<label>Начин на плаќање</label><select id="smMethod" class="login-select"><option value="bank">Банка</option><option value="cash">Кеш</option><option value="other">Друго</option></select>'
-      + '<label>Датум на уплата</label><input type="date" id="smDate" class="login-input" value="'+todayIso()+'">'
-      + '<label>Белешка (незадолжително)</label><input type="text" id="smNote" class="login-input" maxlength="200">'
+      + (reportId ? '<p class="sch-mini" style="margin:0 0 8px;">Родителот пријавил дека платил. Провери дека парите навистина стигнале, па потврди.</p>' : '')
+      + '<label>Начин на плаќање</label><select id="smMethod" class="login-select"><option value="bank"'+sel('bank')+'>Банка</option><option value="cash"'+sel('cash')+'>Кеш</option><option value="other"'+sel('other')+'>Друго</option></select>'
+      + '<label>Датум на уплата</label><input type="date" id="smDate" class="login-input" value="'+(pre.date||todayIso())+'">'
+      + '<label>Белешка (незадолжително)</label><input type="text" id="smNote" class="login-input" maxlength="200" value="'+escapeHtml(pre.note||'')+'">'
       + '<label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="smInvoice" checked> Испрати фактура на мејл на родителот</label>',
       'Означи платена',
       async (ov)=>{
         const out = await authApiCall('/finance/installments/' + instId + '/mark-paid', { method:'POST', body: JSON.stringify({
           method: ov.querySelector('#smMethod').value, paid_date: ov.querySelector('#smDate').value,
           note: ov.querySelector('#smNote').value.trim(), send_invoice: ov.querySelector('#smInvoice').checked }) });
+        if(reportId){ try{ await authApiCall('/school/reports/' + reportId + '/resolve', { method:'POST' }); }catch(e){ console.warn('resolve report', e); } }
         alert(out.invoice_number ? 'Означено како платено. Фактура ' + out.invoice_number + (out.emailed ? ' е испратена на мејл.' : ' е издадена, но мејлот не е испратен.') : 'Означено како платено.');
         if(done) await done();
       });
@@ -4899,12 +4961,28 @@
     const set = {}; rows.forEach(r=>{ if(r) set[r] = 1; });
     return '<option value="">Сите професори</option>' + Object.keys(set).sort().map(p=>'<option value="'+escapeHtml(p)+'"'+(sel===p?' selected':'')+'>'+escapeHtml(p)+'</option>').join('');
   }
+  async function schReportsView(){
+    const d = SCH._rep || { rows: [] };
+    if(d.migration_missing) return '<div class="empty-state">Функцијата уште не е активирана — треба да се изврши миграцијата 37 (payment_reports).</div>';
+    const rows = d.rows.map(r=>'<tr><td><a href="#" data-card="'+r.child_id+'">'+escapeHtml(r.child_name)+'</a></td>'
+      + '<td>'+escapeHtml(r.parent_name||'')+'<div class="sch-mini">'+escapeHtml(r.parent_phone||r.parent_email||'')+'</div></td>'
+      + '<td>'+escapeHtml(r.package_name)+' · '+r.installment_number+'/'+r.total_installments+'<div class="sch-mini">'+escapeHtml(r.professor_name||'')+'</div></td>'
+      + '<td class="num">'+fmtMoney(r.amount)+'</td>'
+      + '<td>'+escapeHtml({bank:'Банка',cash:'Кеш',other:'Друго'}[r.method]||r.method)+', '+schDate(r.paid_date)+(r.note?'<div class="sch-mini">'+escapeHtml(r.note)+'</div>':'')+'<div class="sch-mini">пријавено '+schDate(r.created_at)+'</div></td>'
+      + '<td style="white-space:nowrap;"><button class="sch-btn primary" data-confirm="'+r.report_id+'">Потврди</button> <button class="sch-btn" data-reject="'+r.report_id+'">Одбиј</button></td></tr>').join('');
+    return '<p class="sch-mini">Родители што пријавиле дека платиле кеш, во банка или во школа. Потврди ако парите навистина стигнале.</p>'
+      + schTbl(['Дете','Родител / контакт','Пакет · рата','Износ','Пријавено','' ], rows, 'Нема пријави што чекаат. ✓');
+  }
   async function schPayments(){
     const body = schBody();
-    const top = '<div class="sch-bar"><button class="sch-btn'+(SCH.payMode==='due'?' primary':'')+'" data-mode="due">За наплата</button><button class="sch-btn'+(SCH.payMode==='log'?' primary':'')+'" data-mode="log">Дневник на уплати</button>'
+    try{ SCH._rep = await authApiCall('/school/reports/pending'); }catch(e){ SCH._rep = { rows: [] }; }
+    const repN = SCH._rep.rows.length;
+    const top = '<div class="sch-bar"><button class="sch-btn'+(SCH.payMode==='reports'?' primary':'')+'" data-mode="reports">Пријавени плаќања'+(repN?' ('+repN+')':'')+'</button><button class="sch-btn'+(SCH.payMode==='due'?' primary':'')+'" data-mode="due">За наплата</button><button class="sch-btn'+(SCH.payMode==='log'?' primary':'')+'" data-mode="log">Дневник на уплати</button>'
       + '<span style="flex:1"></span><button class="sch-btn" id="schAddPaysBtn">➕ Додај нови уплати (од листата)</button><button class="sch-btn" id="schEnrollBtn">➕ Запиши дете што плаќа</button></div>';
     let inner = '';
-    if(SCH.payMode === 'due'){
+    if(SCH.payMode === 'reports'){
+      inner = '<div id="schRepBody">' + await schReportsView() + '</div>';
+    } else if(SCH.payMode === 'due'){
       const d = await authApiCall('/school/payments/due?month=' + schMonth());
       SCH._due = d;
       inner = schMonthBar()
@@ -4922,7 +5000,19 @@
     body.querySelectorAll('button[data-mode]').forEach(b=>b.addEventListener('click', ()=>{ SCH.payMode = b.dataset.mode; renderSchoolPage(); }));
     document.getElementById('schAddPaysBtn').addEventListener('click', openAddPayments);
     document.getElementById('schEnrollBtn').addEventListener('click', ()=>openManualEnrollment());
-    if(SCH.payMode === 'due'){ schWireMonth(); schDrawDue();
+    if(SCH.payMode === 'reports'){
+      const reload = async ()=>{ renderSchoolPage(); };
+      body.querySelectorAll('button[data-confirm]').forEach(b=>b.addEventListener('click', ()=>{
+        const r = SCH._rep.rows.find(x=>String(x.report_id)===b.dataset.confirm);
+        schMarkPaid(r.installment_id, r.child_name+' · рата '+r.installment_number+'/'+r.total_installments, r.amount, reload, { method:r.method, date:String(r.paid_date).slice(0,10), note:r.note||'' }, r.report_id);
+      }));
+      body.querySelectorAll('button[data-reject]').forEach(b=>b.addEventListener('click', async ()=>{
+        const reason = prompt('Причина за одбивање (родителот ќе ја види):'); if(!reason || !reason.trim()) return;
+        try{ await authApiCall('/school/reports/' + b.dataset.reject + '/reject', { method:'POST', body: JSON.stringify({ reason: reason.trim() }) }); renderSchoolPage(); }
+        catch(err){ alert(err.message || 'Грешка.'); }
+      }));
+      body.querySelectorAll('a[data-card]').forEach(a=>a.addEventListener('click', e=>{ e.preventDefault(); schStudentCard({ child_id:Number(a.dataset.card) }); }));
+    } else if(SCH.payMode === 'due'){ schWireMonth(); schDrawDue();
       const redraw = ()=>{ SCH.payFilter = { q:document.getElementById('schPQ').value.trim().toLowerCase(), prof:document.getElementById('schPProf').value, overdueOnly:document.getElementById('schPOver').checked }; schDrawDue(); };
       ['schPQ'].forEach(id=>document.getElementById(id).addEventListener('input', redraw));
       ['schPProf','schPOver'].forEach(id=>document.getElementById(id).addEventListener('change', redraw));
@@ -5047,6 +5137,7 @@
     let html = '';
     if(d.parent) html += '<div class="sch-card" style="margin-bottom:12px;"><b>Родител:</b> '+escapeHtml(d.parent.full_name)+' · <a href="mailto:'+escapeHtml(d.parent.email)+'">'+escapeHtml(d.parent.email)+'</a>'
       + (d.parent.phone ? ' · <a href="tel:'+escapeHtml(d.parent.phone)+'">'+escapeHtml(d.parent.phone)+'</a>' : ' · <span class="sch-mini">нема телефон</span>')
+      + (d.child ? ' <button class="sch-btn" id="schEditPhone" style="margin-left:6px;">✎ Телефон</button>' : '')
       + (d.child && d.child.age ? '<div class="sch-mini">Возраст: '+d.child.age+'</div>' : '') + '</div>';
     else html += '<div class="sch-card" style="margin-bottom:12px;"><span class="sch-chip info">Нема профил на платформата</span> <span class="sch-mini">— родителот треба да се регистрира и да го додаде детето.</span></div>';
     if(d.groups.length) html += '<p><b>Групи:</b> '+d.groups.map(g=>escapeHtml(g.name)+(g.professor_name?' ('+escapeHtml(g.professor_name)+')':'')).join(', ')+'</p>';
@@ -5073,6 +5164,12 @@
     if(d.attendance.length) html += '<h4 class="sch-h" style="font-size:15px;margin:16px 0 6px;">Присуство (последни)</h4><p class="sch-mini">'+d.attendance.map(a=>schDate(a.lesson_date)+(a.was_held?(a.attended?' ✓':' ✗'):' (неодржан)')).join(' · ')+'</p>';
     if(!d.subscriptions.length && !d.roster.length) html += '<p class="sch-mini">Ученикот нема претплата ниту ред во листата. За да го запишеш, користи „Запиши дете што плаќа“ во табот Уплати.</p>';
     const ov = schModal(escapeHtml(nm), html);
+    const ep = ov.querySelector('#schEditPhone');
+    if(ep) ep.addEventListener('click', async ()=>{
+      const v = prompt('Телефонски број на родителот (' + (d.parent.full_name||'') + '):', d.parent.phone || ''); if(v === null || !v.trim()) return;
+      try{ await authApiCall('/children/' + d.child.id + '/parent-phone', { method:'PUT', body: JSON.stringify({ phone: v.trim() }) }); SCH.students = null; await reopen(); }
+      catch(err){ alert(err.message || 'Грешка.'); }
+    });
     ov.querySelectorAll('button[data-mp]').forEach(b=>b.addEventListener('click', ()=>schMarkPaid(b.dataset.mp, b.dataset.label, b.dataset.amount, reopen)));
     ov.querySelectorAll('button[data-un]').forEach(b=>b.addEventListener('click', ()=>schUnmarkPaid(b.dataset.un, b.dataset.label, reopen).catch(e=>alert(e.message||'Грешка.'))));
     ov.querySelectorAll('button[data-rp]').forEach(b=>b.addEventListener('click', ()=>schRosterPay(b.dataset.rp, nm, reopen)));
