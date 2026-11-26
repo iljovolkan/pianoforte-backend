@@ -21,6 +21,17 @@ async function requireFinanceAccess(req, res, next) {
 }
 router.use(requireAuth, requireFinanceAccess);
 
+
+// ---- Пријави на уплата од родители (табела payment_reports, миграција 37) ----
+async function pendingReportsCount() {
+  try {
+    const [[r]] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM payment_reports pr JOIN installments i ON i.id = pr.installment_id
+       WHERE pr.status = 'pending' AND i.status <> 'paid'`);
+    return n(r.cnt);
+  } catch (e) { return 0; }   // табелата уште не постои
+}
+
 const LIST_NOTE = 'Платено според школската листа';
 const today = () => new Date().toISOString().slice(0, 10);
 const currentYm = () => new Date().toISOString().slice(0, 7);
@@ -162,7 +173,8 @@ router.get('/overview', wrap(async (req, res) => {
       due_total: n(due.total) + rosterOwed.reduce((a, r) => a + r.owed, 0),
       due_count: n(due.cnt) + rosterOwed.length,
       overdue_total: n(over.total), overdue_count: n(over.cnt), overdue_kids: n(over.kids),
-      roster_owed_total: rosterOwed.reduce((a, r) => a + r.owed, 0), roster_owed_count: rosterOwed.length
+      roster_owed_total: rosterOwed.reduce((a, r) => a + r.owed, 0), roster_owed_count: rosterOwed.length,
+      reports_pending: await pendingReportsCount()
     },
     lessons: { individual_next_7_days: ib.cnt, held_month: n(logs.held), not_held_month: n(logs.not_held) },
     attention: {
@@ -448,4 +460,52 @@ router.post('/bookings/:id/cancel', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-module.exports = router;  
+// GET /school/reports/pending — родителски пријави што чекаат потврда
+router.get('/reports/pending', wrap(async (req, res) => {
+  let rows;
+  try {
+    [rows] = await pool.query(
+      `SELECT pr.id AS report_id, pr.installment_id, pr.method, pr.paid_date, pr.note, pr.created_at,
+              i.amount, i.installment_number, i.total_installments, i.due_date,
+              c.id AS child_id, c.full_name AS child_name,
+              u.full_name AS parent_name, u.email AS parent_email, u.phone AS parent_phone,
+              p.name AS package_name, g.name AS group_name, gp.full_name AS professor_name
+       FROM payment_reports pr
+       JOIN installments i ON i.id = pr.installment_id
+       JOIN subscriptions s ON s.id = i.subscription_id
+       JOIN children c ON c.id = s.student_id
+       JOIN users u ON u.id = c.parent_id
+       JOIN packages p ON p.id = s.package_id
+       LEFT JOIN groups_table g ON g.id = s.group_id
+       LEFT JOIN users gp ON gp.id = g.professor_id
+       WHERE pr.status = 'pending' AND i.status <> 'paid'
+       ORDER BY pr.created_at ASC`);
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') return res.json({ rows: [], migration_missing: true });
+    throw e;
+  }
+  res.json({ rows });
+}));
+
+// POST /school/reports/:id/resolve — се вика откако ратата е означена платена (mark-paid): ја затвора пријавата како потврдена
+router.post('/reports/:id/resolve', wrap(async (req, res) => {
+  const [[r]] = await pool.query(
+    `SELECT pr.id, i.status AS inst_status FROM payment_reports pr JOIN installments i ON i.id = pr.installment_id WHERE pr.id = ?`, [req.params.id]);
+  if (!r) return res.status(404).json({ error: 'Пријавата не постои.' });
+  if (r.inst_status !== 'paid') return res.status(409).json({ error: 'Ратата сè уште не е означена како платена.' });
+  await pool.query("UPDATE payment_reports SET status = 'confirmed', reviewed_by = ?, reviewed_at = NOW() WHERE id = ? AND status = 'pending'", [req.user.id, r.id]);
+  res.json({ ok: true });
+}));
+
+// POST /school/reports/:id/reject { reason }
+router.post('/reports/:id/reject', wrap(async (req, res) => {
+  const reason = String(req.body.reason || '').trim().slice(0, 255);
+  if (!reason) return res.status(400).json({ error: 'Внеси причина за одбивање — родителот ќе ја види.' });
+  const [u] = await pool.query(
+    "UPDATE payment_reports SET status = 'rejected', reject_reason = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ? AND status = 'pending'",
+    [reason, req.user.id, req.params.id]);
+  if (!u.affectedRows) return res.status(404).json({ error: 'Пријавата не е пронајдена или е веќе обработена.' });
+  res.json({ ok: true });
+}));
+
+module.exports = router;
