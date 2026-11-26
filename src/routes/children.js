@@ -96,7 +96,7 @@ router.post('/:id/withdraw', requireAuth, requireRole('student'), async (req, re
 
   const [[parent]] = await pool.query('SELECT full_name, email FROM users WHERE id = ?', [req.user.id]);
 
-  // земи го professor-от од активна претплата/група (ако постои)
+  // земи го професорот од активна претплата/група (ако постои)
   const [[activeSub]] = await pool.query(
     `SELECT g.professor_id, u.full_name AS professor_name
      FROM subscriptions s
@@ -133,6 +133,50 @@ router.post('/:id/withdraw', requireAuth, requireRole('student'), async (req, re
   } catch (e) { console.error('Withdraw email error:', e); }
 
   res.json({ ok: true });
+});
+
+// ---- Телефон на родител: професорот ги внесува за родителите од неговите групи; admin/финансиски пристап за сите ----
+const PHONE_RE = /^[+0-9][0-9 ()\/.-]{5,24}$/;
+async function canManageParentOf(user, childId) {
+  if (user.role === 'admin') return true;
+  const [[u]] = await pool.query('SELECT finance_access FROM users WHERE id = ?', [user.id]);
+  if (u && u.finance_access === 1) return true;
+  if (user.role !== 'professor') return false;
+  const [[ok]] = await pool.query(
+    `SELECT 1 AS ok FROM children c
+     WHERE c.id = ? AND (
+       EXISTS (SELECT 1 FROM group_members gm JOIN groups_table g ON g.id = gm.group_id WHERE gm.student_id = c.id AND g.professor_id = ?)
+       OR EXISTS (SELECT 1 FROM subscriptions s JOIN groups_table g ON g.id = s.group_id WHERE s.student_id = c.id AND g.professor_id = ? AND s.released = FALSE))
+     LIMIT 1`, [childId, user.id, user.id]);
+  return !!ok;
+}
+
+// GET /children/my-group-parents — за професор: деца од неговите групи со родител и телефон
+router.get('/my-group-parents', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT c.id AS child_id, c.full_name AS child_name, u.id AS parent_id, u.full_name AS parent_name, u.phone AS parent_phone, g.id AS group_id, g.name AS group_name
+       FROM groups_table g
+       JOIN group_members gm ON gm.group_id = g.id
+       JOIN children c ON c.id = gm.student_id
+       JOIN users u ON u.id = c.parent_id
+       WHERE g.professor_id = ?
+       ORDER BY g.name, c.full_name`, [req.user.id]);
+    res.json(rows);
+  } catch (err) { console.error('GET /children/my-group-parents error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
+});
+
+// PUT /children/:id/parent-phone { phone } — поставува телефон на родителот на детето
+router.put('/:id/parent-phone', requireAuth, requireRole('professor', 'admin'), async (req, res) => {
+  try {
+    const phone = String(req.body.phone || '').trim();
+    if (!PHONE_RE.test(phone)) return res.status(400).json({ error: 'Внеси валиден телефонски број.' });
+    if (!(await canManageParentOf(req.user, req.params.id))) return res.status(403).json({ error: 'Можеш да менуваш телефон само за родители на деца од твоите групи.' });
+    const [[c]] = await pool.query('SELECT parent_id FROM children WHERE id = ?', [req.params.id]);
+    if (!c) return res.status(404).json({ error: 'Детето не постои.' });
+    await pool.query('UPDATE users SET phone = ? WHERE id = ?', [phone, c.parent_id]);
+    res.json({ ok: true, phone });
+  } catch (err) { console.error('PUT /children/:id/parent-phone error:', err); res.status(500).json({ error: 'Грешка: ' + err.message }); }
 });
 
 module.exports = router;
