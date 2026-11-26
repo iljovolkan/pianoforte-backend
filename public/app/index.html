@@ -115,6 +115,28 @@
   .admin-stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;}
 
   /* ===== ФИНАНСИСКИ ТАБЕЛИ (прецизни, со колони) ===== */
+
+  .sch-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:0 0 14px;}
+  .sch-bar label{display:block;font-size:12px;color:var(--mist);margin-bottom:3px;}
+  .sch-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:10px;}
+  .sch-tab{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);padding:9px 16px;border-radius:999px;cursor:pointer;font-size:14px;font-family:inherit;}
+  .sch-tab.active{background:var(--lilac-deep);color:#fff;border-color:var(--lilac-deep);}
+  .sch-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .sch-btn.primary{background:var(--lilac-deep);color:#fff;border-color:var(--lilac-deep);}
+  .sch-h{font-size:17px;margin:22px 0 10px;}
+  .sch-mini{font-size:12px;color:var(--mist);font-weight:400;}
+  .sch-chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);}
+  .sch-chip.overdue{background:var(--wine-pale);color:var(--wine);border-color:var(--wine);}
+  .sch-chip.ok{background:#e6f4ea;color:#1e6b34;border-color:#a8d5b4;}
+  .sch-chip.done{background:var(--lilac-pale);color:var(--lilac-deep);border-color:var(--lilac-deep);}
+  .sch-chip.info,.sch-chip.noplan{background:var(--sand-pale);color:var(--ink);}
+  .sch-action{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--surface);}
+  .sch-action.warn{border-color:var(--wine);background:var(--wine-pale);}
+  .sch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+  .sch-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface);}
+  .sch-bar-prog{height:5px;background:var(--line);border-radius:3px;margin-top:4px;overflow:hidden;}
+  .sch-bar-prog i{display:block;height:100%;background:var(--lilac-deep);}
+  .fin-table td.neg{color:var(--wine);font-weight:600;}
   .fin-table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px;}
   .fin-table{width:100%; border-collapse:collapse; font-size:13px; min-width:560px;}
   .fin-table thead th{background:var(--surface-2); color:var(--mist); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; text-align:left; padding:11px 14px; white-space:nowrap; border-bottom:1px solid var(--line);}
@@ -1200,6 +1222,17 @@
           <tbody id="adminWithdrawnList"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- ---- ШКОЛА PAGE ---- -->
+    <section class="page" id="page-school">
+      <div class="page-head">
+        <span class="eyebrow">Администрација</span>
+        <h2>Школа</h2>
+        <p>Ученици, уплати, професори, часови и финансии — сè на едно место.</p>
+      </div>
+      <div class="sch-tabs" id="schTabs"></div>
+      <div id="schBody"></div>
     </section>
 
     <!-- ---- FINANCE PAGE ---- -->
@@ -2888,6 +2921,7 @@
     if(session.role==='professor') tabs.push({id:'schedule', label:t('nav_schedule')});
     tabs.push({id:'billing', label:t('nav_billing')});
     if(session.role !== 'student') tabs.push({id:'packages', label:t('nav_packages')});
+    if(session.role==='admin' || session.financeAccess) tabs.push({id:'school', label:'Школа'});
     if(session.role==='admin' || session.financeAccess) tabs.push({id:'finance', label:'Финансии'});
     tabs.forEach(tab=>{
       const btn = document.createElement('button'); btn.textContent = tab.label; btn.dataset.page = tab.id;
@@ -2897,6 +2931,7 @@
         if(tab.id==='schedule') renderSchedulePage();
         if(tab.id==='admin') renderAdminPage();
         if(tab.id==='finance') renderFinancePage();
+        if(tab.id==='school') renderSchoolPage();
       });
       nav.appendChild(btn);
     });
@@ -4733,6 +4768,406 @@
     }
   }
 
+
+  /* ===================== ШКОЛА — единствен преглед за Искра и господата ===================== */
+  const SCH = { tab:'overview', month:null, payMode:'due', students:null, stFilter:{ q:'', prof:'', view:'' }, payFilter:{ q:'', prof:'', overdueOnly:false }, profAll:false };
+  const SCH_TABS = [['overview','Преглед'],['pay','Уплати'],['students','Ученици'],['profs','Професори'],['lessons','Часови'],['fin','Финансии']];
+  const SCH_MON = ['','Јануари','Февруари','Март','Април','Мај','Јуни','Јули','Август','Септември','Октомври','Ноември','Декември'];
+  const schMonth = ()=> SCH.month || new Date().toISOString().slice(0,7);
+  const schBody = ()=> document.getElementById('schBody');
+  const schLoading = ()=> { schBody().innerHTML = '<div class="empty-state">Се вчитува...</div>'; };
+  const schErr = (err)=> { schBody().innerHTML = '<div class="empty-state">Грешка: ' + escapeHtml((err && err.message) || 'непозната') + '</div>'; };
+  function schDate(s){ if(!s) return '—'; const p = String(s).slice(0,10).split('-'); return p.length===3 ? p[2]+'.'+p[1]+'.'+p[0] : String(s); }
+  function schYm(ym){ if(!ym) return '—'; const p = String(ym).split('-'); return (SCH_MON[Number(p[1])]||p[1]) + ' ' + p[0]; }
+  function schTbl(headers, rowsHtml, empty){
+    return '<div class="fin-table-wrap"><table class="fin-table"><thead><tr>' + headers.map(h=>'<th>'+h+'</th>').join('') + '</tr></thead><tbody>'
+      + (rowsHtml || '<tr><td colspan="'+headers.length+'" class="fin-table-empty">'+(empty||'Нема податоци.')+'</td></tr>') + '</tbody></table></div>';
+  }
+  function schStat(num, lbl, warn){ return '<div class="admin-stat-card"><div class="num'+(warn?' warn':'')+'">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
+  function schCsv(filename, header, rows){
+    const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+    const csv = '﻿' + [header].concat(rows).map(r=>r.map(esc).join(';')).join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})); a.download = filename;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function schModal(title, html){
+    const old = document.getElementById('schModal'); if(old) old.remove();
+    const ov = document.createElement('div'); ov.id = 'schModal';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto;';
+    ov.innerHTML = '<div style="background:var(--surface);color:var(--ink);border-radius:16px;max-width:820px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;"><h3 style="margin:0;font-size:20px;">'+title+'</h3>'
+      + '<button class="sch-btn" id="schModalClose">Затвори ✕</button></div><div id="schModalBody">'+html+'</div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#schModalClose').onclick = ()=>ov.remove();
+    ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+    return ov;
+  }
+
+  function renderSchoolPage(){
+    const tabs = document.getElementById('schTabs');
+    tabs.innerHTML = SCH_TABS.map(t=>'<button class="sch-tab'+(SCH.tab===t[0]?' active':'')+'" data-t="'+t[0]+'">'+t[1]+'</button>').join('');
+    tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{ SCH.tab = b.dataset.t; renderSchoolPage(); }));
+    schLoading();
+    const run = { overview:schOverview, pay:schPayments, students:schStudents, profs:schProfessors, lessons:schLessons, fin:schFinance }[SCH.tab];
+    Promise.resolve().then(run).catch(schErr);
+  }
+  function schGo(tab, opts){
+    SCH.tab = tab;
+    if(opts && opts.view !== undefined) SCH.stFilter = { q:'', prof:(opts.prof||''), view:opts.view };
+    if(opts && opts.prof !== undefined && opts.view === undefined) SCH.stFilter = { q:'', prof:String(opts.prof), view:'' };
+    renderSchoolPage();
+  }
+  function schMonthBar(){
+    return '<div class="sch-bar"><div><label>Месец</label><input type="month" id="schMonthInp" class="login-select" value="'+schMonth()+'"></div></div>';
+  }
+  function schWireMonth(){
+    const m = document.getElementById('schMonthInp');
+    if(m) m.addEventListener('change', ()=>{ if(m.value){ SCH.month = m.value; renderSchoolPage(); } });
+  }
+
+  /* ---------- ПРЕГЛЕД ---------- */
+  async function schOverview(){
+    const d = await authApiCall('/school/overview?month=' + schMonth());
+    const p = d.people, m = d.money, c = d.collection, l = d.lessons;
+    const act = [];
+    if(c.overdue_count > 0) act.push({ warn:true, txt:'<b>'+c.overdue_count+' задоцнети рати</b> ('+fmtMoney(c.overdue_total)+') кај '+c.overdue_kids+' ученици', go:'pay', btn:'Види кој' });
+    if(c.roster_owed_count > 0) act.push({ warn:true, txt:'<b>'+c.roster_owed_count+' ученици од листата</b> должат вкупно '+fmtMoney(c.roster_owed_total), go:'pay', btn:'Види кој' });
+    if(p.no_group > 0) act.push({ warn:false, txt:'<b>'+p.no_group+' ученици</b> имаат платена претплата, но немаат група', go:'students', view:'nogroup', btn:'Прикажи' });
+    if(p.roster_waiting > 0) act.push({ warn:false, txt:'<b>'+p.roster_waiting+' деца од листата</b> имаат профил, но не се запишани на платформата', go:'students', view:'waiting', btn:'Прикажи' });
+    if(p.roster_no_profile > 0) act.push({ warn:false, txt:'<b>'+p.roster_no_profile+' деца од листата</b> уште немаат профил — родителот треба да се регистрира', go:'students', view:'noprofile', btn:'Прикажи' });
+    if(p.children_without_plan > 0) act.push({ warn:false, txt:'<b>'+p.children_without_plan+' деца</b> имаат профил, но немаат претплата', go:'students', view:'noplan', btn:'Прикажи' });
+    const actHtml = act.length ? act.map((a,i)=>'<div class="sch-action'+(a.warn?' warn':'')+'"><div>'+a.txt+'</div><button class="sch-btn primary" data-act="'+i+'">'+a.btn+'</button></div>').join('')
+      : '<div class="sch-action"><div>✓ Нема ништо што бара вашето внимание.</div></div>';
+    schBody().innerHTML = schMonthBar()
+      + '<h3 class="sch-h">Потребно е вашето внимание</h3>' + actHtml
+      + '<h3 class="sch-h">Ученици · ' + schYm(d.month) + '</h3><div class="admin-stats-grid">'
+      + schStat(p.total_students, 'Вкупно ученици') + schStat(p.active_students, 'На платформата (со претплата)') + schStat(p.roster_only, 'Само во листата') + schStat(p.professors, 'Професори')
+      + '</div>'
+      + '<h3 class="sch-h">Наплата</h3><div class="admin-stats-grid">'
+      + schStat(fmtMoney(c.due_total), 'За наплата до крајот на месецот ('+c.due_count+')', c.due_total>0)
+      + schStat(fmtMoney(c.overdue_total), 'Од тоа веќе задоцнето', c.overdue_total>0)
+      + schStat(fmtMoney(m.income), 'Наплатено овој месец ('+m.payments_count+' уплати)')
+      + '</div>'
+      + '<h3 class="sch-h">Месечен биланс</h3><div class="admin-stats-grid">'
+      + schStat(fmtMoney(m.income), 'Приход') + schStat(fmtMoney(m.salaries), 'Плати') + schStat(fmtMoney(m.trosoci + m.marketing), 'Трошоци и маркетинг') + schStat(fmtMoney(m.remainder), 'Остаток', m.remainder<0)
+      + '</div>'
+      + '<h3 class="sch-h">Часови</h3><div class="admin-stats-grid">'
+      + schStat(l.individual_next_7_days, 'Индивидуални часови во наредните 7 дена') + schStat(l.held_month, 'Одржани групни часови овој месец') + schStat(l.not_held_month, 'Неодржани групни часови', l.not_held_month>0)
+      + '</div>'
+      + (p.no_group ? '' : '');
+    schWireMonth();
+    schBody().querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click', ()=>{ const a = act[Number(b.dataset.act)]; schGo(a.go, a.view ? { view:a.view } : undefined); }));
+  }
+
+  /* ---------- УПЛАТИ ---------- */
+  function schMarkPaid(instId, label, amount, done){
+    finModal('Означи рата како платена',
+      '<p style="margin:0 0 10px;font-size:14px;"><strong>'+escapeHtml(label)+'</strong> · '+fmtMoney(amount)+'</p>'
+      + '<label>Начин на плаќање</label><select id="smMethod" class="login-select"><option value="bank">Банка</option><option value="cash">Кеш</option><option value="other">Друго</option></select>'
+      + '<label>Датум на уплата</label><input type="date" id="smDate" class="login-input" value="'+todayIso()+'">'
+      + '<label>Белешка (незадолжително)</label><input type="text" id="smNote" class="login-input" maxlength="200">'
+      + '<label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="smInvoice" checked> Испрати фактура на мејл на родителот</label>',
+      'Означи платена',
+      async (ov)=>{
+        const out = await authApiCall('/finance/installments/' + instId + '/mark-paid', { method:'POST', body: JSON.stringify({
+          method: ov.querySelector('#smMethod').value, paid_date: ov.querySelector('#smDate').value,
+          note: ov.querySelector('#smNote').value.trim(), send_invoice: ov.querySelector('#smInvoice').checked }) });
+        alert(out.invoice_number ? 'Означено како платено. Фактура ' + out.invoice_number + (out.emailed ? ' е испратена на мејл.' : ' е издадена, но мејлот не е испратен.') : 'Означено како платено.');
+        if(done) await done();
+      });
+  }
+  async function schUnmarkPaid(instId, label, done){
+    const reason = prompt('Поништување на уплатата за ' + label + '.\nФактурата ќе се означи како СТОРНИРАНА (не се брише).\n\nПричина:');
+    if(!reason || !reason.trim()) return;
+    const out = await authApiCall('/finance/installments/' + instId + '/mark-unpaid', { method:'POST', body: JSON.stringify({ reason: reason.trim() }) });
+    alert('Уплатата е поништена.' + (out.invoices_cancelled ? ' Фактурата е означена како сторнирана.' : ''));
+    if(done) await done();
+  }
+  function schRosterPay(rosterId, name, done, defMonth){
+    finModal('Уплата од листата — ' + escapeHtml(name),
+      '<label>Месец на уплата</label><input type="month" id="srMonth" class="login-input" value="'+(defMonth||new Date().toISOString().slice(0,7))+'">'
+      + '<label>Износ (ден.) — 0 за бришење на уплатата за тој месец</label><input type="number" id="srAmount" class="login-input" min="0" step="1">',
+      'Зачувај',
+      async (ov)=>{
+        const pay_month = ov.querySelector('#srMonth').value, amount = ov.querySelector('#srAmount').value;
+        if(!pay_month || amount === ''){ alert('Внеси месец и износ.'); return true; }
+        await authApiCall('/finance/roster/' + rosterId + '/payment', { method:'POST', body: JSON.stringify({ pay_month, amount: Number(amount) }) });
+        if(done) await done();
+      });
+  }
+  function schProfOptions(rows, sel){
+    const set = {}; rows.forEach(r=>{ if(r) set[r] = 1; });
+    return '<option value="">Сите професори</option>' + Object.keys(set).sort().map(p=>'<option value="'+escapeHtml(p)+'"'+(sel===p?' selected':'')+'>'+escapeHtml(p)+'</option>').join('');
+  }
+  async function schPayments(){
+    const body = schBody();
+    const top = '<div class="sch-bar"><button class="sch-btn'+(SCH.payMode==='due'?' primary':'')+'" data-mode="due">За наплата</button><button class="sch-btn'+(SCH.payMode==='log'?' primary':'')+'" data-mode="log">Дневник на уплати</button>'
+      + '<span style="flex:1"></span><button class="sch-btn" id="schAddPaysBtn">➕ Додај нови уплати (од листата)</button><button class="sch-btn" id="schEnrollBtn">➕ Запиши дете што плаќа</button></div>';
+    let inner = '';
+    if(SCH.payMode === 'due'){
+      const d = await authApiCall('/school/payments/due?month=' + schMonth());
+      SCH._due = d;
+      inner = schMonthBar()
+        + '<div class="sch-bar"><div><label>Пребарај</label><input type="text" id="schPQ" class="login-input" placeholder="дете / родител" value="'+escapeHtml(SCH.payFilter.q)+'"></div>'
+        + '<div><label>Професор</label><select id="schPProf" class="login-select">'+schProfOptions(d.platform.map(r=>r.professor_name).concat(d.roster.map(r=>r.professor_name)), SCH.payFilter.prof)+'</select></div>'
+        + '<div><label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" id="schPOver"'+(SCH.payFilter.overdueOnly?' checked':'')+'> Само задоцнето</label></div>'
+        + '<button class="sch-btn" id="schPCsv">⬇ CSV</button></div><div id="schDueBody"></div>';
+    } else {
+      const to = new Date().toISOString().slice(0,10), from = new Date(Date.now()-30*86400000).toISOString().slice(0,10);
+      SCH.logFrom = SCH.logFrom || from; SCH.logTo = SCH.logTo || to;
+      inner = '<div class="sch-bar"><div><label>Од</label><input type="date" id="schLFrom" class="login-input" value="'+SCH.logFrom+'"></div><div><label>До</label><input type="date" id="schLTo" class="login-input" value="'+SCH.logTo+'"></div>'
+        + '<button class="sch-btn primary" id="schLGo">Прикажи</button><button class="sch-btn" id="schLCsv">⬇ CSV</button></div><div id="schLogBody"></div>';
+    }
+    body.innerHTML = top + inner;
+    body.querySelectorAll('button[data-mode]').forEach(b=>b.addEventListener('click', ()=>{ SCH.payMode = b.dataset.mode; renderSchoolPage(); }));
+    document.getElementById('schAddPaysBtn').addEventListener('click', openAddPayments);
+    document.getElementById('schEnrollBtn').addEventListener('click', ()=>openManualEnrollment());
+    if(SCH.payMode === 'due'){ schWireMonth(); schDrawDue();
+      const redraw = ()=>{ SCH.payFilter = { q:document.getElementById('schPQ').value.trim().toLowerCase(), prof:document.getElementById('schPProf').value, overdueOnly:document.getElementById('schPOver').checked }; schDrawDue(); };
+      ['schPQ'].forEach(id=>document.getElementById(id).addEventListener('input', redraw));
+      ['schPProf','schPOver'].forEach(id=>document.getElementById(id).addEventListener('change', redraw));
+      document.getElementById('schPCsv').addEventListener('click', ()=>{
+        const f = schDueFiltered();
+        schCsv('za-naplata-' + schMonth() + '.csv', ['Дете','Родител','Е-пошта','Телефон','Професор','Пакет','Рата','Износ','Рок','Денови задоцнето'],
+          f.platform.map(r=>[r.child_name,r.parent_name,r.parent_email,r.parent_phone||'',r.professor_name||'',r.package_name,r.installment_number+'/'+r.total_installments,r.amount,r.due_date,Math.max(0,r.days_overdue)])
+            .concat(f.roster.map(r=>[r.full_name,'','','',r.professor_name,'од листата','',r.owed,'','']))); });
+    } else {
+      const load = async ()=>{
+        SCH.logFrom = document.getElementById('schLFrom').value; SCH.logTo = document.getElementById('schLTo').value;
+        const box = document.getElementById('schLogBody'); box.innerHTML = '<div class="empty-state">Се вчитува...</div>';
+        const d = await authApiCall('/school/payments/recent?from=' + SCH.logFrom + '&to=' + SCH.logTo);
+        SCH._log = d;
+        const rows = d.rows.map(r=>'<tr><td>'+(r.source==='list' ? schYm(String(r.date).slice(0,7)) : schDate(r.date))+'</td><td>'+escapeHtml(r.name)+'</td><td>'+escapeHtml(r.professor_name||'—')+'</td><td>'+escapeHtml(r.label)+'</td><td>'+escapeHtml({bank:'Банка',cash:'Кеш',other:'Друго',cpay:'Онлајн'}[r.method]||r.method||'—')+'</td><td class="num">'+fmtMoney(r.amount)+'</td></tr>').join('');
+        box.innerHTML = '<p class="sch-mini">Платформа: <b>'+fmtMoney(d.totals.platform)+'</b> · Од школската листа: <b>'+fmtMoney(d.totals.list)+'</b> · Вкупно: <b>'+fmtMoney(d.totals.platform + d.totals.list)+'</b> (уплатите од листата се по месец, не по ден)</p>'
+          + schTbl(['Датум','Ученик','Професор','Што','Начин','Износ'], rows, 'Нема уплати во овој период.');
+      };
+      document.getElementById('schLGo').addEventListener('click', ()=>load().catch(schErr));
+      document.getElementById('schLCsv').addEventListener('click', ()=>{ const d = SCH._log; if(!d) return;
+        schCsv('uplati.csv', ['Датум','Ученик','Професор','Што','Начин','Износ'], d.rows.map(r=>[String(r.date).slice(0,10),r.name,r.professor_name||'',r.label,r.method||'',r.amount])); });
+      await load();
+    }
+  }
+  function schDueFiltered(){
+    const d = SCH._due || { platform:[], roster:[] }, f = SCH.payFilter;
+    const okName = s => !f.q || String(s||'').toLowerCase().includes(f.q);
+    const platform = d.platform.filter(r => (okName(r.child_name) || okName(r.parent_name) || okName(r.parent_email)) && (!f.prof || r.professor_name === f.prof) && (!f.overdueOnly || r.days_overdue > 0));
+    const roster = d.roster.filter(r => okName(r.full_name) && (!f.prof || r.professor_name === f.prof));
+    return { platform, roster };
+  }
+  function schDrawDue(){
+    const box = document.getElementById('schDueBody'); if(!box) return;
+    const f = schDueFiltered();
+    const sumP = f.platform.reduce((a,r)=>a+r.amount,0), sumR = f.roster.reduce((a,r)=>a+r.owed,0);
+    const pRows = f.platform.map(r=>{
+      const late = r.days_overdue > 0;
+      return '<tr><td><a href="#" data-card="'+r.child_id+'">'+escapeHtml(r.child_name)+'</a></td>'
+        + '<td>'+escapeHtml(r.parent_name||'')+'<div class="sch-mini">'+escapeHtml(r.parent_phone||r.parent_email||'')+'</div></td>'
+        + '<td>'+escapeHtml(r.professor_name||'—')+'</td><td>'+escapeHtml(r.package_name)+' · '+r.installment_number+'/'+r.total_installments+'</td>'
+        + '<td class="num">'+fmtMoney(r.amount)+'</td><td>'+schDate(r.due_date)+'</td>'
+        + '<td>'+(late ? '<span class="sch-chip overdue">'+r.days_overdue+' дена</span>' : '<span class="sch-chip ok">на време</span>')+'</td>'
+        + '<td><button class="sch-btn primary" data-pay="'+r.installment_id+'" data-label="'+escapeHtml(r.child_name+' · рата '+r.installment_number+'/'+r.total_installments)+'" data-amount="'+r.amount+'">Означи платено</button></td></tr>';
+    }).join('');
+    const rRows = f.roster.map(r=>'<tr><td>'+escapeHtml(r.full_name)+'</td><td>'+escapeHtml(r.professor_name)+'</td><td class="num">'+fmtMoney(r.full_price)+'</td><td class="num">'+fmtMoney(r.paid_total)+'</td><td class="num">'+fmtMoney(r.expected)+'</td><td class="num neg">'+fmtMoney(r.owed)+'</td>'
+      + '<td><button class="sch-btn primary" data-rpay="'+r.roster_id+'" data-name="'+escapeHtml(r.full_name)+'">Додај уплата</button></td></tr>').join('');
+    box.innerHTML = '<h3 class="sch-h" style="margin-top:6px;">Рати на платформата <span class="sch-mini">— вкупно '+fmtMoney(sumP)+' ('+f.platform.length+')</span></h3>'
+      + schTbl(['Дете','Родител / контакт','Професор','Пакет · рата','Износ','Рок','Статус',''], pRows, 'Нема рати за наплата.')
+      + '<h3 class="sch-h">Деца само од школската листа што должат <span class="sch-mini">— вкупно '+fmtMoney(sumR)+' ('+f.roster.length+')</span></h3>'
+      + schTbl(['Дете','Професор','Цена','Платено','Очекувано до месецот','Должи',''], rRows, 'Нема.');
+    const reload = async ()=>{ renderSchoolPage(); };
+    box.querySelectorAll('button[data-pay]').forEach(b=>b.addEventListener('click', ()=>schMarkPaid(b.dataset.pay, b.dataset.label, b.dataset.amount, reload)));
+    box.querySelectorAll('button[data-rpay]').forEach(b=>b.addEventListener('click', ()=>schRosterPay(b.dataset.rpay, b.dataset.name, reload, schMonth())));
+    box.querySelectorAll('a[data-card]').forEach(a=>a.addEventListener('click', e=>{ e.preventDefault(); schStudentCard({ child_id:Number(a.dataset.card) }); }));
+  }
+
+  /* ---------- УЧЕНИЦИ ---------- */
+  const SCH_VIEWS = [['','Сите'],['overdue','Задоцнето'],['ok','Редовни'],['done','Платена цела година'],['nogroup','Без група'],['waiting','Имаат профил, не се запишани'],['noprofile','Немаат профил (само листа)'],['noplan','Профил без претплата']];
+  function schStatusChip(r){
+    if(r.kind === 'noplan') return '<span class="sch-chip noplan">без претплата</span>';
+    const base = r.status==='overdue' ? '<span class="sch-chip overdue">задоцнето</span>' : (r.status==='done' ? '<span class="sch-chip done">платено сè</span>' : '<span class="sch-chip ok">редовно</span>');
+    return base + (r.kind==='roster' ? ' <span class="sch-chip info">листа</span>' : '');
+  }
+  function schStFiltered(){
+    const f = SCH.stFilter, q = (f.q||'').toLowerCase();
+    return (SCH.students || []).filter(r=>{
+      if(q && !(String(r.name).toLowerCase().includes(q) || String(r.parent_name||'').toLowerCase().includes(q) || String(r.parent_email||'').toLowerCase().includes(q))) return false;
+      if(f.prof && r.professor_name !== f.prof) return false;
+      switch(f.view){
+        case 'overdue': return r.status === 'overdue';
+        case 'ok': return r.status === 'ok';
+        case 'done': return r.status === 'done';
+        case 'nogroup': return r.flags.includes('no_group');
+        case 'waiting': return r.flags.includes('has_profile_no_plan');
+        case 'noprofile': return r.flags.includes('no_profile');
+        case 'noplan': return r.kind === 'noplan';
+        default: return true;
+      }
+    });
+  }
+  async function schStudents(){
+    if(!SCH.students){ const d = await authApiCall('/school/students'); SCH.students = d.rows; SCH.studentProfs = d.professors; }
+    const profNames = SCH.students.map(r=>r.professor_name);
+    schBody().innerHTML = '<div class="sch-bar"><div><label>Пребарај</label><input type="text" id="schSQ" class="login-input" placeholder="ученик / родител / е-пошта" value="'+escapeHtml(SCH.stFilter.q)+'"></div>'
+      + '<div><label>Професор</label><select id="schSProf" class="login-select">'+schProfOptions(profNames, SCH.stFilter.prof)+'</select></div>'
+      + '<div><label>Приказ</label><select id="schSView" class="login-select">'+SCH_VIEWS.map(v=>'<option value="'+v[0]+'"'+(SCH.stFilter.view===v[0]?' selected':'')+'>'+v[1]+'</option>').join('')+'</select></div>'
+      + '<button class="sch-btn" id="schSCsv">⬇ CSV</button><button class="sch-btn" id="schSRefresh">↻ Освежи</button></div><div id="schStBody"></div>';
+    const draw = ()=>{
+      const rows = schStFiltered();
+      const tot = rows.reduce((a,r)=>{ a.t += r.total; a.p += r.paid; return a; }, { t:0, p:0 });
+      document.getElementById('schStBody').innerHTML = '<p class="sch-mini">'+rows.length+' ученици · платено '+fmtMoney(tot.p)+' од '+fmtMoney(tot.t)+'</p>'
+        + schTbl(['Ученик','Професор / група','Пакет','Платено','Следна рата','Статус'], rows.map((r,i)=>{
+          const pct = r.total > 0 ? Math.min(100, Math.round(r.paid * 100 / r.total)) : 0;
+          return '<tr data-i="'+i+'" style="cursor:pointer;"><td><b>'+escapeHtml(r.name)+'</b>'+(r.flags.includes('no_group')?' <span class="sch-chip noplan">без група</span>':'')+(r.flags.includes('no_profile')?' <span class="sch-chip info">без профил</span>':'')
+            + '<div class="sch-mini">'+escapeHtml(r.parent_name||'')+'</div></td>'
+            + '<td>'+escapeHtml(r.professor_name||'—')+'<div class="sch-mini">'+escapeHtml(r.group_name||'')+'</div></td>'
+            + '<td>'+escapeHtml(r.package_name||'—')+(r.rati ? '<div class="sch-mini">'+r.rati_paid+'/'+r.rati+' рати</div>' : '')+'</td>'
+            + '<td class="num">'+fmtMoney(r.paid)+'<div class="sch-mini">од '+fmtMoney(r.total)+'</div><div class="sch-bar-prog"><i style="width:'+pct+'%"></i></div></td>'
+            + '<td>'+(r.kind==='platform' ? schDate(r.next_due) : '—')+(r.overdue_amount>0 ? '<div class="sch-mini" style="color:var(--wine)">должи '+fmtMoney(r.overdue_amount)+'</div>' : '')+'</td>'
+            + '<td>'+schStatusChip(r)+'</td></tr>';
+        }).join(''), 'Нема ученици за овој филтер.');
+      document.querySelectorAll('#schStBody tr[data-i]').forEach(tr=>tr.addEventListener('click', ()=>schStudentCard(rows[Number(tr.dataset.i)])));
+      SCH._stRows = rows;
+    };
+    const redraw = ()=>{ SCH.stFilter = { q:document.getElementById('schSQ').value.trim(), prof:document.getElementById('schSProf').value, view:document.getElementById('schSView').value }; draw(); };
+    document.getElementById('schSQ').addEventListener('input', redraw);
+    document.getElementById('schSProf').addEventListener('change', redraw);
+    document.getElementById('schSView').addEventListener('change', redraw);
+    document.getElementById('schSRefresh').addEventListener('click', ()=>{ SCH.students = null; renderSchoolPage(); });
+    document.getElementById('schSCsv').addEventListener('click', ()=>{
+      schCsv('ucenici.csv', ['Ученик','Родител','Е-пошта','Професор','Група','Пакет','Вкупно','Платено','Остануваат','Следна рата','Статус'],
+        (SCH._stRows||[]).map(r=>[r.name,r.parent_name||'',r.parent_email||'',r.professor_name||'',r.group_name||'',r.package_name||'',r.total,r.paid,r.remaining,r.next_due||'',{overdue:'задоцнето',ok:'редовно',done:'платено',noplan:'без претплата'}[r.status]||r.status]));
+    });
+    draw();
+  }
+
+  async function schStudentCard(row){
+    const q = row.child_id ? 'child_id=' + row.child_id : 'roster_id=' + row.roster_id;
+    const d = await authApiCall('/school/student?' + q);
+    const nm = d.child ? d.child.full_name : (d.roster[0] ? d.roster[0].full_name : 'Ученик');
+    const reopen = async ()=>{ SCH.students = null; const m = document.getElementById('schModal'); if(m) m.remove(); await schStudentCard(row); if(SCH.tab==='students' || SCH.tab==='pay') renderSchoolPage(); };
+    let html = '';
+    if(d.parent) html += '<div class="sch-card" style="margin-bottom:12px;"><b>Родител:</b> '+escapeHtml(d.parent.full_name)+' · <a href="mailto:'+escapeHtml(d.parent.email)+'">'+escapeHtml(d.parent.email)+'</a>'
+      + (d.parent.phone ? ' · <a href="tel:'+escapeHtml(d.parent.phone)+'">'+escapeHtml(d.parent.phone)+'</a>' : ' · <span class="sch-mini">нема телефон</span>')
+      + (d.child && d.child.age ? '<div class="sch-mini">Возраст: '+d.child.age+'</div>' : '') + '</div>';
+    else html += '<div class="sch-card" style="margin-bottom:12px;"><span class="sch-chip info">Нема профил на платформата</span> <span class="sch-mini">— родителот треба да се регистрира и да го додаде детето.</span></div>';
+    if(d.groups.length) html += '<p><b>Групи:</b> '+d.groups.map(g=>escapeHtml(g.name)+(g.professor_name?' ('+escapeHtml(g.professor_name)+')':'')).join(', ')+'</p>';
+    d.subscriptions.forEach(s=>{
+      const paid = s.installments.filter(i=>i.status==='paid').length;
+      html += '<h4 class="sch-h" style="font-size:15px;margin:16px 0 6px;">'+escapeHtml(s.package_name)+(s.released?' <span class="sch-chip info">ослободена</span>':'')+' <span class="sch-mini">· '+paid+'/'+s.installments.length+' рати · '+(s.group_name?escapeHtml(s.group_name)+' / '+escapeHtml(s.professor_name||''):'без група')+'</span></h4>'
+        + schTbl(['#','Износ','Рок','Статус',''], s.installments.map(i=>{
+          const isPaid = i.status === 'paid', late = !isPaid && String(i.due_date).slice(0,10) < todayIso();
+          const lbl = nm + ' · рата ' + i.installment_number + '/' + i.total_installments;
+          return '<tr><td>'+i.installment_number+'/'+i.total_installments+'</td><td class="num">'+fmtMoney(i.amount)+'</td><td>'+schDate(i.due_date)+'</td>'
+            + '<td>'+(isPaid ? '<span class="sch-chip ok">платена '+schDate(i.paid_at)+'</span>'+(i.paid_note ? '<div class="sch-mini">'+escapeHtml(i.paid_note)+'</div>' : '') : (late ? '<span class="sch-chip overdue">задоцнета</span>' : '<span class="sch-chip info">на чекање</span>'))+'</td>'
+            + '<td>'+(isPaid ? '<button class="sch-btn" data-un="'+i.id+'" data-label="'+escapeHtml(lbl)+'">Поништи</button>' : (s.released ? '' : '<button class="sch-btn primary" data-mp="'+i.id+'" data-label="'+escapeHtml(lbl)+'" data-amount="'+i.amount+'">Означи платена</button>'))+'</td></tr>';
+        }).join(''), '');
+    });
+    if(d.roster.length){
+      html += '<h4 class="sch-h" style="font-size:15px;margin:16px 0 6px;">Школска листа</h4>';
+      d.roster.forEach(r=>{
+        html += '<div class="sch-card" style="margin-bottom:8px;"><b>'+escapeHtml(r.professor_name)+'</b> · цена '+fmtMoney(r.full_price)+' · платено '+fmtMoney(r.paid_total)+' · очекувано до сега '+fmtMoney(r.expected)+(r.owed>0 ? ' · <b style="color:var(--wine)">должи '+fmtMoney(r.owed)+'</b>' : '')
+          + '<div class="sch-mini" style="margin:6px 0;">'+(r.payments.length ? r.payments.map(p=>schYm(p.pay_month)+': '+fmtMoney(p.amount)).join(' · ') : 'нема уплати')+'</div>'
+          + '<button class="sch-btn primary" data-rp="'+r.id+'">Додај/измени уплата</button></div>';
+      });
+    }
+    if(d.bookings.length) html += '<h4 class="sch-h" style="font-size:15px;margin:16px 0 6px;">Индивидуални часови</h4>' + schTbl(['Датум','Време','Професор','Статус'], d.bookings.map(b=>'<tr><td>'+schDate(b.booking_date)+'</td><td>'+String(b.start_time).slice(0,5)+'</td><td>'+escapeHtml(b.professor_name)+'</td><td>'+(b.status==='cancelled'?'<span class="sch-chip info">откажан</span>':'<span class="sch-chip ok">закажан</span>')+'</td></tr>').join(''), '');
+    if(d.attendance.length) html += '<h4 class="sch-h" style="font-size:15px;margin:16px 0 6px;">Присуство (последни)</h4><p class="sch-mini">'+d.attendance.map(a=>schDate(a.lesson_date)+(a.was_held?(a.attended?' ✓':' ✗'):' (неодржан)')).join(' · ')+'</p>';
+    if(!d.subscriptions.length && !d.roster.length) html += '<p class="sch-mini">Ученикот нема претплата ниту ред во листата. За да го запишеш, користи „Запиши дете што плаќа“ во табот Уплати.</p>';
+    const ov = schModal(escapeHtml(nm), html);
+    ov.querySelectorAll('button[data-mp]').forEach(b=>b.addEventListener('click', ()=>schMarkPaid(b.dataset.mp, b.dataset.label, b.dataset.amount, reopen)));
+    ov.querySelectorAll('button[data-un]').forEach(b=>b.addEventListener('click', ()=>schUnmarkPaid(b.dataset.un, b.dataset.label, reopen).catch(e=>alert(e.message||'Грешка.'))));
+    ov.querySelectorAll('button[data-rp]').forEach(b=>b.addEventListener('click', ()=>schRosterPay(b.dataset.rp, nm, reopen)));
+  }
+
+  /* ---------- ПРОФЕСОРИ ---------- */
+  async function schProfessors(){
+    const d = await authApiCall('/school/professors?month=' + schMonth());
+    const active = p => p.groups.length || p.active_students || p.roster_total || p.salary_month || p.individual_upcoming || p.lessons_held || p.lessons_not_held;
+    const list = d.professors.filter(p => SCH.profAll || active(p));
+    schBody().innerHTML = schMonthBar() + '<div class="sch-bar"><label style="display:flex;gap:6px;align-items:center;font-size:13px;"><input type="checkbox" id="schProfAll"'+(SCH.profAll?' checked':'')+'> Прикажи ги и корисниците без ученици/групи</label></div>'
+      + '<div class="sch-grid">' + list.map(p=>
+        '<div class="sch-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><b style="font-size:16px;">'+escapeHtml(p.full_name)+'</b><div class="sch-mini">'+escapeHtml(p.instrument ? instrumentLabel(p.instrument) : '')+'</div></div>'
+        + '<button class="sch-btn primary" data-prof="'+escapeHtml(p.full_name)+'">Ученици →</button></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:12px 0;font-size:13px;">'
+        + '<div><div class="sch-mini">Ученици (платформа)</div><b>'+p.active_students+'</b>'+(p.roster_only?' <span class="sch-mini">+'+p.roster_only+' само листа</span>':'')+'</div>'
+        + '<div><div class="sch-mini">Задоцнето</div><b'+(p.overdue_amount>0?' style="color:var(--wine)"':'')+'>'+fmtMoney(p.overdue_amount)+'</b>'+(p.overdue_kids?' <span class="sch-mini">('+p.overdue_kids+' ученици)</span>':'')+'</div>'
+        + '<div><div class="sch-mini">Наплатено овој месец</div><b>'+fmtMoney(p.collected_month)+'</b></div>'
+        + '<div><div class="sch-mini">Плата овој месец</div><b>'+fmtMoney(p.salary_month)+'</b></div>'
+        + '<div><div class="sch-mini">Групни часови</div><b>'+p.lessons_held+'</b> одржани'+(p.lessons_not_held?' · <span style="color:var(--wine)">'+p.lessons_not_held+' неодржани</span>':'')+'</div>'
+        + '<div><div class="sch-mini">Индивидуални (наредни)</div><b>'+p.individual_upcoming+'</b></div></div>'
+        + (p.groups.length ? '<div class="sch-mini" style="margin-bottom:4px;">Групи</div>'+p.groups.map(g=>'<div style="font-size:13px;display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid var(--line);"><span>'+escapeHtml(g.name)+(g.is_closed?' 🔒':'')+'<span class="sch-mini"> '+escapeHtml(g.termini||'')+'</span></span><b>'+g.members+'/'+g.capacity+'</b></div>').join('') : '<div class="sch-mini">Нема групи.</div>')
+        + '</div>').join('') + '</div>'
+      + (list.length ? '' : '<div class="empty-state">Нема професори за прикажување.</div>')
+      + (d.list_only_professors.length ? '<h3 class="sch-h">Професори што постојат само во школската листа</h3>' + schTbl(['Професор','Ученици','Платено','Должи'], d.list_only_professors.map(p=>'<tr><td>'+escapeHtml(p.name)+'</td><td>'+p.students+'</td><td class="num">'+fmtMoney(p.paid)+'</td><td class="num">'+fmtMoney(p.owed)+'</td></tr>').join(''), '') : '');
+    schWireMonth();
+    document.getElementById('schProfAll').addEventListener('change', e=>{ SCH.profAll = e.target.checked; renderSchoolPage(); });
+    schBody().querySelectorAll('button[data-prof]').forEach(b=>b.addEventListener('click', ()=>{ SCH.students = SCH.students; schGo('students', { view:'', prof:b.dataset.prof }); }));
+  }
+
+  /* ---------- ЧАСОВИ ---------- */
+  async function schLessons(){
+    const from = SCH.lFrom || todayIso(), to = SCH.lTo || new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+    const profs = await authApiCall('/finance/professors');
+    const prof = SCH.lProf || '';
+    const d = await authApiCall('/school/lessons?from=' + from + '&to=' + to + (prof ? '&professor_id=' + prof : ''));
+    schBody().innerHTML = '<div class="sch-bar"><div><label>Од</label><input type="date" id="schLsFrom" class="login-input" value="'+from+'"></div><div><label>До</label><input type="date" id="schLsTo" class="login-input" value="'+to+'"></div>'
+      + '<div><label>Професор</label><select id="schLsProf" class="login-select"><option value="">Сите</option>'+profs.map(p=>'<option value="'+p.id+'"'+(String(p.id)===String(prof)?' selected':'')+'>'+escapeHtml(p.full_name)+'</option>').join('')+'</select></div>'
+      + '<button class="sch-btn primary" id="schLsGo">Прикажи</button></div>'
+      + '<h3 class="sch-h" style="margin-top:6px;">Индивидуални часови <span class="sch-mini">('+d.bookings.filter(b=>b.status!=='cancelled').length+' активни)</span></h3>'
+      + schTbl(['Датум','Време','Ученик','Професор','Предмет','Статус',''], d.bookings.map(b=>'<tr><td>'+schDate(b.booking_date)+'</td><td>'+b.start_time+' <span class="sch-mini">'+b.duration_minutes+' мин</span></td><td><a href="#" data-card="'+b.child_id+'">'+escapeHtml(b.child_name)+'</a></td><td>'+escapeHtml(b.professor_name)+'</td><td>'+escapeHtml(instrumentLabel(b.instrument))+'</td>'
+        + '<td>'+(b.status==='cancelled' ? '<span class="sch-chip info">откажан</span>' : '<span class="sch-chip ok">закажан</span>')+'</td>'
+        + '<td>'+(b.status==='cancelled' ? '' : '<button class="sch-btn" data-cancel="'+b.id+'" data-label="'+escapeHtml(b.child_name+' · '+schDate(b.booking_date)+' '+b.start_time)+'">Откажи</button>')+'</td></tr>').join(''), 'Нема индивидуални часови во овој период.')
+      + '<h3 class="sch-h">Евиденција на групни часови</h3>'
+      + schTbl(['Датум','Група','Професор','Одржан','Присутни'], d.logs.map(l=>'<tr><td>'+schDate(l.lesson_date)+'</td><td>'+escapeHtml(l.group_name||'индивидуален')+'</td><td>'+escapeHtml(l.professor_name)+'</td><td>'+(l.was_held?'<span class="sch-chip ok">да</span>':'<span class="sch-chip overdue">не</span>')+(l.notes?'<div class="sch-mini">'+escapeHtml(l.notes)+'</div>':'')+'</td><td>'+(l.total_marked ? l.present+'/'+l.total_marked : '—')+'</td></tr>').join(''), 'Нема евиденција во овој период.');
+    document.getElementById('schLsGo').addEventListener('click', ()=>{ SCH.lFrom = document.getElementById('schLsFrom').value; SCH.lTo = document.getElementById('schLsTo').value; SCH.lProf = document.getElementById('schLsProf').value; renderSchoolPage(); });
+    schBody().querySelectorAll('a[data-card]').forEach(a=>a.addEventListener('click', e=>{ e.preventDefault(); schStudentCard({ child_id:Number(a.dataset.card) }); }));
+    schBody().querySelectorAll('button[data-cancel]').forEach(b=>b.addEventListener('click', async ()=>{
+      if(!confirm('Да се откаже часот: ' + b.dataset.label + '?')) return;
+      try{ await authApiCall('/school/bookings/' + b.dataset.cancel + '/cancel', { method:'POST' }); renderSchoolPage(); } catch(err){ alert(err.message || 'Грешка.'); }
+    }));
+  }
+
+  /* ---------- ФИНАНСИИ ---------- */
+  async function schFinance(){
+    const month = schMonth();
+    const [sum, salaries, expenses, profs, forecast] = await Promise.all([
+      authApiCall('/finance/summary?month=' + month), authApiCall('/finance/salaries?month=' + month),
+      authApiCall('/finance/expenses?month=' + month), authApiCall('/finance/professors'),
+      authApiCall('/finance/annual-forecast').catch(()=>null)
+    ]);
+    const salTot = salaries.reduce((a,s)=>a + Number(s.amount) - Number(s.tax_amount||0) + Number(s.cash_amount||0), 0);
+    schBody().innerHTML = schMonthBar()
+      + '<div class="admin-stats-grid">' + schStat(fmtMoney(sum.income), 'Приход (платформа '+fmtMoney(sum.income_platform)+' + листа '+fmtMoney(sum.income_roster)+')') + schStat(fmtMoney(sum.salaries), 'Плати') + schStat(fmtMoney(sum.total_expenses), 'Трошоци и маркетинг') + schStat(fmtMoney(sum.remainder), 'Остаток', sum.remainder<0) + '</div>'
+      + '<h3 class="sch-h">Плати и хонорари <span class="sch-mini">— за исплата (нето + кеш): '+fmtMoney(salTot)+'</span></h3>'
+      + '<div class="sch-bar"><div><label>Професор</label><select id="schSalProf" class="login-select">'+profs.map(p=>'<option value="'+p.id+'">'+escapeHtml(p.full_name)+'</option>').join('')+'</select></div>'
+      + '<div><label>Бруто износ</label><input type="number" id="schSalAmt" class="login-input" min="0"></div><div><label>Данок %</label><input type="number" id="schSalTax" class="login-input" value="10" min="0" max="100" step="0.1"></div><div><label>Кеш</label><input type="number" id="schSalCash" class="login-input" value="0" min="0"></div>'
+      + '<button class="sch-btn primary" id="schSalSave">Зачувај</button></div>'
+      + schTbl(['Професор','Бруто','Данок','Нето','Кеш','За исплата',''], salaries.map(s=>{ const net = Number(s.amount) - Number(s.tax_amount||0);
+        return '<tr><td>'+escapeHtml(s.professor_name)+'</td><td class="num">'+fmtMoney(s.amount)+'</td><td class="num">'+fmtMoney(s.tax_amount||0)+'</td><td class="num">'+fmtMoney(net)+'</td><td class="num">'+fmtMoney(s.cash_amount||0)+'</td><td class="num"><b>'+fmtMoney(net + Number(s.cash_amount||0))+'</b></td><td><button class="sch-btn" data-delsal="'+s.id+'">Избриши</button></td></tr>'; }).join(''), 'Нема внесени плати за овој месец.')
+      + '<h3 class="sch-h">Трошоци и маркетинг</h3>'
+      + '<div class="sch-bar"><div><label>Опис</label><input type="text" id="schExpDesc" class="login-input" maxlength="200"></div><div><label>Тип</label><select id="schExpCat" class="login-select"><option value="trosok">Трошок</option><option value="marketing">Маркетинг</option></select></div>'
+      + '<div><label>Износ</label><input type="number" id="schExpAmt" class="login-input" min="0"></div><div><label>Датум</label><input type="date" id="schExpDate" class="login-input" value="'+todayIso()+'"></div><button class="sch-btn primary" id="schExpSave">Додај</button></div>'
+      + schTbl(['Датум','Опис','Тип','Износ',''], expenses.map(e=>'<tr><td>'+schDate(e.expense_date)+'</td><td>'+escapeHtml(e.description)+'</td><td>'+(e.category==='marketing'?'Маркетинг':'Трошок')+'</td><td class="num">'+fmtMoney(e.amount)+'</td><td><button class="sch-btn" data-delexp="'+e.id+'">Избриши</button></td></tr>').join(''), 'Нема трошоци за овој месец.')
+      + (forecast && forecast.months ? '<h3 class="sch-h">Проценка за учебната година '+escapeHtml(forecast.school_year||'')+'</h3>' + schTbl(['Месец','Наплатено','Очекувано','Вкупно'], forecast.months.map(m=>'<tr><td>'+schYm(m.month)+'</td><td class="num">'+fmtMoney(m.paid)+'</td><td class="num">'+fmtMoney(m.expected)+'</td><td class="num"><b>'+fmtMoney(Number(m.paid)+Number(m.expected))+'</b></td></tr>').join('')
+        + '<tr style="font-weight:700;"><td>Вкупно</td><td class="num">'+fmtMoney(forecast.totals.collected)+'</td><td class="num">'+fmtMoney(forecast.totals.expected)+'</td><td class="num">'+fmtMoney(forecast.totals.projected)+'</td></tr>', '') : '')
+      + '<h3 class="sch-h">Алатки</h3><div class="sch-bar"><button class="sch-btn" id="schToolOld">Отвори ги сите стари финансиски алатки (фактури, масовно запишување, имиња…)</button></div>';
+    schWireMonth();
+    document.getElementById('schSalSave').addEventListener('click', async ()=>{
+      const professor_id = document.getElementById('schSalProf').value, amount = Number(document.getElementById('schSalAmt').value) || 0;
+      const pct = Number(document.getElementById('schSalTax').value) || 0, cash = Number(document.getElementById('schSalCash').value) || 0;
+      if(!professor_id || !amount){ alert('Избери професор и внеси износ.'); return; }
+      try{ await authApiCall('/finance/salaries', { method:'POST', body: JSON.stringify({ professor_id, month, amount, tax_amount: Math.round(amount * pct) / 100, cash_amount: cash }) }); renderSchoolPage(); }
+      catch(err){ alert(err.message || 'Грешка.'); }
+    });
+    schBody().querySelectorAll('button[data-delsal]').forEach(b=>b.addEventListener('click', async ()=>{ if(!confirm('Да се избрише платата?')) return; await authApiCall('/finance/salaries/' + b.dataset.delsal, { method:'DELETE' }); renderSchoolPage(); }));
+    document.getElementById('schExpSave').addEventListener('click', async ()=>{
+      const description = document.getElementById('schExpDesc').value.trim(), amount = document.getElementById('schExpAmt').value, expense_date = document.getElementById('schExpDate').value;
+      if(!description || amount === '' || !expense_date){ alert('Внеси опис, износ и датум.'); return; }
+      try{ await authApiCall('/finance/expenses', { method:'POST', body: JSON.stringify({ category: document.getElementById('schExpCat').value, description, amount: Number(amount), expense_date }) }); renderSchoolPage(); }
+      catch(err){ alert(err.message || 'Грешка.'); }
+    });
+    schBody().querySelectorAll('button[data-delexp]').forEach(b=>b.addEventListener('click', async ()=>{ if(!confirm('Да се избрише трошокот?')) return; await authApiCall('/finance/expenses/' + b.dataset.delexp, { method:'DELETE' }); renderSchoolPage(); }));
+    document.getElementById('schToolOld').addEventListener('click', ()=>{ showPage('finance'); renderFinancePage(); });
+  }
 
   /* ===================== ДЕЦА ПО ПРОФЕСОР (со плаќања) ===================== */
   const MONTH_NAMES = {'09':'Сеп','10':'Окт','11':'Ное','12':'Дек','01':'Јан','02':'Фев','03':'Мар','04':'Апр'};
